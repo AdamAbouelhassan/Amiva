@@ -1,0 +1,37 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+lib/
+build/
+.expo/
+.expo-shared/
+web-build/
+
+# native
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# env
+.env
+.env.local
+*.local
+
+# test/coverage
+coverage/
+
+# firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# editor/os
+.DS_Store
+*.log

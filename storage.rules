@@ -1,0 +1,40 @@
+rules_version = '2';
+
+/**
+ * Firebase Storage rules for uploaded images (experience photos, profile
+ * photos) — technical_specification.md §1.
+ *
+ * Simplification vs. Firestore rules: Storage rules can't cheaply join
+ * against a Firestore doc's privacySetting per-request the way
+ * firestore.rules does, so read access here is "any signed-in user,"
+ * not privacy-cascaded. This is a known MVP gap, not a spec requirement —
+ * a private experience's *document* is still fully protected by
+ * firestore.rules; only its already-uploaded image bytes would be
+ * fetchable by URL if guessed/leaked by a signed-in user. Tightening this
+ * (e.g. via a Cloud Function proxy issuing signed URLs) is a reasonable
+ * post-MVP follow-up, not done here to avoid over-building beyond spec.
+ */
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+    function isValidImage() {
+      return request.resource.size < 15 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    match /profilePhotos/{uid}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(uid) && isValidImage();
+    }
+
+    match /experiencePhotos/{uid}/{experienceId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(uid) && isValidImage();
+    }
+  }
+}

@@ -1,0 +1,163 @@
+rules_version = '2';
+
+/**
+ * Firestore Security Rules — technical_specification.md §6.
+ *
+ * Key rules enforced here:
+ *  - `travelStyle` / `travelStyleBaseline` / `travelStyleLastUpdated` on a
+ *    user doc are Cloud-Function-only writes (Admin SDK bypasses these
+ *    rules entirely) — a client `update` may never change them. The one
+ *    exception is document `create`: onboarding's 8 sliders are the
+ *    user's first, self-declared baseline (functional_specification.md
+ *    §2.3), so the initial value is a legitimate client write.
+ *  - Read access to `experiences`, `trips`, and a user's travel style is
+ *    gated by that owner's `privacySetting` (public/private/friends),
+ *    checked against friend-edge existence for the `friends` case
+ *    (functional_specification.md §3.6, §6.4).
+ *  - `places` is world-readable, Cloud-Function-write-only (prevents
+ *    client-side pollution of the normalized place list).
+ *  - `friends` edges are never client-writable — compatibilityScore is
+ *    server-computed, and the edge itself is only ever created by the
+ *    `onFriendAdded` callable (technical_specification.md §5).
+ *  - Raw phone numbers are never queried client-side for contacts-sync
+ *    matching (technical_specification.md §6) — that matching happens
+ *    inside a Cloud Function, out of scope for these declarative rules,
+ *    but note `users/{uid}.phoneNumber` is still gated by the same
+ *    privacySetting read rule as the rest of the profile below.
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isFriendOf(ownerId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/friends/$(ownerId + '_' + request.auth.uid));
+    }
+
+    /** Mirrors the account-wide privacy cascade
+     * (functional_specification.md §3.6): the owner always sees their own
+     * data; otherwise gated by privacySetting. */
+    function canReadOwnedBy(ownerId, privacySetting) {
+      return isOwner(ownerId) ||
+        privacySetting == 'public' ||
+        (privacySetting == 'friends' && isFriendOf(ownerId));
+    }
+
+    function unchanged(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+
+    // --- users -----------------------------------------------------------
+    match /users/{uid} {
+      allow read: if canReadOwnedBy(uid, resource.data.privacySetting);
+
+      // Initial account creation: the client sets everything, including
+      // the onboarding travel-style vector as the first baseline.
+      allow create: if isOwner(uid);
+
+      // Updates: owner only, and never allowed to touch the
+      // server-computed style fields (Cloud Functions write these via
+      // the Admin SDK, which is not subject to these rules at all).
+      allow update: if isOwner(uid) &&
+        unchanged('travelStyle') &&
+        unchanged('travelStyleBaseline') &&
+        unchanged('travelStyleLastUpdated');
+
+      allow delete: if isOwner(uid);
+
+      // FCM device tokens (infra addition — see
+      // functions/src/adapters/pushAdapter.ts for why this isn't on the
+      // User schema itself). Owner-only in both directions.
+      match /fcmTokens/{token} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // --- places ------------------------------------------------------------
+    match /places/{placeId} {
+      allow read: if true;
+      allow write: if false; // Cloud Functions (Admin SDK) only
+    }
+
+    // --- trips (Logbook) ---------------------------------------------------
+    match /trips/{tripId} {
+      allow read: if canReadOwnedBy(resource.data.ownerId, resource.data.visibility);
+      allow create: if isSignedIn() && isOwner(request.resource.data.ownerId);
+      allow update, delete: if isOwner(resource.data.ownerId);
+    }
+
+    // --- experiences (Logbook entries / posts) ------------------------------
+    match /experiences/{experienceId} {
+      allow read: if canReadOwnedBy(
+        resource.data.ownerId,
+        get(/databases/$(database)/documents/users/$(resource.data.ownerId)).data.privacySetting
+      );
+      allow create: if isSignedIn() && isOwner(request.resource.data.ownerId);
+      allow update, delete: if isOwner(resource.data.ownerId);
+    }
+
+    // --- saves ---------------------------------------------------------------
+    match /saves/{saveId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow delete: if isOwner(resource.data.userId); // "unsave"
+      allow update: if false; // saves are immutable — delete + recreate instead
+    }
+
+    // --- plannedTrips (shared-doc-style group co-editing) ---------------------
+    match /plannedTrips/{plannedTripId} {
+      function isCollaborator(data) {
+        return isOwner(data.ownerId) || (isSignedIn() && request.auth.uid in data.collaboratorIds);
+      }
+      allow read: if canReadOwnedBy(resource.data.ownerId, resource.data.visibility) || isCollaborator(resource.data);
+      allow create: if isSignedIn() && isOwner(request.resource.data.ownerId);
+      // Any collaborator can co-edit (functional_specification.md §6.1) —
+      // unlimited collaborators, direct-add, no invite/accept step.
+      allow update: if isCollaborator(resource.data);
+      allow delete: if isOwner(resource.data.ownerId);
+    }
+
+    match /plannedTripItems/{itemId} {
+      function parentTrip() {
+        return get(/databases/$(database)/documents/plannedTrips/$(resource.data.plannedTripId)).data;
+      }
+      function parentTripOnCreate() {
+        return get(/databases/$(database)/documents/plannedTrips/$(request.resource.data.plannedTripId)).data;
+      }
+      function isCollaboratorOf(trip) {
+        return isOwner(trip.ownerId) || (isSignedIn() && request.auth.uid in trip.collaboratorIds);
+      }
+      allow read: if isCollaboratorOf(parentTrip());
+      allow create: if isCollaboratorOf(parentTripOnCreate());
+      allow update, delete: if isCollaboratorOf(parentTrip());
+    }
+
+    // --- friends (bidirectional compatibility edges) ---------------------------
+    match /friends/{edgeId} {
+      allow read: if isOwner(resource.data.userId);
+      allow write: if false; // onFriendAdded / onTravelStyleChanged (Admin SDK) only
+    }
+
+    // --- notifications -----------------------------------------------------------
+    match /notifications/{notificationId} {
+      allow read: if isOwner(resource.data.recipientId);
+      allow create, delete: if false; // Cloud Functions only
+      // Client may mark its own notification read, nothing else.
+      allow update: if isOwner(resource.data.recipientId) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+    }
+
+    // --- config (tunable algorithm constants) -----------------------------------
+    match /config/{docId} {
+      allow read: if isSignedIn();
+      allow write: if false; // set via console/admin tooling only
+    }
+  }
+}

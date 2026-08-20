@@ -1,0 +1,20 @@
+{
+  "name": "@amiva/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared pure types and logic for Amiva — TravelStyleVector, match scoring, style decay, feed/group algorithms. No React, no Firebase SDK, no I/O.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "jest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.12.7",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.4.5"
+  }
+}
