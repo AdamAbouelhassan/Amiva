@@ -5,23 +5,23 @@
   "description": "Cloud Functions for Firebase — Amiva backend. Thin triggers over testable lib/ functions (CLAUDE.md #4, #8).",
   "main": "lib/index.js",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node22 --format=cjs --sourcemap --outfile=lib/index.js --alias:@amiva/core=../packages/core/src/index.ts --external:firebase-admin --external:firebase-functions",
     "test": "jest",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "serve": "npm run build && firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions"
   },
   "dependencies": {
-    "@amiva/core": "*",
     "firebase-admin": "^12.1.0",
     "firebase-functions": "^4.9.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.7",
+    "esbuild": "^0.21.4",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.2",
     "typescript": "^5.4.5"

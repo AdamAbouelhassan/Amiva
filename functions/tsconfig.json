@@ -1,11 +1,21 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "lib",
-    "rootDir": "src",
+    // No outDir/rootDir: tsc here only runs as `--noEmit` (typecheck) —
+    // esbuild does the actual build (see package.json's "build" script).
+    // rootDir would conflict with pulling in packages/core/src below.
     "module": "CommonJS",
-    "target": "ES2020"
+    "target": "ES2020",
+    // @amiva/core is deliberately NOT an npm dependency of this package —
+    // Firebase's remote Cloud Build reinstalls from package.json
+    // regardless of dependencies/devDependencies, and @amiva/core isn't
+    // (and shouldn't be) published to the npm registry. Resolved by
+    // direct path instead, matching the esbuild --alias in package.json's
+    // build script (see that script's comment for the full story).
+    "baseUrl": ".",
+    "paths": {
+      "@amiva/core": ["../packages/core/src/index.ts"]
+    }
   },
-  "include": ["src"],
-  "compileOnSave": true
+  "include": ["src"]
 }
