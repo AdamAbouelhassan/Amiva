@@ -38,19 +38,8 @@ export function EditTravelStyleScreen({ navigation }: { navigation: { goBack: ()
         label="Save"
         loading={mutation.isPending}
         onPress={() => {
-          // TEMPORARY diagnostic log — remove once the save-doesn't-persist
-          // issue is confirmed fixed. If this line never prints when
-          // tapping Save, the bug is upstream of the mutation entirely
-          // (touch handling / Button component), not in the save logic.
-          console.log('[EditTravelStyleScreen] Save tapped, value =', JSON.stringify(value));
           mutation.mutate(value, {
-            onSuccess: () => {
-              console.log('[EditTravelStyleScreen] mutation onSuccess');
-              navigation.goBack();
-            },
-            onError: (err) => {
-              console.log('[EditTravelStyleScreen] mutation onError', err);
-            },
+            onSuccess: () => navigation.goBack(),
           });
         }}
       />

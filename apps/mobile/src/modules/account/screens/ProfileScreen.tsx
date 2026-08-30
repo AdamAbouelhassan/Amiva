@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import { topCategories } from '@amiva/core';
 import { RadarChart, TravelStyleValueList } from '../../../components/RadarChart';
 import { ScreenContainer } from '../../../components/ScreenContainer';
@@ -14,6 +14,14 @@ export function ProfileScreen() {
   return (
     <ScreenContainer>
       <View style={{ alignItems: 'center', gap: spacing.xs }}>
+        {profile.profilePhotoUrl ? (
+          <Image
+            source={{ uri: profile.profilePhotoUrl }}
+            style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: colors.surfaceAlt }}
+          />
+        ) : (
+          <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: colors.surfaceAlt }} />
+        )}
         <Text style={typography.displayMd}>{profile.name}</Text>
         <Text style={typography.bodySmall}>@{profile.username}</Text>
       </View>
