@@ -50,6 +50,20 @@ export const RECENT_SEARCHES_MAX = 10;
 /** Max photos per logged experience (functional_specification.md §3.3). */
 export const MAX_EXPERIENCE_PHOTOS = 5;
 
+/** How many of the viewer's top categories (topCategories, profileInsights.ts)
+ * become Feed/Trending sections (feedSections.ts) in the Discover rebuild —
+ * "organized by the activities that most match your personal travel
+ * style." Matches the existing "top 3 categories" convention already used
+ * for profile badges (functional_specification.md §2.6). */
+export const FEED_SECTION_COUNT = 3;
+
+/** Minimum categoryScores[category] (0-10) for an item to belong to that
+ * category's Feed/Trending section (feedSections.ts). An item can clear
+ * the threshold for more than one category and appear in multiple
+ * sections — functional_specification.md §2.5's own example (a food tour
+ * scoring high on both Luxury and Foodie) is exactly this case. */
+export const CATEGORY_SECTION_THRESHOLD = 6;
+
 export interface DecayConfig {
   wLogged: number;
   wSaved: number;

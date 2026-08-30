@@ -61,6 +61,20 @@ export interface FriendEdgeRecord {
   createdAt: Date;
 }
 
+/** Backs the server-side re-implementation of firestore.rules'
+ * canReadOwnedBy (see lib/visibility.ts) — the Admin SDK bypasses
+ * security rules entirely, so anything reading across multiple users'
+ * experiences for Feed/Trending (functions/src/lib/feed.ts,
+ * functions/src/lib/trending.ts) must re-apply that same privacy cascade
+ * itself in plain code, since Firestore can't gate a *query* by
+ * per-document data reached through another document (CLAUDE.md's
+ * `usernames` lookup-collection gotcha) the way it can a single-doc read. */
+export interface VisibilityStore {
+  /** Current privacySetting per uid. A uid absent from the result (e.g. a
+   * deleted account) should be treated as not visible by callers. */
+  getPrivacySettings(userIds: string[]): Promise<Record<string, 'public' | 'private' | 'friends'>>;
+}
+
 export interface FriendStore {
   createFriendEdgePair(edge: {
     userId: string;

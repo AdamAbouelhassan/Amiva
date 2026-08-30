@@ -16,11 +16,11 @@ export type LogbookStackParamList = {
 };
 
 export type DiscoveryStackParamList = {
+  DiscoverHome: undefined;
   Feed: undefined;
-  ExperienceDetail: { experienceId: string };
-  Search: undefined;
   Trending: undefined;
   Recommendations: undefined;
+  ExperienceDetail: { experienceId: string };
 };
 
 export type SocialStackParamList = {
