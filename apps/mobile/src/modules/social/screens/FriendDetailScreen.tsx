@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Text, View } from 'react-native';
 import { toMatchPercent } from '@amiva/core';
+import { ProfileIdentity } from '../../../components/ProfileIdentity';
 import { RadarChart } from '../../../components/RadarChart';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
@@ -30,7 +31,12 @@ export function FriendDetailScreen({ route }: FriendDetailScreenProps) {
   return (
     <ScreenContainer>
       <View style={{ alignItems: 'center', gap: spacing.xs }}>
-        <Text style={typography.displayMd}>{friend.name}</Text>
+        <ProfileIdentity
+          layout="stacked"
+          name={friend.name}
+          username={friend.username}
+          photoUrl={friend.profilePhotoUrl}
+        />
         <Text style={typography.statNumber}>{toMatchPercent(edge.compatibilityScore)}% compatible</Text>
       </View>
 

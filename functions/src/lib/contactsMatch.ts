@@ -11,17 +11,27 @@
  * wire); this matches against phone-number hashes precomputed the same
  * way for every registered user.
  */
+export interface ContactMatch {
+  userId: string;
+  name: string;
+  username: string;
+  /** Profile photo URL, or null if the user hasn't set one. Safe to
+   * return (like `name` / `username`) — it's already public on the
+   * user's profile; still never a raw phone number. */
+  profilePhotoUrl: string | null;
+}
+
 export interface ContactsMatchStore {
   /** Looks up which of the given phone-number hashes belong to a
-   * registered user, returning only {userId, name} pairs — never a raw
-   * phone number. */
-  findUsersByPhoneHashes(hashes: string[]): Promise<Array<{ userId: string; name: string }>>;
+   * registered user, returning only {userId, name, profilePhotoUrl}
+   * triples — never a raw phone number. */
+  findUsersByPhoneHashes(hashes: string[]): Promise<ContactMatch[]>;
 }
 
 export async function matchContacts(
   store: ContactsMatchStore,
   contactPhoneHashes: string[],
-): Promise<Array<{ userId: string; name: string }>> {
+): Promise<ContactMatch[]> {
   const uniqueHashes = [...new Set(contactPhoneHashes)];
   if (uniqueHashes.length === 0) return [];
   return store.findUsersByPhoneHashes(uniqueHashes);

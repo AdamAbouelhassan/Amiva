@@ -13,6 +13,8 @@ import { hashPhoneNumber } from '../../../lib/phoneHash';
 interface ContactMatch {
   userId: string;
   name: string;
+  username: string;
+  profilePhotoUrl: string | null;
 }
 
 const matchContactsCallable = httpsCallable<{ contactPhoneHashes: string[] }, ContactMatch[]>(

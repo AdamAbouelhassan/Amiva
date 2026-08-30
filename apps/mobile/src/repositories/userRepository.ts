@@ -40,8 +40,10 @@ function fromFirestore(id: string, data: DocumentData): UserDoc {
     username: data.username,
     name: data.name,
     email: data.email,
-    phoneNumber: data.phoneNumber,
-    phoneNumberHash: data.phoneNumberHash,
+    // `create` stores these as `null` when absent; normalize to
+    // `undefined` so nothing above the repository sees `null`.
+    phoneNumber: data.phoneNumber ?? undefined,
+    phoneNumberHash: data.phoneNumberHash ?? undefined,
     profilePhotoUrl: data.profilePhotoUrl,
     privacySetting: data.privacySetting,
     travelStyle: data.travelStyle,
@@ -87,11 +89,37 @@ export const UserRepository = {
     await batch.commit();
   },
 
+  /** Non-username profile fields (Account → Settings). `username` is
+   * deliberately excluded — it has a uniqueness lookup to keep in sync,
+   * so it goes through `changeUsername`. Pass `null` for `phoneNumber` /
+   * `phoneNumberHash` to clear them; `undefined` keys are left untouched. */
   async updateProfile(
     uid: string,
-    patch: Partial<Pick<UserDoc, 'name' | 'username' | 'phoneNumber' | 'phoneNumberHash' | 'profilePhotoUrl'>>,
+    patch: {
+      name?: string;
+      profilePhotoUrl?: string;
+      phoneNumber?: string | null;
+      phoneNumberHash?: string | null;
+    },
   ): Promise<void> {
-    await updateDoc(doc(db, COLLECTION, uid), patch);
+    const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
+    if (Object.keys(clean).length === 0) return;
+    await updateDoc(doc(db, COLLECTION, uid), clean);
+  },
+
+  /** Renames the user while keeping the `usernames/{username}` uniqueness
+   * lookup in sync: claims the new name and releases the old one in one
+   * atomic batch. The new claim is a `set` on a doc that must not exist
+   * (firestore.rules forbids `update` on `usernames`), so a race where
+   * someone else grabbed the name in the meantime fails the whole batch —
+   * same guarantee `create` gives at signup. Call `isUsernameTaken`
+   * first for a friendly message; this is the actual safety net. */
+  async changeUsername(uid: string, currentUsername: string, newUsername: string): Promise<void> {
+    const batch = writeBatch(db);
+    batch.set(doc(db, USERNAMES_COLLECTION, newUsername), { uid });
+    batch.delete(doc(db, USERNAMES_COLLECTION, currentUsername));
+    batch.update(doc(db, COLLECTION, uid), { username: newUsername });
+    await batch.commit();
   },
 
   async updatePrivacySetting(uid: string, privacySetting: PrivacySetting): Promise<void> {

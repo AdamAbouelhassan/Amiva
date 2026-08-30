@@ -35,6 +35,7 @@ export function NotificationsScreen() {
     <ScreenContainer scroll={false}>
       <Text style={[typography.displayMd, { padding: spacing.lg, paddingBottom: 0 }]}>Notifications</Text>
       <FlatList
+        style={{ flex: 1 }}
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
         data={query.data ?? []}
         keyExtractor={(item) => item.notificationId}

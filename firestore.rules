@@ -87,12 +87,18 @@ service cloud.firestore {
     // link/QR"), and a query over `users` filtered by username can't be
     // expressed safely against that collection's privacy-gated read rule
     // (see apps/mobile/src/repositories/userRepository.ts's header
-    // comment for why). Claimed once at account creation, alongside the
-    // user doc, in the same batch — never updated or deleted client-side.
+    // comment for why). Claimed at account creation alongside the user
+    // doc in one batch; a username *change* (Account → Settings) is a
+    // batch that creates the new claim and deletes the old one — so
+    // `delete` is allowed, but only by the claim's owner. `update` stays
+    // forbidden: a rename must be delete-old + create-new, which keeps
+    // the create rule as the uniqueness guard (a set on an already-taken
+    // username is an update, and is denied — so races lose safely).
     match /usernames/{username} {
       allow read: if true;
       allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if false;
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow update: if false;
     }
 
     // --- places ------------------------------------------------------------

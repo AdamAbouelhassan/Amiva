@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { toMatchPercent } from '@amiva/core';
 import { MatchBadge } from '../../../components/MatchBadge';
+import { ProfileIdentity } from '../../../components/ProfileIdentity';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { Button } from '../../../components/Button';
 import { orNull } from '../../../lib/queryHelpers';
@@ -16,7 +17,7 @@ interface FriendsListScreenProps {
 }
 
 export function FriendsListScreen({ navigation }: FriendsListScreenProps) {
-  const { data: friends = [], isLoading } = useFriends();
+  const { data: friends = [], isLoading, isError, error, refetch } = useFriends();
 
   return (
     <ScreenContainer scroll={false}>
@@ -31,11 +32,21 @@ export function FriendsListScreen({ navigation }: FriendsListScreenProps) {
       </View>
 
       <FlatList
+        style={{ flex: 1 }}
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
         data={friends}
         keyExtractor={(item) => item.friendId}
         refreshing={isLoading}
-        ListEmptyComponent={!isLoading ? <Text style={typography.body}>No friends yet — add one to get started.</Text> : null}
+        onRefresh={refetch}
+        ListEmptyComponent={
+          isLoading ? null : isError ? (
+            <Text style={[typography.body, { color: colors.danger }]}>
+              Couldn’t load friends: {error instanceof Error ? error.message : String(error)}
+            </Text>
+          ) : (
+            <Text style={typography.body}>No friends yet — add one to get started.</Text>
+          )
+        }
         renderItem={({ item }) => (
           <FriendRow friendId={item.friendId} compatibilityScore={item.compatibilityScore} onPress={() => navigation.navigate('FriendDetail', { friendId: item.friendId })} />
         )}
@@ -56,12 +67,17 @@ function FriendRow({ friendId, compatibilityScore, onPress }: { friendId: string
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        gap: spacing.sm,
         paddingVertical: spacing.sm,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
       }}
     >
-      <Text style={typography.subtitle}>{friend?.name ?? '…'}</Text>
+      <ProfileIdentity
+        name={friend?.name ?? '…'}
+        username={friend?.username}
+        photoUrl={friend?.profilePhotoUrl}
+      />
       <MatchBadge matchPercent={toMatchPercent(compatibilityScore)} />
     </Pressable>
   );

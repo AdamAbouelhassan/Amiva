@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MatchBadge } from '../../../components/MatchBadge';
+import { ProfileIdentity } from '../../../components/ProfileIdentity';
 import { orNull } from '../../../lib/queryHelpers';
 import { UserRepository } from '../../../repositories/userRepository';
 import { colors, radius, spacing, typography } from '../../../theme';
@@ -28,10 +29,11 @@ export function FeedItemCard({ item, onPress }: FeedItemCardProps) {
       )}
       <View style={styles.body}>
         <View style={styles.headerRow}>
-          <Text style={typography.subtitle} numberOfLines={1}>
-            {ownerQuery.data?.name ?? '…'}
-            {isFriend ? ' · Friend' : ''}
-          </Text>
+          <ProfileIdentity
+            name={`${ownerQuery.data?.name ?? '…'}${isFriend ? ' · Friend' : ''}`}
+            username={ownerQuery.data?.username}
+            photoUrl={ownerQuery.data?.profilePhotoUrl}
+          />
           <MatchBadge matchPercent={toMatchPercent(matchScore)} />
         </View>
         <Text style={typography.body} numberOfLines={1}>
@@ -68,5 +70,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.sm,
   },
 });

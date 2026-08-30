@@ -166,17 +166,27 @@ function toComparable(value: unknown): number {
 
 export function writeBatch(_db: unknown) {
   const ops: Array<() => void> = [];
-  return {
+  const batch = {
+    set(ref: DocRef, data: Doc) {
+      ops.push(() => __store.col(ref.name).set(ref.id, data));
+      return batch;
+    },
     update(ref: DocRef, patch: Doc) {
       ops.push(() => {
         const existing = __store.col(ref.name).get(ref.id) ?? {};
         __store.col(ref.name).set(ref.id, { ...existing, ...patch });
       });
+      return batch;
+    },
+    delete(ref: DocRef) {
+      ops.push(() => __store.col(ref.name).delete(ref.id));
+      return batch;
     },
     async commit() {
       ops.forEach((op) => op());
     },
   };
+  return batch;
 }
 
 export function arrayUnion(value: unknown) {

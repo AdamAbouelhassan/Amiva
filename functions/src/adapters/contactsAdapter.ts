@@ -1,5 +1,5 @@
 import { db as defaultDb } from '../adminApp';
-import { ContactsMatchStore } from '../lib/contactsMatch';
+import { ContactMatch, ContactsMatchStore } from '../lib/contactsMatch';
 
 /**
  * Matches against `users/{uid}.phoneNumberHash` — a hash of the user's
@@ -16,14 +16,19 @@ const FIRESTORE_IN_LIMIT = 30;
 export class FirestoreContactsMatchStore implements ContactsMatchStore {
   constructor(private readonly db: FirebaseFirestore.Firestore = defaultDb) {}
 
-  async findUsersByPhoneHashes(hashes: string[]): Promise<Array<{ userId: string; name: string }>> {
-    const results: Array<{ userId: string; name: string }> = [];
+  async findUsersByPhoneHashes(hashes: string[]): Promise<ContactMatch[]> {
+    const results: ContactMatch[] = [];
 
     for (let i = 0; i < hashes.length; i += FIRESTORE_IN_LIMIT) {
       const chunk = hashes.slice(i, i + FIRESTORE_IN_LIMIT);
       const snap = await this.db.collection('users').where('phoneNumberHash', 'in', chunk).get();
       for (const doc of snap.docs) {
-        results.push({ userId: doc.id, name: doc.data().name });
+        results.push({
+          userId: doc.id,
+          name: doc.data().name,
+          username: doc.data().username,
+          profilePhotoUrl: doc.data().profilePhotoUrl ?? null,
+        });
       }
     }
 
