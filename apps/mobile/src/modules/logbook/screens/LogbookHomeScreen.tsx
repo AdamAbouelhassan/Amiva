@@ -36,7 +36,7 @@ export function LogbookHomeScreen({ navigation }: LogbookHomeScreenProps) {
         </View>
 
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <Button label="New trip" variant="secondary" onPress={() => navigation.navigate('CreateTrip')} />
+          <Button label="Log trip" variant="secondary" onPress={() => navigation.navigate('CreateTrip')} />
           <Button label="Log experience" onPress={() => navigation.navigate('CreateExperience', undefined)} />
         </View>
 
