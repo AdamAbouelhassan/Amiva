@@ -70,7 +70,7 @@ export function FeedItemCard({ experienceId, isFriend, matchScore, onPress }: Fe
             username={ownerQuery.data?.username}
             photoUrl={ownerQuery.data?.profilePhotoUrl}
           />
-          <MatchBadge matchPercent={toMatchPercent(matchScore)} />
+          {matchScore !== undefined && <MatchBadge matchPercent={toMatchPercent(matchScore)} />}
         </View>
         <Text style={typography.body} numberOfLines={1}>
           {experience.title}
