@@ -1,12 +1,105 @@
 # CLAUDE.md — Amiva
 
-This file guides Claude Code when working in this repository. Read `functional_specification.md` and `technical_specification.md` in the repo root before making structural changes — they are the source of truth for product behavior and architecture. This file governs *how* code gets written, not *what* gets built.
+This file guides Claude Code when working in this repository. Read `docs/functional_specification.md` and `docs/technical_specification.md` before making structural changes — they are the source of truth for product behavior and architecture. This file governs *how* code gets written, not *what* gets built.
 
 ---
 
 ## Project Summary
 
 Amiva is a React Native (Expo) mobile app for social travel planning. Users log travel experiences scored across 8 fixed "travel style" categories, visualized as a radar chart, and matched to other users/content via cosine similarity. Backend is Firebase (Auth, Firestore, Storage, Cloud Functions, FCM), location data via Google Places/Maps API.
+
+---
+
+## Current Status (as of 2026-08-30) — read this before doing anything else
+
+The full scaffold is built (all 5 modules, `packages/core`, all 12 Cloud
+Functions) and a real Firebase dev project is live and deployed. The stuff
+below is what a fresh session needs to know that isn't obvious from reading
+code cold — hard-won tonight, don't rediscover it the slow way.
+
+**Live project:** `amivadev` (see `.firebaserc`). Firestore (`us-central1`
+— must stay single-region, see gotcha below), Storage, security rules, and
+all 12 Cloud Functions are deployed. `apps/mobile/.env.local` holds the
+real credentials and is gitignored on purpose — get it from a teammate who
+has it (Youssef or Adam), don't try to regenerate it from scratch unless
+you also have Owner/Editor access on the Firebase project yourself.
+
+**What's actually been verified on a real device** (Expo Go, SDK 54, not
+just typechecked): sign-up via email/password, onboarding (profile +
+8-slider travel style + photo upload to Storage), privacy setting edit,
+and a manual travel-style edit round-tripping through a callable Cloud
+Function. **Nothing in Logbook, Planner, Discovery, or Social has been
+live-tested yet** — expect bugs of the same *kind* found tonight (silent
+failures from missing error handling, Firestore rules rejecting a query
+the code assumed would work, etc.), not necessarily the same bugs.
+
+**Google/Facebook OAuth sign-in does not work in Expo Go — this is
+structural, not a bug to keep chasing.** Firebase auto-creates a "Web
+application" type OAuth client; Google's OAuth policy only allows that
+client type to redirect to HTTPS URLs, and Expo Go's redirect is a custom
+`exp://` scheme, which Google rejects outright regardless of
+configuration. Real fix is a development build (`eas build --profile
+development`) with its own registered URL scheme and a matching
+iOS/Android-type OAuth client — don't spend time on more Expo Go
+workarounds for this specific error. Email/Password sign-in was added as
+a working stand-in (functional_specification.md §7 already lists password
+as a legitimate non-OAuth path, so this isn't scope creep) and is what
+every test tonight used to authenticate.
+
+**Gotchas worth knowing before you hit them again:**
+- **`@amiva/core` is not an npm dependency of `functions/`, and must stay
+  that way.** Firebase's remote Cloud Build reinstalls from
+  `package.json` on every deploy and can't resolve a workspace-local
+  package — it must stay resolved via esbuild's `--alias` (see
+  `functions/package.json`'s `build` script) and a tsconfig `paths` entry,
+  never added back to `dependencies`/`devDependencies`.
+- **Cloud Functions callables can silently lack invoke permission.**
+  Symptom: client is genuinely signed in, Firestore works fine, but a
+  callable throws `unauthenticated [401]` — that's GCP IAM blocking the
+  request before it ever reaches the function's own `context.auth` check,
+  not an app bug. Check `gcloud functions get-iam-policy <name>` (or
+  Console → Cloud Functions → function → Permissions) for an empty
+  policy; grant `roles/cloudfunctions.invoker` to `allUsers`. `firebase
+  deploy` usually sets this automatically on function creation but can
+  skip it after an interrupted/partial deploy.
+- **Firestore security rules can't gate a collection-query the way you'd
+  gate a single-doc read.** If a read rule depends on per-document data
+  (e.g. `privacySetting`), a `where(...)` query over that collection gets
+  rejected outright — Firestore can't prove every possible match would
+  pass the rule, so it refuses the whole query rather than filtering
+  results. This is why username uniqueness is its own small
+  `usernames/{username}` lookup collection instead of a query over
+  `users` — same pattern applies to any other "look up by a field, gated
+  by privacy" case.
+- **React Query v5 throws if a `queryFn` ever resolves `undefined`**
+  (v4 allowed it silently). Repositories use `T | undefined` for "not
+  found" — wrap those calls with `orNull` (`apps/mobile/src/lib/
+  queryHelpers.ts`) at the query boundary, don't return the repository
+  result directly.
+- **Metro needs `apps/mobile/metro.config.js`'s monorepo config to run at
+  all** (`watchFolders` + `nodeModulesPaths`) — without it, expect
+  bundling to succeed but the app to crash on a real device with an empty
+  native-module registry, since Metro can end up serving two different
+  copies of `react-native`.
+- **`.gitignore` patterns must be anchored.** A bare `lib/` here once
+  silently excluded `apps/mobile/src/lib/` and all of
+  `functions/src/lib/` (the entire business-logic layer) from every
+  commit for a good chunk of tonight. If a whole directory of expected
+  files is missing after a fresh clone, check `git check-ignore -v
+  <path>` before assuming it's a fetch/pull problem.
+- **The Expo Go SDK on a physical device only ever tracks the latest
+  release** (App Store won't install older versions) — if `expo start`
+  reports an SDK mismatch, the project needs upgrading
+  (`npx expo install expo@latest` then `npx expo install --fix`), not the
+  device downgrading.
+
+**Suggested next step for "start fixing bugs":** log a trip + experience
+in the Logbook module for real (the original vertical-slice target:
+Account → Logbook → Discovery feed showing that experience with a match
+%) — that exercises Google Places autocomplete, photo upload, the
+standalone/trip categorization rule, and the `onExperienceCreated`
+travel-style-decay trigger all at once, and is the most likely place to
+surface the next real bug.
 
 ---
 
