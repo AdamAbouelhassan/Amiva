@@ -39,7 +39,9 @@ export function OnboardingScreen() {
   const [privacySetting, setPrivacySetting] = useState<Privacy>('public');
   const [travelStyle, setTravelStyle] = useState<TravelStyleVector>(initialTravelStyle());
   const [photoUri, setPhotoUri] = useState<string | undefined>(firebaseUser?.photoURL ?? undefined);
+  const [nameError, setNameError] = useState<string | undefined>();
   const [usernameError, setUsernameError] = useState<string | undefined>();
+  const [formError, setFormError] = useState<string | undefined>();
   const [submitting, setSubmitting] = useState(false);
 
   async function pickPhoto() {
@@ -49,16 +51,18 @@ export function OnboardingScreen() {
 
   async function submit() {
     if (!firebaseUser) return;
+    setFormError(undefined);
+
     const trimmedUsername = username.trim().toLowerCase();
-    if (!name.trim() || !trimmedUsername) {
-      setUsernameError(!trimmedUsername ? 'Username is required.' : undefined);
-      return;
-    }
+    const trimmedName = name.trim();
+    setNameError(trimmedName ? undefined : 'Name is required.');
+    setUsernameError(trimmedUsername ? undefined : 'Username is required.');
+    if (!trimmedName || !trimmedUsername) return;
 
     setSubmitting(true);
     try {
-      const existing = await UserRepository.getByUsername(trimmedUsername);
-      if (existing) {
+      const taken = await UserRepository.isUsernameTaken(trimmedUsername);
+      if (taken) {
         setUsernameError('That username is taken.');
         return;
       }
@@ -76,7 +80,7 @@ export function OnboardingScreen() {
       await UserRepository.create({
         uid: firebaseUser.uid,
         username: trimmedUsername,
-        name: name.trim(),
+        name: trimmedName,
         email: firebaseUser.email ?? '',
         phoneNumber: trimmedPhone || undefined,
         phoneNumberHash: trimmedPhone ? await hashPhoneNumber(trimmedPhone) : undefined,
@@ -90,6 +94,8 @@ export function OnboardingScreen() {
       });
 
       await refetchProfile();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : String(err));
     } finally {
       setSubmitting(false);
     }
@@ -111,7 +117,16 @@ export function OnboardingScreen() {
         <Button label="Choose photo (optional)" variant="secondary" onPress={pickPhoto} />
       </View>
 
-      <TextField label="Name" value={name} onChangeText={setName} placeholder="Your name" />
+      <TextField
+        label="Name"
+        value={name}
+        onChangeText={(text) => {
+          setName(text);
+          setNameError(undefined);
+        }}
+        placeholder="Your name"
+        error={nameError}
+      />
       <TextField
         label="Username"
         value={username}
@@ -140,6 +155,8 @@ export function OnboardingScreen() {
         <Text style={typography.subtitle}>Your travel style</Text>
         <TravelStyleSliders value={travelStyle} onChange={setTravelStyle} />
       </View>
+
+      {formError ? <Text style={[typography.bodySmall, { color: colors.danger }]}>{formError}</Text> : null}
 
       <Button label="Finish setup" onPress={submit} loading={submitting} />
     </ScreenContainer>

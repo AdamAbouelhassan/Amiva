@@ -3,13 +3,14 @@
  * modules" rule rather than one module reaching into another's
  * /hooks. */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { orNull } from '../lib/queryHelpers';
 import { PlannedTripItemRepository } from '../repositories/plannedTripItemRepository';
 import { PlannedTripRepository } from '../repositories/plannedTripRepository';
 
 export function usePlannedTrip(plannedTripId: string | undefined) {
   return useQuery({
     queryKey: ['plannedTrips', plannedTripId],
-    queryFn: () => PlannedTripRepository.getById(plannedTripId!),
+    queryFn: () => PlannedTripRepository.getById(plannedTripId!).then(orNull),
     enabled: !!plannedTripId,
   });
 }

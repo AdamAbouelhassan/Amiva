@@ -4,7 +4,7 @@
  * table (it's covered there under the general recommendation engine), but
  * needs its own entry point since it takes a candidate experience *and* a
  * set of collaborators, unlike computeMatchScore's single pair. */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FirestoreConfigStore } from '../adapters/configAdapter';
 import { FirestoreExperienceStore } from '../adapters/experienceAdapter';
 import { FirestoreUserStore } from '../adapters/userAdapter';

@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FirestoreContactsMatchStore } from '../adapters/contactsAdapter';
 import { matchContacts as matchContactsLib } from '../lib/contactsMatch';
 

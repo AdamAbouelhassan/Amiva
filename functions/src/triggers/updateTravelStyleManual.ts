@@ -1,6 +1,6 @@
 /** See lib/manualStyleEdit.ts for why this callable exists even though
  * it isn't named in technical_specification.md §5's table. */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { TravelStyleVector } from '@amiva/core';
 import { FirestoreUserStore } from '../adapters/userAdapter';
 import { updateTravelStyleManual as updateManualLib } from '../lib/manualStyleEdit';

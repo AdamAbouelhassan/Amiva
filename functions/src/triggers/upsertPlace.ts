@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FirestorePlaceStore, PlaceUpsertInput } from '../adapters/placeAdapter';
 
 export const upsertPlace = functions.https.onCall(async (data: PlaceUpsertInput, context) => {

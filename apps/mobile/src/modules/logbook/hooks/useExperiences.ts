@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { orNull } from '../../../lib/queryHelpers';
 import { CreateExperienceInput, ExperienceRepository } from '../../../repositories/experienceRepository';
 
 export function useOwnerExperiences(ownerId: string | undefined) {
@@ -28,7 +29,7 @@ export function useTripExperiences(tripId: string | undefined) {
 export function useExperience(experienceId: string | undefined) {
   return useQuery({
     queryKey: ['experiences', experienceId],
-    queryFn: () => ExperienceRepository.getById(experienceId!),
+    queryFn: () => ExperienceRepository.getById(experienceId!).then(orNull),
     enabled: !!experienceId,
   });
 }

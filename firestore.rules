@@ -80,6 +80,21 @@ service cloud.firestore {
       }
     }
 
+    // --- usernames (uniqueness lookup) --------------------------------------
+    // {username} -> { uid }. Deliberately world-readable and separate from
+    // `users/{uid}` — usernames are a public identifier by design
+    // (functional_specification.md §7: "Used for shareable profile
+    // link/QR"), and a query over `users` filtered by username can't be
+    // expressed safely against that collection's privacy-gated read rule
+    // (see apps/mobile/src/repositories/userRepository.ts's header
+    // comment for why). Claimed once at account creation, alongside the
+    // user doc, in the same batch — never updated or deleted client-side.
+    match /usernames/{username} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     // --- places ------------------------------------------------------------
     match /places/{placeId} {
       allow read: if true;

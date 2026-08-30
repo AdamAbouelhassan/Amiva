@@ -1,5 +1,5 @@
 /** technical_specification.md §5: "Recompute owner's travel style (saved weight)." */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FirestoreConfigStore } from '../adapters/configAdapter';
 import { FirestoreExperienceStore } from '../adapters/experienceAdapter';
 import { FirestoreUserStore } from '../adapters/userAdapter';

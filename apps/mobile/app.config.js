@@ -26,7 +26,7 @@ module.exports = {
         backgroundColor: '#FAF7F2',
       },
     },
-    plugins: ['expo-image-picker'],
+    plugins: ['expo-image-picker', 'expo-asset'],
     extra: {
       firebaseApiKey: process.env.AMIVA_FIREBASE_API_KEY,
       firebaseAuthDomain: process.env.AMIVA_FIREBASE_AUTH_DOMAIN,

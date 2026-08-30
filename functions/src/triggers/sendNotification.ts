@@ -1,5 +1,5 @@
 /** technical_specification.md §5: "Dispatches via FCM." */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FcmPushSender } from '../adapters/pushAdapter';
 import { dispatchNotification } from '../lib/notificationDispatch';
 

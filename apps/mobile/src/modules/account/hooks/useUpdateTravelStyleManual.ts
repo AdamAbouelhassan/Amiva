@@ -21,7 +21,15 @@ export function useUpdateTravelStyleManual() {
 
   return useMutation({
     mutationFn: async (travelStyle: TravelStyleVector) => {
-      await updateTravelStyleManualCallable({ travelStyle });
+      // TEMPORARY diagnostic logs — remove once confirmed fixed.
+      console.log('[useUpdateTravelStyleManual] calling callable with', JSON.stringify(travelStyle));
+      try {
+        const result = await updateTravelStyleManualCallable({ travelStyle });
+        console.log('[useUpdateTravelStyleManual] callable resolved', JSON.stringify(result.data));
+      } catch (err) {
+        console.log('[useUpdateTravelStyleManual] callable threw', err);
+        throw err;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users', uid] });

@@ -1,6 +1,6 @@
 /** technical_specification.md §5: "On-demand similarity computation (e.g.,
  * previewing a match before data is persisted)." */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FirestoreExperienceStore } from '../adapters/experienceAdapter';
 import { FirestoreUserStore } from '../adapters/userAdapter';
 import { computeMatchScore as computeMatchScoreLib, MatchSubject } from '../lib/computeMatchScore';

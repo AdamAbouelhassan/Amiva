@@ -1,6 +1,6 @@
 /** technical_specification.md §5: global / location-scoped / personalized
  * trending queries (functional_specification.md §5.4). */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FirestoreExperienceStore } from '../adapters/experienceAdapter';
 import { FirestoreUserStore } from '../adapters/userAdapter';
 import { getTrending as getTrendingLib } from '../lib/trending';

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { orNull } from '../../../lib/queryHelpers';
 import { FriendRepository } from '../../../repositories/friendRepository';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 
@@ -15,7 +16,7 @@ export function useFriendEdge(friendId: string | undefined) {
   const { profile } = useCurrentUser();
   return useQuery({
     queryKey: ['friends', profile?.uid, friendId],
-    queryFn: () => FriendRepository.getEdge(profile!.uid, friendId!),
+    queryFn: () => FriendRepository.getEdge(profile!.uid, friendId!).then(orNull),
     enabled: !!profile && !!friendId,
   });
 }

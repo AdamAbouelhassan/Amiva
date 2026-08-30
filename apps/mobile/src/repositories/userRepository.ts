@@ -8,24 +8,31 @@
  * callable (see hooks/useUpdateTravelStyleManual.ts), never a raw
  * Firestore write — matching firestore.rules and
  * technical_specification.md §6.
+ *
+ * Username uniqueness is backed by a small `usernames/{username}` doc
+ * (`{ uid }`), not a query over `users` filtered by username. Firestore
+ * rejects a collection query outright if its per-document read rule
+ * depends on data the query doesn't constrain (here, `privacySetting`) —
+ * it can't prove every possible match would pass, so it refuses the
+ * whole query rather than filtering results. `usernames` sidesteps this
+ * by being its own tiny, intentionally world-readable collection —
+ * consistent with the spec treating username as a public identifier
+ * (functional_specification.md §7: "Used for shareable profile link/QR").
  */
 import {
-  collection,
   DocumentData,
   doc,
   getDoc,
-  getDocs,
-  limit,
-  query,
   setDoc,
   updateDoc,
-  where,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase/client';
 import { toDate, toTimestamp } from '../firebase/timestamps';
 import { PrivacySetting, UserDoc } from './types';
 
 const COLLECTION = 'users';
+const USERNAMES_COLLECTION = 'usernames';
 
 function fromFirestore(id: string, data: DocumentData): UserDoc {
   return {
@@ -51,17 +58,18 @@ export const UserRepository = {
     return snap.exists() ? fromFirestore(snap.id, snap.data()) : undefined;
   },
 
-  async getByUsername(username: string): Promise<UserDoc | undefined> {
-    const q = query(collection(db, COLLECTION), where('username', '==', username), limit(1));
-    const snap = await getDocs(q);
-    const first = snap.docs[0];
-    return first ? fromFirestore(first.id, first.data()) : undefined;
+  async isUsernameTaken(username: string): Promise<boolean> {
+    const snap = await getDoc(doc(db, USERNAMES_COLLECTION, username));
+    return snap.exists();
   },
 
   /** Account creation (functional_specification.md §7) — the one legal
-   * client write of `travelStyle`, as the user's very first baseline. */
+   * client write of `travelStyle`, as the user's very first baseline.
+   * Claims the username atomically alongside creating the profile so the
+   * two can never end up out of sync. */
   async create(user: UserDoc): Promise<void> {
-    await setDoc(doc(db, COLLECTION, user.uid), {
+    const batch = writeBatch(db);
+    batch.set(doc(db, COLLECTION, user.uid), {
       username: user.username,
       name: user.name,
       email: user.email,
@@ -75,6 +83,8 @@ export const UserRepository = {
       createdAt: toTimestamp(user.createdAt),
       recentSearches: [],
     });
+    batch.set(doc(db, USERNAMES_COLLECTION, user.username), { uid: user.uid });
+    await batch.commit();
   },
 
   async updateProfile(

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../modules/account/hooks/useAuthStore';
+import { orNull } from '../lib/queryHelpers';
 import { UserRepository } from '../repositories/userRepository';
 
 /** Shared across modules (CLAUDE.md: promote once used by 2+ modules) —
@@ -13,7 +14,7 @@ export function useCurrentUser() {
 
   const profileQuery = useQuery({
     queryKey: ['users', firebaseUser?.uid],
-    queryFn: () => UserRepository.getById(firebaseUser!.uid),
+    queryFn: () => UserRepository.getById(firebaseUser!.uid).then(orNull),
     enabled: !!firebaseUser,
   });
 

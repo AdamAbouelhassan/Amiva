@@ -10,7 +10,7 @@
  * step (functional_specification.md §6.3), so this single call both
  * creates the edge and fires the notification.
  */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FirestoreFriendStore } from '../adapters/friendAdapter';
 import { FirestoreNotificationStore } from '../adapters/notificationAdapter';
 import { FirestoreUserStore } from '../adapters/userAdapter';

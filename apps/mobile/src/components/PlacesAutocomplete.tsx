@@ -39,7 +39,7 @@ export function PlacesAutocomplete({ onSelect }: PlacesAutocompleteProps) {
   const [query, setQuery] = useState('');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [selected, setSelected] = useState<SelectedPlace | undefined>();
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     if (selected || query.trim().length < 3) {

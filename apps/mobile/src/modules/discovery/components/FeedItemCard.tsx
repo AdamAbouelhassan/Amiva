@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MatchBadge } from '../../../components/MatchBadge';
+import { orNull } from '../../../lib/queryHelpers';
 import { UserRepository } from '../../../repositories/userRepository';
 import { colors, radius, spacing, typography } from '../../../theme';
 import { toMatchPercent } from '@amiva/core';
@@ -15,7 +16,7 @@ export function FeedItemCard({ item, onPress }: FeedItemCardProps) {
   const { experience, isFriend, matchScore } = item;
   const ownerQuery = useQuery({
     queryKey: ['users', experience.ownerId],
-    queryFn: () => UserRepository.getById(experience.ownerId),
+    queryFn: () => UserRepository.getById(experience.ownerId).then(orNull),
   });
 
   return (

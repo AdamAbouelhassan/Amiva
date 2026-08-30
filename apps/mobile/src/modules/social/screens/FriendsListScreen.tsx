@@ -4,6 +4,7 @@ import { toMatchPercent } from '@amiva/core';
 import { MatchBadge } from '../../../components/MatchBadge';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { Button } from '../../../components/Button';
+import { orNull } from '../../../lib/queryHelpers';
 import { UserRepository } from '../../../repositories/userRepository';
 import { colors, spacing, typography } from '../../../theme';
 import { useFriends } from '../hooks/useFriends';
@@ -44,7 +45,10 @@ export function FriendsListScreen({ navigation }: FriendsListScreenProps) {
 }
 
 function FriendRow({ friendId, compatibilityScore, onPress }: { friendId: string; compatibilityScore: number; onPress: () => void }) {
-  const { data: friend } = useQuery({ queryKey: ['users', friendId], queryFn: () => UserRepository.getById(friendId) });
+  const { data: friend } = useQuery({
+    queryKey: ['users', friendId],
+    queryFn: () => UserRepository.getById(friendId).then(orNull),
+  });
   return (
     <Pressable
       onPress={onPress}

@@ -1,6 +1,6 @@
 /** technical_specification.md §5: "Triggered on trip completion flow;
  * creates Experience docs from PlannedTripItems per user confirmation." */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { FirestorePlannedTripConversionStore } from '../adapters/plannedTripAdapter';
 import { ConversionDecision, convertPlannedTripToLogbook as convertLib } from '../lib/plannedTripConversion';
 

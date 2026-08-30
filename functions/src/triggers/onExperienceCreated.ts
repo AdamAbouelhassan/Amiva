@@ -7,7 +7,7 @@
  * this trigger's job is just the two writes: the style update and the
  * trip cover-photo default.
  */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { TravelStyleVector } from '@amiva/core';
 import { FirestoreConfigStore } from '../adapters/configAdapter';
 import { FirestoreTripStore } from '../adapters/tripAdapter';

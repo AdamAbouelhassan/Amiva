@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { orNull } from '../lib/queryHelpers';
 import { UserRepository } from '../repositories/userRepository';
 
 /** Shared across modules — anywhere a RadarChart needs a user's current
@@ -9,7 +10,7 @@ export function useTravelStyle(userId: string | undefined) {
     queryKey: ['users', userId, 'travelStyle'],
     queryFn: async () => {
       const user = await UserRepository.getById(userId!);
-      return user?.travelStyle;
+      return orNull(user?.travelStyle);
     },
     enabled: !!userId,
   });

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { orNull } from '../../../lib/queryHelpers';
 import { TripRepository } from '../../../repositories/tripRepository';
 import { TripDoc } from '../../../repositories/types';
 
@@ -13,7 +14,7 @@ export function useTrips(ownerId: string | undefined) {
 export function useTrip(tripId: string | undefined) {
   return useQuery({
     queryKey: ['trips', tripId],
-    queryFn: () => TripRepository.getById(tripId!),
+    queryFn: () => TripRepository.getById(tripId!).then(orNull),
     enabled: !!tripId,
   });
 }

@@ -4,6 +4,7 @@ import { toMatchPercent } from '@amiva/core';
 import { RadarChart } from '../../../components/RadarChart';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
+import { orNull } from '../../../lib/queryHelpers';
 import { UserRepository } from '../../../repositories/userRepository';
 import { colors, spacing, typography } from '../../../theme';
 import { useFriendEdge } from '../hooks/useFriends';
@@ -19,7 +20,10 @@ export function FriendDetailScreen({ route }: FriendDetailScreenProps) {
   const { friendId } = route.params;
   const { profile } = useCurrentUser();
   const { data: edge } = useFriendEdge(friendId);
-  const { data: friend } = useQuery({ queryKey: ['users', friendId], queryFn: () => UserRepository.getById(friendId) });
+  const { data: friend } = useQuery({
+    queryKey: ['users', friendId],
+    queryFn: () => UserRepository.getById(friendId).then(orNull),
+  });
 
   if (!profile || !friend || !edge) return null;
 

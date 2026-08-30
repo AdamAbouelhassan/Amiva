@@ -5,7 +5,7 @@
  * onSaveCreated) or a manual edit (updateTravelStyleManual) — both write
  * through FirestoreUserStore, so both land here identically.
  */
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import isEqual from '../lib/isEqual';
 import { FirestoreFriendStore } from '../adapters/friendAdapter';
 import { FirestoreUserStore } from '../adapters/userAdapter';
