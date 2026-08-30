@@ -17,7 +17,7 @@ export function SignInScreen() {
   const error = google.error ?? facebook.error ?? emailPassword.error;
 
   return (
-    <ScreenContainer>
+    <ScreenContainer safeAreaTop>
       <View style={{ gap: spacing.lg }}>
         <View style={{ gap: spacing.xs }}>
           <Text style={typography.displayLg}>Amiva</Text>

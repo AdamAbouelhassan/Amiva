@@ -57,11 +57,42 @@ every test tonight used to authenticate.
   Symptom: client is genuinely signed in, Firestore works fine, but a
   callable throws `unauthenticated [401]` — that's GCP IAM blocking the
   request before it ever reaches the function's own `context.auth` check,
-  not an app bug. Check `gcloud functions get-iam-policy <name>` (or
-  Console → Cloud Functions → function → Permissions) for an empty
-  policy; grant `roles/cloudfunctions.invoker` to `allUsers`. `firebase
-  deploy` usually sets this automatically on function creation but can
-  skip it after an interrupted/partial deploy.
+  not an app bug. Confirm by curling the endpoint unauthenticated
+  (`curl -i https://us-central1-amivadev.cloudfunctions.net/<name>`): a
+  Google-Frontend `403 Forbidden` HTML page (not your function's JSON
+  error) means `allUsers` is missing `roles/cloudfunctions.invoker`. The
+  function's IAM policy will be empty (`:getIamPolicy` → just an etag).
+  - **`firebase deploy` does NOT fix this for a function that already
+    exists** — the CLI only sets the `allUsers` invoker binding on first
+    *creation*, never on an update, and prints no warning. Redeploying a
+    broken function is a no-op for IAM. Deleting + recreating hits the
+    same wall (see next point).
+  - **Fixing it needs Owner / Cloud Functions Admin — plain Editor
+    can't** (`cloudfunctions.functions.setIamPolicy` isn't in the Editor
+    role). `aabouelh@gmail.com` is now Owner of `amivadev` (was Editor
+    until 2026-08-30). Per callable, run
+    `gcloud functions add-iam-policy-binding <name> --region=us-central1
+    --project=amivadev --member=allUsers --role=roles/cloudfunctions.invoker`
+    (or Console → the function → Permissions → Grant access → `allUsers`
+    = Cloud Functions Invoker). No gcloud in the Claude Code env — the
+    working alternative is a `:setIamPolicy` POST to the Cloud Functions
+    v1 REST API with the Firebase CLI token from
+    `~/.config/configstore/firebase-tools.json` (`cloud-platform` scope),
+    body `{"policy":{"bindings":[{"role":"roles/cloudfunctions.invoker","members":["allUsers"]}]}}`.
+  - This actually happened 2026-08-30: all 8 callables lost the binding
+    at once and were fixed via that REST loop. If it recurs and the
+    setIamPolicy call fails with "users named in the policy do not belong
+    to a permitted customer", **domain restricted sharing**
+    (`constraints/iam.allowedPolicyMemberDomains`) has been enabled on
+    the org — that org policy retroactively strips `allUsers` bindings.
+    Real fix is an org-level exception; there's no app-side workaround.
+    (It was NOT the cause in the 2026-08-30 incident — the bindings had
+    just been wiped.)
+  - The 8 callables affected: `updateTravelStyleManual`,
+    `computeMatchScore`, `computeGroupRecommendation`,
+    `convertPlannedTripToLogbook`, `getTrending`, `matchContacts`,
+    `onFriendAdded`, `upsertPlace`. (Background triggers don't need
+    invoker.)
 - **Firestore security rules can't gate a collection-query the way you'd
   gate a single-doc read.** If a read rule depends on per-document data
   (e.g. `privacySetting`), a `where(...)` query over that collection gets

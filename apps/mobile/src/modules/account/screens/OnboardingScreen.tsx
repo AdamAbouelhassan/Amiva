@@ -102,7 +102,7 @@ export function OnboardingScreen() {
   }
 
   return (
-    <ScreenContainer>
+    <ScreenContainer safeAreaTop>
       <View style={{ gap: spacing.xs }}>
         <Text style={typography.displayMd}>Set up your profile</Text>
         <Text style={typography.body}>This defines your starting travel style — you can always adjust it later.</Text>
