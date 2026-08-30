@@ -1,9 +1,9 @@
 import { TravelStyleVector } from '@amiva/core';
 import { db as defaultDb } from '../adminApp';
-import { UserStore, UserStyleRecord } from '../lib/ports';
+import { UserStore, UserStyleRecord, VisibilityStore } from '../lib/ports';
 import { toDate, toTimestamp } from './firestoreUtil';
 
-export class FirestoreUserStore implements UserStore {
+export class FirestoreUserStore implements UserStore, VisibilityStore {
   constructor(private readonly db: FirebaseFirestore.Firestore = defaultDb) {}
 
   private col() {
@@ -31,5 +31,22 @@ export class FirestoreUserStore implements UserStore {
       travelStyleBaseline: record.travelStyleBaseline,
       travelStyleLastUpdated: toTimestamp(record.travelStyleLastUpdated),
     });
+  }
+
+  /** Batched via getAll rather than N individual .get() calls — the
+   * Admin SDK's getAll accepts up to 500 refs in one round trip, well
+   * above anything Feed/Trending's candidate pools need. */
+  async getPrivacySettings(userIds: string[]): Promise<Record<string, 'public' | 'private' | 'friends'>> {
+    const uniqueIds = [...new Set(userIds)];
+    if (uniqueIds.length === 0) return {};
+
+    const refs = uniqueIds.map((id) => this.col().doc(id));
+    const snaps = await this.db.getAll(...refs);
+
+    const result: Record<string, 'public' | 'private' | 'friends'> = {};
+    snaps.forEach((snap, i) => {
+      if (snap.exists) result[uniqueIds[i]!] = snap.data()!.privacySetting;
+    });
+    return result;
   }
 }

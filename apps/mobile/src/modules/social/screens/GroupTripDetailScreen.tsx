@@ -67,10 +67,11 @@ export function GroupTripDetailScreen({ route }: GroupTripDetailScreenProps) {
           of forcing a compromise.
         </Text>
         <Button label="Check group matches" variant="secondary" onPress={() => setShowCandidates(true)} />
+        {candidates.error && <Text style={[typography.bodySmall, { color: colors.danger }]}>{candidates.error}</Text>}
 
-        {candidates.data.map(({ experience, recommendation }) => (
-          <View key={experience.experienceId} style={{ paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border }}>
-            <Text style={typography.body}>{experience.title}</Text>
+        {candidates.data.map(({ experienceId, title, recommendation }) => (
+          <View key={experienceId} style={{ paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border }}>
+            <Text style={typography.body}>{title}</Text>
             {recommendation.type === 'blended' ? (
               <MatchBadge matchPercent={toMatchPercent(recommendation.matchScore ?? 0)} />
             ) : (

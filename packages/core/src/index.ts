@@ -3,6 +3,8 @@ export * from './constants';
 export * from './matchScorer';
 export * from './travelStyleDecay';
 export * from './feedRanking';
+export * from './feedSections';
 export * from './groupBlending';
 export * from './tripCategorization';
 export * from './profileInsights';
+export * from './placeCategoryEstimate';

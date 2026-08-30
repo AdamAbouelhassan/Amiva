@@ -77,6 +77,22 @@ export interface SaveDoc {
   savedAt: Date;
 }
 
+/** A user's saved raw Google Place from Discover > Recommendations
+ * (Discover rebuild, 2026-08-30) — the `saves` collection is keyed by
+ * experienceId (an Amiva post) and doesn't fit a place that's never been
+ * logged, so this is a small parallel collection mirroring its shape.
+ * Feeds Planner's "Add from your saved places" the same way `saves`
+ * feeds "Add from your saves" (functional_specification.md §4.2). */
+export interface SavedPlaceDoc {
+  userId: string;
+  placeId: string;
+  name: string;
+  country: string;
+  city: string;
+  categoryScores: TravelStyleVector;
+  savedAt: Date;
+}
+
 export type PlannedTripStatus = 'planning' | 'upcoming' | 'completed';
 
 export interface PlannedTripDoc {

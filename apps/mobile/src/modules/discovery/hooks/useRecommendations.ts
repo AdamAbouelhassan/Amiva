@@ -1,52 +1,78 @@
 /**
- * Recommendations — functional_specification.md §5.2: experiences the
- * user hasn't logged, with a match score, filterable by location.
- *
- * Simplification: sources only from existing Amiva user-generated
- * experiences (excluding the viewer's own and anything already saved),
- * ranked by match score. The spec's other named source — "the broader
- * Google Places catalog" — needs a real recommendation pipeline (querying
- * Places by category affinity, not just autocomplete) that's out of scope
- * for this scaffold; flagged rather than faked.
+ * Recommendations — functional_specification.md §5.2, rebuilt (Discover
+ * rebuild, 2026-08-30) to pull directly from the Google Places catalog
+ * rather than existing Amiva posts — "doesn't have anything to do with
+ * other users." Filterable by country (required)/city/category, plus free
+ * text, via the getPlaceRecommendations callable (see
+ * functions/src/lib/placeRecommendations.ts for why this runs server-side
+ * rather than a direct client fetch to Google).
  */
 import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
-import { defaultMatchScorer } from '@amiva/core';
-import { useCurrentUser } from '../../../hooks/useCurrentUser';
-import { ExperienceRepository } from '../../../repositories/experienceRepository';
-import { SaveRepository } from '../../../repositories/saveRepository';
+import { httpsCallable } from 'firebase/functions';
+import { useState } from 'react';
+import { TravelStyleCategory, TravelStyleVector } from '@amiva/core';
+import { functions } from '../../../firebase/client';
+
+export interface PlaceRecommendationFilter {
+  country: string;
+  city?: string;
+  category?: TravelStyleCategory;
+  text?: string;
+}
+
+export interface PlaceRecommendationResult {
+  placeId: string;
+  name: string;
+  country: string;
+  city: string;
+  lat: number;
+  lng: number;
+  categoryScores: TravelStyleVector;
+  matchScore: number;
+}
+
+const getPlaceRecommendationsCallable = httpsCallable<
+  { filter: PlaceRecommendationFilter; limit?: number },
+  PlaceRecommendationResult[]
+>(functions, 'getPlaceRecommendations');
 
 export function useRecommendations() {
-  const { profile } = useCurrentUser();
-  const [locationFilter, setLocationFilter] = useState('');
+  const [text, setText] = useState('');
+  const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
+  const [category, setCategory] = useState<TravelStyleCategory | undefined>();
 
-  const experiencesQuery = useQuery({
-    queryKey: ['experiences', 'recommendationPool'],
-    queryFn: () => ExperienceRepository.listRecentForFeed(200),
-    enabled: !!profile,
+  const filter: PlaceRecommendationFilter = {
+    country: country.trim(),
+    city: city.trim() || undefined,
+    category,
+    text: text.trim() || undefined,
+  };
+  const hasCountry = filter.country.length > 0;
+
+  const query = useQuery({
+    queryKey: ['placeRecommendations', filter],
+    queryFn: async () => (await getPlaceRecommendationsCallable({ filter })).data,
+    enabled: hasCountry,
   });
-  const savedQuery = useQuery({
-    queryKey: ['saves', profile?.uid],
-    queryFn: () => SaveRepository.listByUser(profile!.uid),
-    enabled: !!profile,
-  });
 
-  const results = useMemo(() => {
-    if (!profile || !experiencesQuery.data) return [];
-    const savedIds = new Set((savedQuery.data ?? []).map((s) => s.experienceId));
-    const locationLower = locationFilter.trim().toLowerCase();
-
-    return experiencesQuery.data
-      .filter((experience) => experience.ownerId !== profile.uid && !savedIds.has(experience.experienceId))
-      .filter(
-        (experience) =>
-          !locationLower ||
-          experience.city.toLowerCase().includes(locationLower) ||
-          experience.country.toLowerCase().includes(locationLower),
-      )
-      .map((experience) => ({ experience, matchScore: defaultMatchScorer.score(profile.travelStyle, experience.categoryScores) }))
-      .sort((a, b) => b.matchScore - a.matchScore);
-  }, [profile, experiencesQuery.data, savedQuery.data, locationFilter]);
-
-  return { results, isLoading: experiencesQuery.isLoading, locationFilter, setLocationFilter };
+  return {
+    results: query.data ?? [],
+    isLoading: query.isLoading,
+    // Surfaced explicitly rather than silently showing "no results" — a
+    // thrown callable error (missing server-side API key, Places request
+    // failure, etc.) should be visible, not indistinguishable from a
+    // legitimately empty result set (CLAUDE.md: this exact silent-failure
+    // shape has bitten Onboarding/Settings before).
+    error: query.error instanceof Error ? query.error.message : undefined,
+    hasSearched: hasCountry,
+    text,
+    setText,
+    country,
+    setCountry,
+    city,
+    setCity,
+    category,
+    setCategory,
+  };
 }

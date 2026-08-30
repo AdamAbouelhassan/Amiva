@@ -17,6 +17,7 @@ import { usePlannedTrip, usePlannedTripItems } from '../../../hooks/usePlannedTr
 import { ConversionDecision, useConvertPlannedTrip } from '../hooks/useConvertPlannedTrip';
 import { useAddPlannedTripItem, useSetPlannedTripStatus } from '../hooks/usePlannedTrips';
 import { useSavedExperiences } from '../hooks/useSavedExperiences';
+import { useSavedPlaces } from '../hooks/useSavedPlaces';
 
 interface PlannedTripDetailScreenProps {
   route: { params: { plannedTripId: string } };
@@ -27,6 +28,7 @@ export function PlannedTripDetailScreen({ route }: PlannedTripDetailScreenProps)
   const { data: trip } = usePlannedTrip(plannedTripId);
   const { data: items = [] } = usePlannedTripItems(plannedTripId);
   const { data: savedExperiences } = useSavedExperiences();
+  const { data: savedPlaces } = useSavedPlaces();
   const addItem = useAddPlannedTripItem();
   const setStatus = useSetPlannedTripStatus();
 
@@ -37,6 +39,7 @@ export function PlannedTripDetailScreen({ route }: PlannedTripDetailScreenProps)
   if (!trip) return null;
 
   const savedNotYetAdded = savedExperiences.filter((e) => !items.some((item) => item.placeId === e.placeId));
+  const savedPlacesNotYetAdded = savedPlaces.filter((p) => !items.some((item) => item.placeId === p.placeId));
 
   async function submitConversion() {
     await convert.mutateAsync(items.map((item) => decisions[item.itemId] ?? { itemId: item.itemId, action: 'skip' }));
@@ -99,6 +102,28 @@ export function PlannedTripDetailScreen({ route }: PlannedTripDetailScreenProps)
               </Pressable>
             ))}
             {savedNotYetAdded.length === 0 && <Text style={typography.bodySmall}>No saved experiences to add.</Text>}
+          </View>
+
+          <View style={{ gap: spacing.xs }}>
+            <Text style={typography.subtitle}>Add from your saved places</Text>
+            {savedPlacesNotYetAdded.map((place) => (
+              <Pressable
+                key={place.placeId}
+                onPress={() =>
+                  addItem.mutate({
+                    plannedTripId,
+                    source: 'recommended',
+                    placeId: place.placeId,
+                    title: place.name,
+                    categoryScores: place.categoryScores,
+                  })
+                }
+                style={{ paddingVertical: spacing.xxs }}
+              >
+                <Text style={{ color: colors.accent }}>+ {place.name}</Text>
+              </Pressable>
+            ))}
+            {savedPlacesNotYetAdded.length === 0 && <Text style={typography.bodySmall}>No saved places to add.</Text>}
           </View>
         </>
       )}

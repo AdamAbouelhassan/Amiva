@@ -9,6 +9,7 @@ import {
   TripStore,
   UserStore,
   UserStyleRecord,
+  VisibilityStore,
 } from '../ports';
 
 export function vector(overrides: Partial<TravelStyleVector> = {}): TravelStyleVector {
@@ -107,6 +108,23 @@ export class FakeFriendStore implements FriendStore {
   async updateCompatibilityScore(userId: string, friendId: string, score: number): Promise<void> {
     const edge = this.edges.find((e) => e.userId === userId && e.friendId === friendId);
     if (edge) edge.compatibilityScore = score;
+  }
+}
+
+export class FakeVisibilityStore implements VisibilityStore {
+  constructor(private settings: Map<string, 'public' | 'private' | 'friends'> = new Map()) {}
+
+  static seeded(entries: Record<string, 'public' | 'private' | 'friends'>): FakeVisibilityStore {
+    return new FakeVisibilityStore(new Map(Object.entries(entries)));
+  }
+
+  async getPrivacySettings(userIds: string[]): Promise<Record<string, 'public' | 'private' | 'friends'>> {
+    const result: Record<string, 'public' | 'private' | 'friends'> = {};
+    for (const id of userIds) {
+      const setting = this.settings.get(id);
+      if (setting) result[id] = setting;
+    }
+    return result;
   }
 }
 

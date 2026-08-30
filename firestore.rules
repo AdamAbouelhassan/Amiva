@@ -126,6 +126,17 @@ service cloud.firestore {
       allow update: if false; // saves are immutable — delete + recreate instead
     }
 
+    // --- savedPlaces (saved raw Google Places from Discover >
+    // Recommendations, Discover rebuild 2026-08-30) — mirrors `saves`,
+    // just keyed by placeId since a recommended place was never logged as
+    // an experience. Feeds Planner's "Add from your saved places".
+    match /savedPlaces/{savedPlaceId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow delete: if isOwner(resource.data.userId); // "unsave"
+      allow update: if false;
+    }
+
     // --- plannedTrips (shared-doc-style group co-editing) ---------------------
     match /plannedTrips/{plannedTripId} {
       function isCollaborator(data) {

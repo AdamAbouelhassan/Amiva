@@ -1,68 +1,58 @@
 /**
  * Social feed — functional_specification.md §5.1, ranked per
- * technical_specification.md §4.3's tier algorithm.
+ * technical_specification.md §4.3's friends-first / non-friend-fallback
+ * tiering, and organized into sections by the viewer's top travel-style
+ * categories (Discover rebuild, 2026-08-30).
  *
- * Match score here is computed client-side with @amiva/core's shared
- * cosine implementation rather than round-tripping the `computeMatchScore`
- * callable per feed item. This does not violate CLAUDE.md principle #2
- * ("never let client-side computation silently become the source of
- * truth for something another user will see"): both inputs are already
- * server-persisted (the viewer's own travelStyle, and each experience's
- * own categoryScores), the output is shown only to the computing viewer,
- * nothing is persisted from it, and technical_specification.md §4.3
- * explicitly allows "on-read computation" for feed ranking at MVP data
- * volumes — this is that, applied per-item instead of via a scheduled
- * aggregation.
+ * This now calls the `getFeed` callable rather than querying `experiences`
+ * directly. Reason: firestore.rules gates experience reads by the owner's
+ * privacySetting via a get() on another document, which Firestore can't
+ * prove a collection query's results would all satisfy (the same
+ * limitation behind the `usernames` lookup-collection pattern in
+ * CLAUDE.md) — a client-side query spanning many friends'/strangers'
+ * experiences gets rejected outright the moment any of them isn't public.
+ * See functions/src/lib/feed.ts for the server-side implementation, which
+ * is also the actual enforcement point for who can see whose experiences
+ * here.
  */
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
-import { defaultMatchScorer, HIGH_MATCH_THRESHOLD, sortFeed } from '@amiva/core';
-import { ExperienceRepository } from '../../../repositories/experienceRepository';
-import { FriendRepository } from '../../../repositories/friendRepository';
-import { ExperienceDoc } from '../../../repositories/types';
+import { httpsCallable } from 'firebase/functions';
+import { TravelStyleCategory } from '@amiva/core';
+import { functions } from '../../../firebase/client';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 
-export interface FeedItem {
-  experience: ExperienceDoc;
-  isFriend: boolean;
-  matchScore: number;
-  createdAt: Date;
+export interface FeedFilter {
+  text?: string;
+  country?: string;
+  city?: string;
 }
 
-export function useFeed() {
+export interface FeedResultItem {
+  experienceId: string;
+  isFriend: boolean;
+  matchScore: number;
+}
+
+export interface FeedSectionResult {
+  category: TravelStyleCategory;
+  items: FeedResultItem[];
+}
+
+const getFeedCallable = httpsCallable<{ filter?: FeedFilter; limit?: number }, FeedSectionResult[]>(functions, 'getFeed');
+
+export function useFeed(filter: FeedFilter = {}) {
   const { profile } = useCurrentUser();
 
-  const experiencesQuery = useQuery({
-    queryKey: ['experiences', 'feed'],
-    queryFn: () => ExperienceRepository.listRecentForFeed(),
+  const query = useQuery({
+    queryKey: ['feed', profile?.uid, filter],
+    queryFn: async () => (await getFeedCallable({ filter })).data,
     enabled: !!profile,
   });
-
-  const friendsQuery = useQuery({
-    queryKey: ['friends', profile?.uid],
-    queryFn: () => FriendRepository.listByUser(profile!.uid),
-    enabled: !!profile,
-  });
-
-  const items = useMemo<FeedItem[]>(() => {
-    if (!profile || !experiencesQuery.data) return [];
-    const friendIds = new Set((friendsQuery.data ?? []).map((edge) => edge.friendId));
-
-    const unranked = experiencesQuery.data
-      .filter((experience) => experience.ownerId !== profile.uid)
-      .map((experience) => ({
-        experience,
-        isFriend: friendIds.has(experience.ownerId),
-        matchScore: defaultMatchScorer.score(profile.travelStyle, experience.categoryScores),
-        createdAt: experience.createdAt,
-      }));
-
-    return sortFeed(unranked, HIGH_MATCH_THRESHOLD);
-  }, [profile, experiencesQuery.data, friendsQuery.data]);
 
   return {
-    items,
-    isLoading: experiencesQuery.isLoading || friendsQuery.isLoading,
-    refetch: experiencesQuery.refetch,
+    sections: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error instanceof Error ? query.error.message : undefined,
+    refetch: query.refetch,
   };
 }
