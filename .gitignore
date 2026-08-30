@@ -1,9 +1,12 @@
 # dependencies
 node_modules/
 
-# builds
-dist/
-lib/
+# builds — anchored to the actual generated-output locations, not bare
+# patterns. A bare `lib/` here once silently swallowed apps/mobile/src/lib
+# and functions/src/lib (real source, not build output) from every commit
+# — don't repeat that.
+/packages/core/dist/
+/functions/lib/
 build/
 .expo/
 .expo-shared/
