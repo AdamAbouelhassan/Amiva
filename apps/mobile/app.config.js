@@ -13,6 +13,14 @@ module.exports = {
     userInterfaceStyle: 'light',
     icon: './assets/icon.png',
     splash: {
+      // Was relying on Expo Go's implicit "no splash.image -> fall back to
+      // the app icon" behavior, which is why this used to be the old
+      // placeholder teal-square icon.png full-bleed. Now explicit, using
+      // the real icon (assets/icon.png), contained on the theme's
+      // off-white background (theme/colors.ts's `background`) instead of
+      // stretched to fill the screen.
+      image: './assets/icon.png',
+      resizeMode: 'contain',
       backgroundColor: '#FAF7F2',
     },
     assetBundlePatterns: ['**/*'],
