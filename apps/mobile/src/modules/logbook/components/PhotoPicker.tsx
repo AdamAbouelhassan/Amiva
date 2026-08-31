@@ -31,19 +31,22 @@ export function PhotoPicker({ localUris, onChange, onExifDateDetected }: PhotoPi
   const t = useTheme();
 
   async function addPhoto() {
-    if (localUris.length >= MAX_EXPERIENCE_PHOTOS) return;
+    const remaining = MAX_EXPERIENCE_PHOTOS - localUris.length;
+    if (remaining <= 0) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 1,
       exif: true,
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
     });
-    if (result.canceled || !result.assets[0]) return;
+    if (result.canceled || result.assets.length === 0) return;
 
-    const asset = result.assets[0];
-    onChange([...localUris, asset.uri]);
+    const wasEmpty = localUris.length === 0;
+    onChange([...localUris, ...result.assets.map((a) => a.uri).slice(0, remaining)]);
 
-    if (localUris.length === 0 && onExifDateDetected) {
-      const raw = asset.exif?.DateTimeOriginal ?? asset.exif?.DateTime;
+    if (wasEmpty && onExifDateDetected) {
+      const raw = result.assets[0]?.exif?.DateTimeOriginal ?? result.assets[0]?.exif?.DateTime;
       const exifDate = typeof raw === 'string' ? parseExifDate(raw) : undefined;
       if (exifDate) onExifDateDetected(exifDate);
     }

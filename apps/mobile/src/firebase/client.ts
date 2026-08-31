@@ -11,16 +11,22 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getReactNativePersistence, initializeAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
 import { env } from '../lib/env';
 
-const app = getApps().length > 0 ? getApp() : initializeApp(env.firebase);
+const firstInit = getApps().length === 0;
+const app = firstInit ? initializeApp(env.firebase) : getApp();
 
 export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage),
 });
-export const db = getFirestore(app);
+// `ignoreUndefinedProperties` so repositories can pass sparse patch objects
+// (e.g. a trip with no city) to setDoc/updateDoc without each call having to
+// strip `undefined` fields itself — the JS SDK otherwise throws on them.
+export const db = firstInit
+  ? initializeFirestore(app, { ignoreUndefinedProperties: true })
+  : getFirestore(app);
 export const storage = getStorage(app);
 export const functions = getFunctions(app);

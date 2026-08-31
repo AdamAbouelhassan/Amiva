@@ -1,42 +1,27 @@
 /**
- * Completion flow (functional_specification.md §4.3): converting planned
- * items into real Logbook entries, per-item, with a skip option — via the
- * `convertPlannedTripToLogbook` callable (server-side, since it creates
- * Experience docs and possibly a new Trip).
+ * Completion flow (functional_specification.md §4.3, 2026-08 rework):
+ * hand the callable the photos the user just added; it creates one Logbook
+ * trip mirroring the plan and links them. Per-item experience conversion is
+ * deferred — the user logs into the new trip afterwards.
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { httpsCallable } from 'firebase/functions';
-import { TravelStyleVector } from '@amiva/core';
 import { functions } from '../../../firebase/client';
 
-export type ConversionDecision =
-  | {
-      itemId: string;
-      action: 'convert';
-      details: {
-        photoUrls: string[];
-        rating: number;
-        notes: string;
-        categoryScores: TravelStyleVector;
-        date: string; // ISO — callable payloads are JSON, not Date objects
-        dateSource: 'exif' | 'manual';
-      };
-    }
-  | { itemId: string; action: 'skip' };
+const completeCallable = httpsCallable<{ plannedTripId: string; photoUrls: string[] }, { tripId: string }>(
+  functions,
+  'convertPlannedTripToLogbook',
+);
 
-const convertCallable = httpsCallable<
-  { plannedTripId: string; decisions: ConversionDecision[] },
-  { converted: string[]; skipped: string[] }
->(functions, 'convertPlannedTripToLogbook');
-
-export function useConvertPlannedTrip(plannedTripId: string) {
+export function useCompletePlannedTrip(plannedTripId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (decisions: ConversionDecision[]) => convertCallable({ plannedTripId, decisions }).then((r) => r.data),
+    mutationFn: (photoUrls: string[]) =>
+      completeCallable({ plannedTripId, photoUrls }).then((r) => r.data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plannedTrips'] });
       queryClient.invalidateQueries({ queryKey: ['plannedTripItems', plannedTripId] });
       queryClient.invalidateQueries({ queryKey: ['trips'] });
-      queryClient.invalidateQueries({ queryKey: ['experiences'] });
     },
   });
 }

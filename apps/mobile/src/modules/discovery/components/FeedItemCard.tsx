@@ -6,6 +6,7 @@ import { MatchScoreBadge } from '../../../components/MatchScoreBadge';
 import { ProfileIdentity } from '../../../components/ProfileIdentity';
 import { orNull } from '../../../lib/queryHelpers';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
+import { useLogExperienceNav } from '../../../hooks/useLogExperienceNav';
 import { useExperience } from '../../logbook/hooks/useExperiences';
 import { SaveRepository } from '../../../repositories/saveRepository';
 import { UserRepository } from '../../../repositories/userRepository';
@@ -22,6 +23,7 @@ export function FeedItemCard({ experienceId, isFriend, matchScore, onPress }: Fe
   const t = useTheme();
   const { profile } = useCurrentUser();
   const queryClient = useQueryClient();
+  const logNav = useLogExperienceNav();
   const { data: experience } = useExperience(experienceId);
 
   const ownerQuery = useQuery({
@@ -81,7 +83,7 @@ export function FeedItemCard({ experienceId, isFriend, matchScore, onPress }: Fe
           </Text>
 
           {/* Save is the only engagement action (spec §5.1 — no likes/comments). */}
-          <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xxs }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xxs }}>
             {!isOwner && (
               <Pressable
                 onPress={() => toggleSave.mutate()}
@@ -103,6 +105,17 @@ export function FeedItemCard({ experienceId, isFriend, matchScore, onPress }: Fe
                   ]}
                 >
                   {savedQuery.data ? 'Saved' : 'Save'}
+                </Text>
+              </Pressable>
+            )}
+            {!isOwner && (
+              <Pressable
+                hitSlop={8}
+                onPress={() => logNav.fromExperience(experience)}
+                style={{ paddingVertical: spacing.xxs, paddingHorizontal: spacing.sm }}
+              >
+                <Text style={[t.type.label, { color: t.colors.accent }]}>
+                  {logNav.preparing ? 'Opening…' : 'Log this'}
                 </Text>
               </Pressable>
             )}

@@ -1,8 +1,8 @@
 rules_version = '2';
 
 /**
- * Firebase Storage rules for uploaded images (experience photos, profile
- * photos) — technical_specification.md §1.
+ * Firebase Storage rules for uploaded images (experience photos, trip
+ * photos, profile photos) — technical_specification.md §1.
  *
  * Simplification vs. Firestore rules: Storage rules can't cheaply join
  * against a Firestore doc's privacySetting per-request the way
@@ -13,6 +13,11 @@ rules_version = '2';
  * fetchable by URL if guessed/leaked by a signed-in user. Tightening this
  * (e.g. via a Cloud Function proxy issuing signed URLs) is a reasonable
  * post-MVP follow-up, not done here to avoid over-building beyond spec.
+ *
+ * Each bucket prefix is keyed by the owner uid as the first segment; the
+ * `{allPaths=**}` tail matches whatever filename layout the client uses
+ * (flat `<ts>-<i>.jpg`, or nested under an entity id) so a path-shape
+ * tweak in the app can't silently start failing writes.
  */
 service firebase.storage {
   match /b/{bucket}/o {
@@ -27,12 +32,17 @@ service firebase.storage {
         request.resource.contentType.matches('image/.*');
     }
 
-    match /profilePhotos/{uid}/{fileName} {
+    match /profilePhotos/{uid}/{allPaths=**} {
       allow read: if isSignedIn();
       allow write: if isOwner(uid) && isValidImage();
     }
 
-    match /experiencePhotos/{uid}/{experienceId}/{fileName} {
+    match /experiencePhotos/{uid}/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(uid) && isValidImage();
+    }
+
+    match /tripPhotos/{uid}/{allPaths=**} {
       allow read: if isSignedIn();
       allow write: if isOwner(uid) && isValidImage();
     }

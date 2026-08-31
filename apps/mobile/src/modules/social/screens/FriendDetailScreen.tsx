@@ -6,6 +6,7 @@ import { ScreenContainer } from '../../../components/ScreenContainer';
 import { TravelStyleRadar, TravelStyleValueList } from '../../../components/TravelStyleRadar';
 import { Card } from '../../../components/Card';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
+import { useRefresh } from '../../../hooks/useRefresh';
 import { orNull } from '../../../lib/queryHelpers';
 import { UserRepository } from '../../../repositories/userRepository';
 import { radius, spacing, useTheme } from '../../../theme';
@@ -21,6 +22,7 @@ export function FriendDetailScreen({ route }: FriendDetailScreenProps) {
   const t = useTheme();
   const { friendId } = route.params;
   const { profile } = useCurrentUser();
+  const refresh = useRefresh();
   const { data: edge } = useFriendEdge(friendId);
   const { data: friend } = useQuery({
     queryKey: ['users', friendId],
@@ -30,7 +32,7 @@ export function FriendDetailScreen({ route }: FriendDetailScreenProps) {
   if (!profile || !friend || !edge) return null;
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={refresh.onRefresh} refreshing={refresh.refreshing}>
       <ProfileIdentity
         layout="stacked"
         name={friend.name}

@@ -6,16 +6,18 @@ import { ProfileIdentity } from '../../../components/ProfileIdentity';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { TravelStyleRadar, TravelStyleValueList } from '../../../components/TravelStyleRadar';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
+import { useRefresh } from '../../../hooks/useRefresh';
 import { spacing } from '../../../theme';
 
 export function ProfileScreen() {
   const { profile } = useCurrentUser();
+  const refresh = useRefresh();
   if (!profile) return null;
 
   const top3 = topCategories(profile.travelStyle);
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={refresh.onRefresh} refreshing={refresh.refreshing}>
       <ProfileIdentity
         layout="stacked"
         name={profile.name}

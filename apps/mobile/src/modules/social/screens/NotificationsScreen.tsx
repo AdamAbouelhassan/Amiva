@@ -1,9 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { BrandEmptyState } from '../../../components/BrandEmptyState';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { NotificationIcon } from '../../../components/icons/NotificationIcon';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
+import { useRefresh } from '../../../hooks/useRefresh';
 import { NotificationRepository } from '../../../repositories/notificationRepository';
 import { NotificationDoc } from '../../../repositories/types';
 import { spacing, useTheme } from '../../../theme';
@@ -20,6 +21,7 @@ export function NotificationsScreen() {
   const t = useTheme();
   const { profile } = useCurrentUser();
   const queryClient = useQueryClient();
+  const refresh = useRefresh();
   const query = useQuery({
     queryKey: ['notifications', profile?.uid],
     queryFn: () => NotificationRepository.listForRecipient(profile!.uid),
@@ -40,7 +42,14 @@ export function NotificationsScreen() {
         contentContainerStyle={{ padding: spacing.screen, paddingTop: 0, gap: spacing.xs }}
         data={query.data ?? []}
         keyExtractor={(item) => item.notificationId}
-        refreshing={query.isLoading}
+        refreshControl={
+          <RefreshControl
+            refreshing={refresh.refreshing}
+            onRefresh={refresh.onRefresh}
+            tintColor={t.colors.accent}
+            colors={[t.colors.accent]}
+          />
+        }
         ListEmptyComponent={
           !query.isLoading ? (
             <BrandEmptyState

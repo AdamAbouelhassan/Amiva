@@ -44,6 +44,13 @@ module.exports = {
       'expo-asset',
       'expo-font',
       [
+        'expo-location',
+        {
+          locationWhenInUsePermission:
+            'Amiva uses your location to pre-fill the "For You" search with where you are.',
+        },
+      ],
+      [
         'expo-splash-screen',
         {
           image: './assets/brand/amiva-icon-card.png',

@@ -3,7 +3,8 @@ import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native'
 import { radius, spacing, useTheme } from '../theme';
 
 interface TextFieldProps extends TextInputProps {
-  label: string;
+  /** Omit for a compact, placeholder-only field (e.g. a search bar). */
+  label?: string;
   error?: string;
 }
 
@@ -15,7 +16,7 @@ export function TextField({ label, error, style, onFocus, onBlur, ...rest }: Tex
 
   return (
     <View style={styles.container}>
-      <Text style={[t.type.label, { color: t.colors.textSecondary }]}>{label}</Text>
+      {label ? <Text style={[t.type.label, { color: t.colors.textSecondary }]}>{label}</Text> : null}
       <TextInput
         style={[
           styles.input,

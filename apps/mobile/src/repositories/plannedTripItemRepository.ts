@@ -29,7 +29,12 @@ function fromFirestore(id: string, data: DocumentData): PlannedTripItemDoc {
     source: data.source,
     placeId: data.placeId,
     title: data.title,
-    categoryScores: data.categoryScores,
+    categoryScores: data.categoryScores ?? undefined,
+    city: data.city ?? undefined,
+    country: data.country ?? undefined,
+    photoRef: data.photoRef ?? undefined,
+    lat: typeof data.lat === 'number' ? data.lat : undefined,
+    lng: typeof data.lng === 'number' ? data.lng : undefined,
     completed: data.completed ?? false,
     convertedToExperienceId: data.convertedToExperienceId,
   };
@@ -47,14 +52,19 @@ export const PlannedTripItemRepository = {
     return snap.docs.map((d) => fromFirestore(d.id, d.data()));
   },
 
-  /** Added from saved experiences or recommendations, in that priority
-   * order (functional_specification.md §4.2). */
+  /** Added from a nearby-place search on the plan (2026-08 Planner rework
+   * — the old "saved / recommended priority order" of §4.2 is gone). */
   async create(input: {
     plannedTripId: string;
     source: 'saved' | 'recommended';
     placeId: string;
     title: string;
     categoryScores?: TravelStyleVector;
+    city?: string;
+    country?: string;
+    photoRef?: string;
+    lat?: number;
+    lng?: number;
   }): Promise<PlannedTripItemDoc> {
     const ref = doc(collection(db, COLLECTION));
     const item: PlannedTripItemDoc = { itemId: ref.id, completed: false, ...input };
@@ -64,6 +74,11 @@ export const PlannedTripItemRepository = {
       placeId: item.placeId,
       title: item.title,
       categoryScores: item.categoryScores ?? null,
+      city: item.city ?? null,
+      country: item.country ?? null,
+      photoRef: item.photoRef ?? null,
+      lat: item.lat ?? null,
+      lng: item.lng ?? null,
       completed: false,
     });
     await PlannedTripRepository.addItemId(input.plannedTripId, ref.id);

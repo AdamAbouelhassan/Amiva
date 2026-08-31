@@ -1,17 +1,17 @@
 /**
- * Trip creation (functional_specification.md §3.2): a country + explicit
- * date range, explicitly created by the user. Name auto-generates from
- * country + date range; the user can rename later from TripDetailScreen.
+ * Trip creation (functional_specification.md §3.2, 2026-08 restructure): a
+ * user-authored container — one location, optional dates, name (auto-fills
+ * from location + dates), optional notes / accommodation / photos.
+ * Experiences are attached explicitly later.
  */
 import { useState } from 'react';
-import { Platform, Text, View } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { Text } from 'react-native';
 import { Button } from '../../../components/Button';
-import { Privacy, PrivacyPicker } from '../../../components/PrivacyPicker';
 import { ScreenContainer } from '../../../components/ScreenContainer';
-import { TextField } from '../../../components/TextField';
+import { emptyTripFormValue, TripFormFields, TripFormValue } from '../../../components/TripFormFields';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
-import { spacing, useTheme } from '../../../theme';
+import { uploadTripPhotos } from '../../../lib/uploadTripPhotos';
+import { useTheme } from '../../../theme';
 import { useCreateTrip } from '../hooks/useTrips';
 
 interface CreateTripScreenProps {
@@ -21,55 +21,46 @@ interface CreateTripScreenProps {
 export function CreateTripScreen({ navigation }: CreateTripScreenProps) {
   const t = useTheme();
   const { profile } = useCurrentUser();
-  const [country, setCountry] = useState('');
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
-  const [visibility, setVisibility] = useState<Privacy>(profile?.privacySetting ?? 'public');
+  const [form, setForm] = useState<TripFormValue>(() =>
+    emptyTripFormValue(profile?.privacySetting ?? 'public'),
+  );
+  const [saving, setSaving] = useState(false);
   const createTrip = useCreateTrip();
 
   async function submit() {
-    if (!profile || !country.trim()) return;
-    await createTrip.mutateAsync({
-      ownerId: profile.uid,
-      countries: [country.trim()],
-      startDate,
-      endDate,
-      visibility,
-    });
-    navigation.goBack();
+    if (!profile || !form.location) return;
+    setSaving(true);
+    try {
+      const photoUrls = await uploadTripPhotos(form.photoUris, profile.uid);
+      await createTrip.mutateAsync({
+        ownerId: profile.uid,
+        location: form.location.label,
+        country: form.location.country,
+        city: form.location.city,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        name: form.name.trim() || undefined,
+        notes: form.notes.trim() || undefined,
+        accommodation: form.accommodation.trim() || undefined,
+        photoUrls,
+        visibility: form.visibility,
+      });
+      navigation.goBack();
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <ScreenContainer>
       <Text style={t.type.displayMd}>New trip</Text>
-      <TextField label="Country" value={country} onChangeText={setCountry} placeholder="e.g. Japan" />
-
-      <View style={{ gap: spacing.xs }}>
-        <Text style={t.type.subtitle}>Start date</Text>
-        <DateTimePicker
-          value={startDate}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'inline' : 'default'}
-          onChange={(_, date) => date && setStartDate(date)}
-        />
-      </View>
-
-      <View style={{ gap: spacing.xs }}>
-        <Text style={t.type.subtitle}>End date</Text>
-        <DateTimePicker
-          value={endDate}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'inline' : 'default'}
-          onChange={(_, date) => date && setEndDate(date)}
-        />
-      </View>
-
-      <View style={{ gap: spacing.xs }}>
-        <Text style={t.type.subtitle}>Visibility</Text>
-        <PrivacyPicker value={visibility} onChange={setVisibility} />
-      </View>
-
-      <Button label="Create trip" onPress={submit} loading={createTrip.isPending} disabled={!country.trim()} />
+      <TripFormFields value={form} onChange={setForm} />
+      <Button
+        label="Create trip"
+        onPress={submit}
+        loading={saving || createTrip.isPending}
+        disabled={!form.location}
+      />
     </ScreenContainer>
   );
 }

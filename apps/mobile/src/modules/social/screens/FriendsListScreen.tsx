@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { toMatchPercent } from '@amiva/core';
 import { BrandEmptyState } from '../../../components/BrandEmptyState';
 import { Button } from '../../../components/Button';
@@ -7,6 +7,7 @@ import { MatchScoreBadge } from '../../../components/MatchScoreBadge';
 import { ProfileIdentity } from '../../../components/ProfileIdentity';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
+import { useRefresh } from '../../../hooks/useRefresh';
 import { orNull } from '../../../lib/queryHelpers';
 import { UserRepository } from '../../../repositories/userRepository';
 import { spacing, useTheme } from '../../../theme';
@@ -20,6 +21,7 @@ interface FriendsListScreenProps {
 
 export function FriendsListScreen({ navigation }: FriendsListScreenProps) {
   const t = useTheme();
+  const refresh = useRefresh();
   const { data: friends = [], isLoading, isError, error, refetch } = useFriends();
 
   return (
@@ -39,8 +41,14 @@ export function FriendsListScreen({ navigation }: FriendsListScreenProps) {
         contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg }}
         data={friends}
         keyExtractor={(item) => item.friendId}
-        refreshing={isLoading}
-        onRefresh={refetch}
+        refreshControl={
+          <RefreshControl
+            refreshing={refresh.refreshing}
+            onRefresh={refresh.onRefresh}
+            tintColor={t.colors.accent}
+            colors={[t.colors.accent]}
+          />
+        }
         ListEmptyComponent={
           isLoading ? null : isError ? (
             <BrandEmptyState

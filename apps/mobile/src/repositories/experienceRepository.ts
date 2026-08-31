@@ -17,13 +17,11 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
-import { canExperienceBeStandalone, findOwningTrip, MAX_EXPERIENCE_PHOTOS, TravelStyleVector } from '@amiva/core';
-import type { ExperienceForCategorization } from '@amiva/core';
+import { MAX_EXPERIENCE_PHOTOS, TravelStyleVector } from '@amiva/core';
 import { db } from '../firebase/client';
 import { toDate, toTimestamp } from '../firebase/timestamps';
 import { ExperienceDoc, PlaceDoc } from './types';
 import { PlaceRepository } from './placeRepository';
-import { TripRepository } from './tripRepository';
 
 const COLLECTION = 'experiences';
 
@@ -51,8 +49,8 @@ function fromFirestore(id: string, data: DocumentData): ExperienceDoc {
 export interface CreateExperienceInput {
   ownerId: string;
   place: Omit<PlaceDoc, 'createdAt'>;
-  /** Explicit trip to add to. If omitted, the standalone/trip business
-   * rule (functional_specification.md §3.2) decides automatically. */
+  /** Explicit trip to attach to; omitted = standalone. Experiences are
+   * attached to trips explicitly by the user (2026-08 restructure). */
   tripId?: string;
   title: string;
   notes: string;
@@ -70,10 +68,21 @@ export const ExperienceRepository = {
     return snap.exists() ? fromFirestore(snap.id, snap.data()) : undefined;
   },
 
-  async listByTrip(tripId: string): Promise<ExperienceDoc[]> {
-    const q = query(collection(db, COLLECTION), where('tripId', '==', tripId), orderBy('date', 'asc'));
+  /** A trip's experiences. Needs the `ownerId` filter (not just `tripId`)
+   * so firestore.rules can prove the query is the owner reading their own
+   * docs — the `experiences` read rule does a per-doc `get(users/…)` that
+   * can't be evaluated for a bare `tripId ==` collection query. Sorted
+   * client-side to avoid a 3-field composite index. */
+  async listByTrip(tripId: string, ownerId: string): Promise<ExperienceDoc[]> {
+    const q = query(
+      collection(db, COLLECTION),
+      where('ownerId', '==', ownerId),
+      where('tripId', '==', tripId),
+    );
     const snap = await getDocs(q);
-    return snap.docs.map((d) => fromFirestore(d.id, d.data()));
+    return snap.docs
+      .map((d) => fromFirestore(d.id, d.data()))
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
   },
 
   /** Logbook drill-down: every experience for an owner, most recent
@@ -105,50 +114,11 @@ export const ExperienceRepository = {
     return snap.docs.map((d) => fromFirestore(d.id, d.data()));
   },
 
-  /** Candidates for computeTripRecategorization: this trip's own
-   * experiences, plus standalone ones with a matching country. */
-  async listCategorizationCandidates(
-    ownerId: string,
-    country: string,
-    tripId: string,
-  ): Promise<ExperienceForCategorization[]> {
-    const toCandidate = (d: DocumentData & { id: string }): ExperienceForCategorization => ({
-      experienceId: d.id,
-      country: d.country,
-      date: toDate(d.date),
-      tripId: d.tripId ?? undefined,
-    });
-
-    const [inTripSnap, standaloneSnap] = await Promise.all([
-      getDocs(
-        query(
-          collection(db, COLLECTION),
-          where('ownerId', '==', ownerId),
-          where('country', '==', country),
-          where('tripId', '==', tripId),
-        ),
-      ),
-      getDocs(
-        query(
-          collection(db, COLLECTION),
-          where('ownerId', '==', ownerId),
-          where('country', '==', country),
-          where('tripId', '==', null),
-        ),
-      ),
-    ]);
-
-    return [
-      ...inTripSnap.docs.map((d) => toCandidate({ id: d.id, ...d.data() })),
-      ...standaloneSnap.docs.map((d) => toCandidate({ id: d.id, ...d.data() })),
-    ];
+  /** Attach an experience to a trip, or detach it (tripId = null). */
+  async setTrip(experienceId: string, tripId: string | null): Promise<void> {
+    await updateDoc(doc(db, COLLECTION, experienceId), { tripId });
   },
 
-  /** Enforces the standalone-experience business rule
-   * (functional_specification.md §3.2) — if no explicit tripId is given
-   * and an existing trip already covers this country + date, the
-   * experience is assigned into that trip automatically rather than
-   * created standalone. */
   async create(input: CreateExperienceInput): Promise<ExperienceDoc> {
     if (input.photoUrls.length > MAX_EXPERIENCE_PHOTOS) {
       throw new Error(`An experience can have at most ${MAX_EXPERIENCE_PHOTOS} photos.`);
@@ -156,22 +126,7 @@ export const ExperienceRepository = {
 
     await PlaceRepository.upsertFromGooglePlace(input.place);
 
-    let tripId = input.tripId;
-    if (!tripId) {
-      const candidateTrips = await TripRepository.listByOwnerAndCountry(input.ownerId, input.place.country);
-      const owning = findOwningTrip(
-        input.place.country,
-        input.date,
-        candidateTrips.map((t) => ({ tripId: t.tripId, countries: t.countries, startDate: t.startDate, endDate: t.endDate })),
-      );
-      tripId = owning?.tripId;
-      // (canExperienceBeStandalone is the inverse of the above check —
-      // asserted here mainly as a readable guard against drift between
-      // this logic and the pure rule in @amiva/core.)
-      if (!canExperienceBeStandalone(input.place.country, input.date, candidateTrips) && !owning) {
-        throw new Error('Inconsistent trip categorization state.');
-      }
-    }
+    const tripId = input.tripId;
 
     const ref = doc(collection(db, COLLECTION));
     const now = new Date();

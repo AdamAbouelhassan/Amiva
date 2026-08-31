@@ -18,11 +18,11 @@ export function useCityExperiences(ownerId: string | undefined, country: string,
   });
 }
 
-export function useTripExperiences(tripId: string | undefined) {
+export function useTripExperiences(tripId: string | undefined, ownerId: string | undefined) {
   return useQuery({
     queryKey: ['experiences', 'byTrip', tripId],
-    queryFn: () => ExperienceRepository.listByTrip(tripId!),
-    enabled: !!tripId,
+    queryFn: () => ExperienceRepository.listByTrip(tripId!, ownerId!),
+    enabled: !!tripId && !!ownerId,
   });
 }
 
@@ -31,6 +31,33 @@ export function useExperience(experienceId: string | undefined) {
     queryKey: ['experiences', experienceId],
     queryFn: () => ExperienceRepository.getById(experienceId!).then(orNull),
     enabled: !!experienceId,
+  });
+}
+
+export function useUpdateExperience() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      experienceId,
+      patch,
+    }: {
+      experienceId: string;
+      patch: Parameters<typeof ExperienceRepository.update>[1];
+    }) => ExperienceRepository.update(experienceId, patch),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['experiences'] });
+    },
+  });
+}
+
+export function useDeleteExperience() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (experienceId: string) => ExperienceRepository.delete(experienceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['experiences'] });
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
+    },
   });
 }
 

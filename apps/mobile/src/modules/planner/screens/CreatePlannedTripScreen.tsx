@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Platform, Text, View } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { Text } from 'react-native';
 import { Button } from '../../../components/Button';
-import { Privacy, PrivacyPicker } from '../../../components/PrivacyPicker';
 import { ScreenContainer } from '../../../components/ScreenContainer';
-import { TextField } from '../../../components/TextField';
+import { emptyTripFormValue, TripFormFields, TripFormValue } from '../../../components/TripFormFields';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
-import { spacing, useTheme } from '../../../theme';
+import { uploadTripPhotos } from '../../../lib/uploadTripPhotos';
+import { useTheme } from '../../../theme';
 import { useCreatePlannedTrip } from '../hooks/usePlannedTrips';
 
 interface CreatePlannedTripScreenProps {
@@ -16,44 +15,45 @@ interface CreatePlannedTripScreenProps {
 export function CreatePlannedTripScreen({ navigation }: CreatePlannedTripScreenProps) {
   const t = useTheme();
   const { profile } = useCurrentUser();
-  const [location, setLocation] = useState('');
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
-  const [visibility, setVisibility] = useState<Privacy>('private');
+  const [form, setForm] = useState<TripFormValue>(() => emptyTripFormValue('private'));
+  const [saving, setSaving] = useState(false);
   const createPlannedTrip = useCreatePlannedTrip();
 
   async function submit() {
-    if (!profile || !location.trim()) return;
-    await createPlannedTrip.mutateAsync({
-      ownerId: profile.uid,
-      locations: [location.trim()],
-      startDate,
-      endDate,
-      visibility,
-    });
-    navigation.goBack();
+    if (!profile || !form.location) return;
+    setSaving(true);
+    try {
+      const photoUrls = await uploadTripPhotos(form.photoUris, profile.uid);
+      await createPlannedTrip.mutateAsync({
+        ownerId: profile.uid,
+        location: form.location.label,
+        country: form.location.country,
+        city: form.location.city,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        name: form.name.trim() || undefined,
+        notes: form.notes.trim() || undefined,
+        accommodation: form.accommodation.trim() || undefined,
+        photoUrls,
+        visibility: form.visibility,
+      });
+      navigation.goBack();
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <ScreenContainer>
       <Text style={t.type.displayMd}>New planned trip</Text>
-      <TextField label="Where to?" value={location} onChangeText={setLocation} placeholder="Country or city" />
-
-      <View style={{ gap: spacing.xs }}>
-        <Text style={t.type.subtitle}>Start date</Text>
-        <DateTimePicker value={startDate} mode="date" display={Platform.OS === 'ios' ? 'inline' : 'default'} onChange={(_, d) => d && setStartDate(d)} />
-      </View>
-      <View style={{ gap: spacing.xs }}>
-        <Text style={t.type.subtitle}>End date</Text>
-        <DateTimePicker value={endDate} mode="date" display={Platform.OS === 'ios' ? 'inline' : 'default'} onChange={(_, d) => d && setEndDate(d)} />
-      </View>
-
-      <View style={{ gap: spacing.xs }}>
-        <Text style={t.type.subtitle}>Visibility</Text>
-        <PrivacyPicker value={visibility} onChange={setVisibility} />
-      </View>
-
-      <Button label="Create" variant="warm" onPress={submit} loading={createPlannedTrip.isPending} disabled={!location.trim()} />
+      <TripFormFields value={form} onChange={setForm} planner photos={false} />
+      <Button
+        label="Create"
+        variant="warm"
+        onPress={submit}
+        loading={saving || createPlannedTrip.isPending}
+        disabled={!form.location}
+      />
     </ScreenContainer>
   );
 }

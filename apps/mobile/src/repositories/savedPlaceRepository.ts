@@ -23,6 +23,9 @@ function fromFirestore(data: DocumentData): SavedPlaceDoc {
     name: data.name,
     country: data.country,
     city: data.city,
+    lat: typeof data.lat === 'number' ? data.lat : undefined,
+    lng: typeof data.lng === 'number' ? data.lng : undefined,
+    photoRef: data.photoRef ?? undefined,
     categoryScores: data.categoryScores as TravelStyleVector,
     savedAt: toDate(data.savedAt),
   };
@@ -35,6 +38,9 @@ export const SavedPlaceRepository = {
     name: string;
     country: string;
     city: string;
+    lat?: number;
+    lng?: number;
+    photoRef?: string;
     categoryScores: TravelStyleVector;
   }): Promise<void> {
     await setDoc(doc(db, COLLECTION, docId(input.userId, input.placeId)), {
@@ -43,6 +49,9 @@ export const SavedPlaceRepository = {
       name: input.name,
       country: input.country,
       city: input.city,
+      lat: input.lat ?? null,
+      lng: input.lng ?? null,
+      photoRef: input.photoRef ?? null,
       categoryScores: input.categoryScores,
       savedAt: toTimestamp(new Date()),
     });

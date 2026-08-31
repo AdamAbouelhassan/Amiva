@@ -57,6 +57,133 @@ brand design system. What changed that you must not fight:
 - Jest is unaffected (ts-jest, node env, no component render tests). `npx
   tsc --noEmit` + `npx expo export` both clean.
 
+**Discovery redesign (2026-08-30):** Discovery is now 3 in-page
+`<SegmentedControl>` tabs on one `DiscoveryScreen` (no landing screen, no
+per-tab routes) — **Local** (Google-Places recs, was "For You"),
+**Trending** (`getTrending` → a flat popularity-ranked list now, not
+category-sectioned), **Friends** (was "Feed" — now a chronological
+friend-*activity* feed: logged experiences/trips, saves, completed planned
+trips, new connections, via the new `getFriendsActivity` callable). The
+old `getFeed` (matched-experience feed) is deleted. This intentionally
+diverges from functional_specification.md §5's Feed/Trending description —
+product decision, not drift. `functions/src/lib/feed.ts` is now just the
+shared `FeedCandidate`/`FeedStore` types.
+
+**Trip / PlannedTrip restructure (2026-08-30):** a Trip is no longer
+"country + date range" — it's a plain user-authored container: **one
+`location`** (`location: string` label + scalar `country` / `city?`;
+`countries: string[]` is gone), **required** `startDate` / `endDate`,
+`name` (auto-fills from `generateTripName(location, range)`, UI label
+"Trip name"), and optional `notes` / `accommodation` / `photoUrls`.
+"By country" (`LogbookHomeScreen` → `CountryDetailScreen`) aggregates
+**trips + experiences** by `trip.country`. The Firestore client sets
+`ignoreUndefinedProperties: true` (`firebase/client.ts`) so repo patch
+objects can carry sparse fields; repos still write `null` (not
+`undefined`) for cleared optional fields. Trip photos upload to
+`tripPhotos/{uid}/…` (`lib/uploadTripPhotos.ts`); `storage.rules` now uses
+`{allPaths=**}` tails on all three photo prefixes (the old
+`experiencePhotos/{uid}/{experienceId}/{fileName}` rule never matched the
+client's flat `{uid}/<ts>-<i>.jpg` upload path — latent bug).
+Experiences attach to trips **explicitly only** — a picker in
+`CreateExperienceScreen` / "Add experience to this trip" on
+`TripDetailScreen`; there is no auto-categorization, no
+standalone-experience rule, no date-range recategorization
+(`findOwningTrip` / `canExperienceBeStandalone` /
+`computeTripRecategorization` deleted from `@amiva/core`). This
+intentionally diverges from functional_specification.md §3.2 — product
+decision, tracked here like the Discovery §5 divergence. `plannedTrips`
+has the **same field shape** (a planned trip is a future trip) plus its
+Planner extras (`collaboratorIds` / `status` / `itemIds` / `completedAt`);
+they stay **two collections**. Shared UI: `<TripFormFields>` (all 4
+create/edit screens), `<DateField>` / `<DateRangeField>` (the **only**
+`@react-native-community/datetimepicker` importers — minimal collapsed
+field that expands the picker on tap; used by every date input in the
+app), `<PhotoGalleryPicker>`. `convertPlannedTripToLogbook` now creates
+one fresh Logbook trip mirroring the planned trip. `trips` /
+`plannedTrips` / `plannedTripItems` Firestore data was wiped on the
+restructure. `firestore.indexes.json`: `trips` + `plannedTrips` list
+queries now order by `createdAt` (was `startDate`, now nullable).
+
+**Saved items + "Log this" (2026-08-31):** `SavedScreen` (Discovery stack,
+"Saved" header button on `DiscoverHome`) is **one merged newest-first list**
+(`useSavedItems`) of saved Amiva experiences (`saves`) and saved Google
+Places (`savedPlaces`) — the user treats a recommended place and an
+experience as the same thing. Each row has a photo, remove, and "Log this".
+Save/unsave hooks live in `src/hooks/useSaves.ts` (promoted out of
+`modules/planner`). **"Log this"** (`useLogExperienceNav` — `fromExperience`
+/ `fromPlace`; also on `FeedItemCard`, `ExperienceDetailScreen`,
+`PlaceRecommendationCard`) opens `CreateExperience` pre-seeded
+(`ExperiencePrefill` nav param: place + title + categoryScores).
+`CreateExperienceScreen` reads `route.params.prefill`; `PlacesAutocomplete`
+takes `initialPlace` and renders predictions as a plain `View.map` (was a
+`FlatList` — nested-VirtualizedList warning inside scroll screens).
+`CreateExperience` is registered in the Discovery stack too (reuses the
+Logbook screen). `savedPlaces` docs gained optional `lat` / `lng` /
+`photoRef` (older ones lack them → `fetchPlaceCoords` re-resolves coords on
+"Log this", thumbnail just omitted).
+
+**Query cache policy (2026-08-31):** `lib/queryClient.ts` — `staleTime`
+5 min, `gcTime` 1 h, `refetchOnWindowFocus`/`refetchOnReconnect` off. The
+app is navigation-heavy; within 5 min, revisiting a screen or a profile is
+served from cache. Mutations still `invalidateQueries` for immediate
+refresh. (No AsyncStorage persistence yet — repo query data holds `Date`
+objects that JSON round-tripping would break; needs a custom
+serializer first.) **Pull-to-refresh** is `useRefresh()`
+(`hooks/useRefresh.ts`) → `queryClient.refetchQueries({ type: 'active' })`
+(re-fetches everything mounted, Facebook-style); wire `{ refreshing,
+onRefresh }` into `ScreenContainer` (scroll screens — it renders the
+`RefreshControl`) or a `FlatList`'s `refreshControl`. Every content/list/
+detail screen has it; create/edit forms don't.
+
+**Planner rework (2026-08-31):** the plan detail screen is **itinerary
+only** — the old "Add from your saves / saved places" lists are gone.
+Itinerary items are added from **`AddPlacesToPlanScreen`** (a nearby-Google-
+Places search scoped to the trip's location, reusing the
+`getPlaceRecommendations` callable; `PlaceRecommendationCard` takes
+`onAdd`/`added` for "Add to plan" mode). `plannedTripItems` gained
+denormalised `city/country/photoRef/lat/lng`. **Planning → Upcoming** is
+derived (`lib/plannedTripStatus.ts` — `displayPlannedTripStatus`, 14-day
+window) with a manual toggle; only the *stored* `status` field is written.
+**Completion** (`CompletePlannedTripScreen`) collects **photos only**;
+`convertPlannedTripToLogbook({ plannedTripId, photoUrls })` creates one
+Logbook trip mirroring the plan + photos, sets
+`plannedTrips.convertedToTripId`, no per-item experience conversion (user
+logs into the new trip afterwards). Completion is gated to after
+`endDate` (`canComplete`). **Revert**: new `revertCompletedTrip` callable
+deletes that Logbook trip, detaches (never deletes) any experiences logged
+into it, restores `status: 'planning'`. The planner create/edit form hides
+the photo picker (`<TripFormFields photos={false}>`). Diverges from
+functional_specification.md §4.2/§4.3 — documented product decision.
+
+**Delete (2026-08-31):** experiences, Logbook trips, and planned trips can
+all be deleted by their owner — destructive `Pressable` on the Edit screen
+(`EditExperienceScreen` / `EditTripScreen` / `EditPlannedTripScreen`), plus
+the completed-plan card on `PlannedTripDetailScreen`. `TripRepository.delete(tripId, ownerId)`
+**detaches** attached experiences (`tripId → null`), never deletes them —
+and the `ownerId` filter on that experiences query is **required**: the
+`experiences` read rule does a per-doc `get(users/…)`, so a bare
+`where('tripId','==')` collection query is rejected by rules (same gotcha
+as the privacy-query one). `ExperienceRepository.listByTrip` takes
+`ownerId` for the same reason (sorts client-side, no composite index).
+`PlannedTripRepository.delete` also removes the `plannedTripItems` (items
+first, then the parent, so the item rule's parent `get()` still resolves).
+Existing firestore.rules already permit owner update/delete — no rules
+change. Nav: delete → `navigation.pop(2)` (Edit modal + the now-stale
+detail screen).
+
+**Experiences: optional photo + editing (2026-08-31):** logging an
+experience no longer requires a photo — if the user adds none,
+`photoUrls[0]` defaults to the place's Google photo
+(`SelectedPlace.photoRef` → `placePhotoUrl`, added to `PlacesAutocomplete`
+details fetch + threaded through `ExperiencePrefill` / `useLogExperienceNav`).
+New **`EditExperienceScreen`** (Logbook + Discovery stacks, "Edit" on
+`ExperienceDetailScreen` for the owner) edits title/notes/rating/photos/
+category/date via `useUpdateExperience` → `ExperienceRepository.update`.
+Photo upload generalised to `lib/uploadPhotos.ts` `uploadPhotoSet(uris,
+pathPrefix)` (`uploadTripPhotos` now delegates). **Rating does not affect
+travel style** — only `categoryScores` feeds `computeStyleAdjustment`
+(spec §3.3: rating is "separate from the category sliders").
+
 **Live project:** `amivadev` (see `.firebaserc`). Firestore (`us-central1`
 — must stay single-region, see gotcha below), Storage, security rules, and
 all 12 Cloud Functions are deployed. `apps/mobile/.env.local` holds the

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { PlannedTripItemRepository } from '../../../repositories/plannedTripItemRepository';
-import { PlannedTripRepository } from '../../../repositories/plannedTripRepository';
+import { PlannedTripRepository, UpdatePlannedTripPatch } from '../../../repositories/plannedTripRepository';
 import { PlannedTripStatus } from '../../../repositories/types';
 
 /** Multi-trip overview — functional_specification.md §4.1: "Users can
@@ -21,6 +21,15 @@ export function useCreatePlannedTrip() {
   return useMutation({
     mutationFn: (input: Parameters<typeof PlannedTripRepository.create>[0]) => PlannedTripRepository.create(input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['plannedTrips', 'forUser', profile?.uid] }),
+  });
+}
+
+export function useUpdatePlannedTrip() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ plannedTripId, patch }: { plannedTripId: string; patch: UpdatePlannedTripPatch }) =>
+      PlannedTripRepository.update(plannedTripId, patch),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['plannedTrips'] }),
   });
 }
 
@@ -44,6 +53,29 @@ export function useAddPlannedTripItem() {
     onSuccess: (item) => {
       queryClient.invalidateQueries({ queryKey: ['plannedTripItems', item.plannedTripId] });
       queryClient.invalidateQueries({ queryKey: ['plannedTrips', item.plannedTripId] });
+    },
+  });
+}
+
+export function useDeletePlannedTrip() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (plannedTripId: string) => PlannedTripRepository.delete(plannedTripId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plannedTrips'] });
+      queryClient.invalidateQueries({ queryKey: ['plannedTripItems'] });
+    },
+  });
+}
+
+export function useRemovePlannedTripItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, plannedTripId }: { itemId: string; plannedTripId: string }) =>
+      PlannedTripItemRepository.delete(itemId, plannedTripId),
+    onSuccess: (_data, { plannedTripId }) => {
+      queryClient.invalidateQueries({ queryKey: ['plannedTripItems', plannedTripId] });
+      queryClient.invalidateQueries({ queryKey: ['plannedTrips', plannedTripId] });
     },
   });
 }

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { orNull } from '../../../lib/queryHelpers';
-import { TripRepository } from '../../../repositories/tripRepository';
+import { ExperienceRepository } from '../../../repositories/experienceRepository';
+import { TripRepository, UpdateTripPatch } from '../../../repositories/tripRepository';
 import { TripDoc } from '../../../repositories/types';
 
 export function useTrips(ownerId: string | undefined) {
@@ -29,14 +30,38 @@ export function useCreateTrip() {
   });
 }
 
-export function useUpdateTripDateRange() {
+export function useUpdateTrip() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ tripId, startDate, endDate }: { tripId: string; startDate: Date; endDate: Date }) =>
-      TripRepository.updateDateRange(tripId, startDate, endDate),
+    mutationFn: ({ tripId, patch }: { tripId: string; patch: UpdateTripPatch }) =>
+      TripRepository.update(tripId, patch),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
+    },
+  });
+}
+
+export function useDeleteTrip() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tripId, ownerId }: { tripId: string; ownerId: string }) =>
+      TripRepository.delete(tripId, ownerId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trips'] });
       queryClient.invalidateQueries({ queryKey: ['experiences'] });
+    },
+  });
+}
+
+/** Attach an experience to a trip, or detach it (tripId = null). */
+export function useAttachExperienceToTrip() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ experienceId, tripId }: { experienceId: string; tripId: string | null }) =>
+      ExperienceRepository.setTrip(experienceId, tripId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['experiences'] });
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
     },
   });
 }

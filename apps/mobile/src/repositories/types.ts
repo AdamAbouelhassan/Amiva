@@ -43,10 +43,21 @@ export interface PlaceDoc {
 export interface TripDoc {
   tripId: string;
   ownerId: string;
-  countries: string[];
+  /** Display label from the location picker, e.g. "Tokyo, Japan". A trip is
+   * tied to exactly one location (2026-08 restructure — replaced the old
+   * `countries: string[]`). */
+  location: string;
+  country: string;
+  city?: string;
   startDate: Date;
   endDate: Date;
+  /** Auto-generated from location + date range, editable. "Trip name" in UI. */
   name: string;
+  notes?: string;
+  accommodation?: string;
+  /** Trip-level photo gallery. */
+  photoUrls: string[];
+  /** Defaults to photoUrls[0] ?? first experience photo; user can override. */
   coverPhotoUrl: string;
   visibility: PrivacySetting;
   createdAt: Date;
@@ -89,6 +100,13 @@ export interface SavedPlaceDoc {
   name: string;
   country: string;
   city: string;
+  /** Persisted so "Log this" can seed an experience without re-hitting the
+   * Google Places Details API. Absent on saves made before 2026-08-31. */
+  lat?: number;
+  lng?: number;
+  /** First Google `photo_reference` for the place, so the Saved list can
+   * show a thumbnail. Absent on saves made before 2026-08-31. */
+  photoRef?: string;
   categoryScores: TravelStyleVector;
   savedAt: Date;
 }
@@ -99,13 +117,26 @@ export interface PlannedTripDoc {
   plannedTripId: string;
   ownerId: string;
   collaboratorIds: string[];
-  locations: string[];
+  /** Same shape as TripDoc (2026-08 restructure — a planned trip is a future
+   * trip). Replaced the old `locations: string[]`. */
+  location: string;
+  country: string;
+  city?: string;
   startDate: Date;
   endDate: Date;
+  name: string;
+  notes?: string;
+  accommodation?: string;
+  photoUrls: string[];
   status: PlannedTripStatus;
   visibility: PrivacySetting;
   itemIds: string[];
   createdAt: Date;
+  /** Set when status first becomes 'completed'. Cleared on revert. */
+  completedAt?: Date;
+  /** The Logbook trip this plan was turned into on completion. Drives
+   * "View in Logbook" and revert. */
+  convertedToTripId?: string;
 }
 
 export interface PlannedTripItemDoc {
@@ -115,6 +146,12 @@ export interface PlannedTripItemDoc {
   placeId: string;
   title: string;
   categoryScores?: TravelStyleVector;
+  /** Denormalised from the place at add-time — thumbnail + "Log this" seed. */
+  city?: string;
+  country?: string;
+  photoRef?: string;
+  lat?: number;
+  lng?: number;
   completed: boolean;
   convertedToExperienceId?: string;
 }

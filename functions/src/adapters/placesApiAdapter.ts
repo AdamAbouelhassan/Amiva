@@ -6,7 +6,10 @@ interface TextSearchResponseResult {
   geometry?: { location?: { lat: number; lng: number } };
   types?: string[];
   price_level?: number;
+  photos?: { photo_reference: string }[];
 }
+
+const MAX_PHOTO_REFS = 3;
 
 interface TextSearchResponse {
   results?: TextSearchResponseResult[];
@@ -45,6 +48,10 @@ export class GooglePlacesApi implements PlacesSearchPort {
         lng: result.geometry!.location!.lng,
         types: result.types ?? [],
         priceLevel: result.price_level,
+        photoReferences: (result.photos ?? [])
+          .map((p) => p.photo_reference)
+          .filter(Boolean)
+          .slice(0, MAX_PHOTO_REFS),
       }));
   }
 }

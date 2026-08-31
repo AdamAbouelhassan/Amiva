@@ -5,7 +5,7 @@
  * components, per spec.
  */
 import { useEffect, useRef, useState } from 'react';
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { TextField } from './TextField';
 import { env } from '../lib/env';
 import { radius, spacing, useTheme } from '../theme';
@@ -18,6 +18,9 @@ export interface SelectedPlace {
   lat: number;
   lng: number;
   googlePlaceType?: string;
+  /** First Google `photo_reference` — used as the default experience photo
+   * when the user doesn't add their own. */
+  photoRef?: string;
 }
 
 interface Prediction {
@@ -27,6 +30,9 @@ interface Prediction {
 
 interface PlacesAutocompleteProps {
   onSelect: (place: SelectedPlace) => void;
+  /** Pre-fill the field with an already-known place (e.g. "Log this"
+   * from an existing experience). The user can still overwrite it. */
+  initialPlace?: SelectedPlace;
 }
 
 const DEBOUNCE_MS = 300;
@@ -35,11 +41,11 @@ function extractComponent(components: Array<{ long_name: string; types: string[]
   return components.find((c) => c.types.includes(type))?.long_name ?? '';
 }
 
-export function PlacesAutocomplete({ onSelect }: PlacesAutocompleteProps) {
+export function PlacesAutocomplete({ onSelect, initialPlace }: PlacesAutocompleteProps) {
   const t = useTheme();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialPlace?.name ?? '');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [selected, setSelected] = useState<SelectedPlace | undefined>();
+  const [selected, setSelected] = useState<SelectedPlace | undefined>(initialPlace);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -60,7 +66,7 @@ export function PlacesAutocomplete({ onSelect }: PlacesAutocompleteProps) {
   }, [query, selected]);
 
   async function selectPrediction(prediction: Prediction) {
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=name,geometry,address_component,type&key=${env.googlePlacesApiKey}`;
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=name,geometry,address_component,type,photo&key=${env.googlePlacesApiKey}`;
     const response = await fetch(url);
     const json = await response.json();
     const result = json.result;
@@ -77,6 +83,7 @@ export function PlacesAutocomplete({ onSelect }: PlacesAutocompleteProps) {
       lat: result.geometry?.location?.lat,
       lng: result.geometry?.location?.lng,
       googlePlaceType: result.types?.[0],
+      photoRef: result.photos?.[0]?.photo_reference,
     };
 
     setSelected(place);
@@ -97,26 +104,33 @@ export function PlacesAutocomplete({ onSelect }: PlacesAutocompleteProps) {
         placeholder="Search for a place"
       />
       {predictions.length > 0 && (
-        <FlatList
+        // A plain View, not a FlatList — this list is ≤5 items and often
+        // renders inside a ScrollView (CreateExperience etc.), where a
+        // nested vertical VirtualizedList warns and breaks scrolling.
+        <View
           style={{
-            maxHeight: 200,
             borderWidth: 1,
             borderColor: t.colors.border,
             borderRadius: radius.chip,
             marginTop: spacing.xxs,
             backgroundColor: t.colors.surface,
+            overflow: 'hidden',
           }}
-          data={predictions}
-          keyExtractor={(item) => item.place_id}
-          renderItem={({ item }) => (
+        >
+          {predictions.slice(0, 5).map((item, i) => (
             <Pressable
-              style={{ padding: spacing.sm, borderBottomWidth: 1, borderBottomColor: t.colors.border }}
+              key={item.place_id}
+              style={{
+                padding: spacing.sm,
+                borderTopWidth: i === 0 ? 0 : 1,
+                borderTopColor: t.colors.border,
+              }}
               onPress={() => selectPrediction(item)}
             >
               <Text style={t.type.body}>{item.description}</Text>
             </Pressable>
-          )}
-        />
+          ))}
+        </View>
       )}
     </View>
   );

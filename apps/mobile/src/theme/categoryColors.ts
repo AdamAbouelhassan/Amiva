@@ -8,9 +8,9 @@ export const CATEGORY_LABELS: Record<TravelStyleCategory, string> = {
   culture: 'Culture',
   foodie: 'Foodie',
   relaxation: 'Relaxation',
-  socialNightlife: 'Social/Nightlife',
+  socialNightlife: 'Social',
   nature: 'Nature',
-  budgetBackpacker: 'Budget/Backpacker',
+  budgetBackpacker: 'Backpacker',
 };
 
 /**

@@ -9,13 +9,16 @@ export { onFriendAdded } from './triggers/onFriendAdded';
 export { onTravelStyleChanged } from './triggers/onTravelStyleChanged';
 export { computeMatchScore } from './triggers/computeMatchScore';
 export { convertPlannedTripToLogbook } from './triggers/convertPlannedTripToLogbook';
+export { revertCompletedTrip } from './triggers/revertCompletedTrip';
 export { getTrending } from './triggers/getTrending';
 export { sendNotification } from './triggers/sendNotification';
 
-// Discover rebuild (2026-08-30): getFeed joins getTrending as a second
-// Admin-SDK-backed read aggregation, both now the actual enforcement point
-// for experience-read privacy (see lib/feed.ts's header for why).
-export { getFeed } from './triggers/getFeed';
+// Discovery tabs (Local / Trending / Friends). getTrending and
+// getFriendsActivity are Admin-SDK-backed read aggregations, both the
+// actual enforcement point for experience-read privacy across many owners
+// (see each lib file's header). (getFeed — the old matched-experience
+// "Feed" — was retired when the tab became a friend-activity feed.)
+export { getFriendsActivity } from './triggers/getFriendsActivity';
 export { getPlaceRecommendations } from './triggers/getPlaceRecommendations';
 
 // Additions beyond the technical spec's §5 table, each required to make an

@@ -1,12 +1,13 @@
-/** technical_specification.md §5: "Triggered on trip completion flow;
- * creates Experience docs from PlannedTripItems per user confirmation." */
+/** The Planner completion flow (functional_specification.md §4.3) — 2026-08
+ * rework: takes the photos the user just added, creates one Logbook trip
+ * mirroring the plan, and links them. */
 import * as functions from 'firebase-functions/v1';
 import { FirestorePlannedTripConversionStore } from '../adapters/plannedTripAdapter';
-import { ConversionDecision, convertPlannedTripToLogbook as convertLib } from '../lib/plannedTripConversion';
+import { convertPlannedTripToLogbook as convertLib } from '../lib/plannedTripConversion';
 
 interface ConvertPlannedTripRequest {
   plannedTripId: string;
-  decisions: ConversionDecision[];
+  photoUrls?: string[];
 }
 
 export const convertPlannedTripToLogbook = functions.https.onCall(
@@ -21,6 +22,6 @@ export const convertPlannedTripToLogbook = functions.https.onCall(
       throw new functions.https.HttpsError('permission-denied', 'Not the owner of this planned trip.');
     }
 
-    return convertLib(store, data.plannedTripId, data.decisions);
+    return convertLib(store, data.plannedTripId, data.photoUrls ?? []);
   },
 );

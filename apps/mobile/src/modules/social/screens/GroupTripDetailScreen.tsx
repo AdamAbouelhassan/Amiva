@@ -9,6 +9,7 @@ import { MatchScoreBadge } from '../../../components/MatchScoreBadge';
 import { ProfileIdentity } from '../../../components/ProfileIdentity';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { Section } from '../../../components/Section';
+import { useRefresh } from '../../../hooks/useRefresh';
 import { orNull } from '../../../lib/queryHelpers';
 import { UserRepository } from '../../../repositories/userRepository';
 import { radius, spacing, useTheme } from '../../../theme';
@@ -43,6 +44,7 @@ export function GroupTripDetailScreen({ route }: GroupTripDetailScreenProps) {
   const addCollaborator = useAddCollaborator(plannedTripId);
   const toggleItem = useToggleItemCompleted(plannedTripId);
   const [showCandidates, setShowCandidates] = useState(false);
+  const refresh = useRefresh();
 
   const collaboratorIds = trip ? [trip.ownerId, ...trip.collaboratorIds] : [];
   const candidates = useGroupRecommendationCandidates(collaboratorIds, showCandidates && collaboratorIds.length > 1);
@@ -54,11 +56,14 @@ export function GroupTripDetailScreen({ route }: GroupTripDetailScreenProps) {
   );
 
   return (
-    <ScreenContainer>
+    <ScreenContainer onRefresh={refresh.onRefresh} refreshing={refresh.refreshing}>
       <View style={{ gap: spacing.xxs }}>
-        <Text style={t.type.displayMd}>{trip.locations.join(', ')}</Text>
+        <Text style={t.type.displayMd}>{trip.name || trip.location}</Text>
         <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
-          {trip.startDate.toDateString()} – {trip.endDate.toDateString()}
+          {trip.location}
+          {trip.startDate && trip.endDate
+            ? ` · ${trip.startDate.toDateString()} – ${trip.endDate.toDateString()}`
+            : ''}
         </Text>
       </View>
 

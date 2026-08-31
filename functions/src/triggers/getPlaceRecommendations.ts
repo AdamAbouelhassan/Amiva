@@ -8,7 +8,8 @@ import { getPlaceRecommendations as getPlaceRecommendationsLib, PlaceRecommendat
 
 type PlaceRecommendationsRequest = {
   filter: PlaceRecommendationFilter;
-  limit?: number;
+  rows?: number;
+  perRow?: number;
 };
 
 export const getPlaceRecommendations = functions.https.onCall(async (data: PlaceRecommendationsRequest, context) => {
@@ -23,6 +24,6 @@ export const getPlaceRecommendations = functions.https.onCall(async (data: Place
     { placesSearch: new GooglePlacesApi(), userStore: new FirestoreUserStore() },
     context.auth.uid,
     data.filter,
-    data.limit,
+    { rows: data.rows, perRow: data.perRow },
   );
 });

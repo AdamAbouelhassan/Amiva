@@ -1,71 +1,55 @@
 jest.mock('firebase/firestore');
 jest.mock('../../firebase/client', () => ({ db: {}, functions: {} }));
-jest.mock('firebase/functions', () => ({
-  httpsCallable: () => async () => ({ data: { success: true } }),
-}));
 
-import { Timestamp, __getRaw, __reset, __seed } from 'firebase/firestore';
+import { __getRaw, __reset } from 'firebase/firestore';
 import { TripRepository } from '../tripRepository';
 
-describe('TripRepository.updateDateRange — recategorization', () => {
+const base = {
+  ownerId: 'alex',
+  location: 'Lisbon, Portugal',
+  country: 'Portugal',
+  startDate: new Date('2026-05-01'),
+  endDate: new Date('2026-05-10'),
+  visibility: 'private' as const,
+};
+
+describe('TripRepository.create', () => {
   beforeEach(() => __reset());
 
-  it('evicts an experience whose date now falls outside a shrunk range, and pulls in a standalone one now inside it', async () => {
-    __seed('trips', 'trip-1', {
-      ownerId: 'alex',
-      countries: ['Japan'],
-      startDate: Timestamp.fromDate(new Date('2026-01-01')),
-      endDate: Timestamp.fromDate(new Date('2026-01-20')),
-      name: 'Japan — Jan 1–20',
-      coverPhotoUrl: '',
-      visibility: 'private',
-      createdAt: Timestamp.fromDate(new Date('2025-01-01')),
-    });
-
-    __seed('experiences', 'exp-in-trip', {
-      ownerId: 'alex',
-      tripId: 'trip-1',
-      country: 'Japan',
-      city: 'Tokyo',
-      date: Timestamp.fromDate(new Date('2026-01-18')), // will fall outside shrunk range
-    });
-    __seed('experiences', 'exp-standalone', {
-      ownerId: 'alex',
-      tripId: null,
-      country: 'Japan',
-      city: 'Osaka',
-      date: Timestamp.fromDate(new Date('2026-01-08')), // falls inside shrunk range
-    });
-
-    // Shrink the range to Jan 1–10: exp-in-trip (Jan 18) should be evicted,
-    // exp-standalone (Jan 8) should be pulled in.
-    await TripRepository.updateDateRange('trip-1', new Date('2026-01-01'), new Date('2026-01-10'));
-
-    expect(__getRaw('experiences', 'exp-in-trip')?.tripId).toBeNull();
-    expect(__getRaw('experiences', 'exp-standalone')?.tripId).toBe('trip-1');
+  it('auto-generates the name from location + dates when none is given', async () => {
+    const trip = await TripRepository.create(base);
+    expect(trip.name).toBe('Lisbon, Portugal — May 1–10');
+    expect(__getRaw('trips', trip.tripId)?.name).toBe('Lisbon, Portugal — May 1–10');
   });
 
-  it('does not touch experiences belonging to a different trip', async () => {
-    __seed('trips', 'trip-1', {
-      ownerId: 'alex',
-      countries: ['Japan'],
-      startDate: Timestamp.fromDate(new Date('2026-01-01')),
-      endDate: Timestamp.fromDate(new Date('2026-01-10')),
-      name: 'Japan trip',
-      coverPhotoUrl: '',
-      visibility: 'private',
-      createdAt: Timestamp.fromDate(new Date('2025-01-01')),
-    });
-    __seed('experiences', 'exp-other-trip', {
-      ownerId: 'alex',
-      tripId: 'some-other-trip',
-      country: 'Japan',
-      city: 'Kyoto',
-      date: Timestamp.fromDate(new Date('2026-01-05')),
-    });
+  it('keeps a user-supplied name', async () => {
+    const trip = await TripRepository.create({ ...base, name: 'Honeymoon' });
+    expect(trip.name).toBe('Honeymoon');
+  });
 
-    await TripRepository.updateDateRange('trip-1', new Date('2026-01-01'), new Date('2026-01-20'));
+  it('writes city as null when the location has no city', async () => {
+    const trip = await TripRepository.create(base);
+    expect(__getRaw('trips', trip.tripId)?.city).toBeNull();
+    expect(trip.city).toBeUndefined();
+  });
 
-    expect(__getRaw('experiences', 'exp-other-trip')?.tripId).toBe('some-other-trip');
+  it('defaults the cover photo to the first trip photo', async () => {
+    const trip = await TripRepository.create({ ...base, photoUrls: ['a.jpg', 'b.jpg'] });
+    expect(trip.coverPhotoUrl).toBe('a.jpg');
+  });
+});
+
+describe('TripRepository.update', () => {
+  beforeEach(() => __reset());
+
+  it('applies a partial patch and a new date range', async () => {
+    const trip = await TripRepository.create(base);
+    await TripRepository.update(trip.tripId, {
+      notes: 'rebooked',
+      endDate: new Date('2026-05-14'),
+    });
+    const raw = __getRaw('trips', trip.tripId)!;
+    expect(raw.notes).toBe('rebooked');
+    expect(raw.name).toBe('Lisbon, Portugal — May 1–10'); // unchanged
   });
 });

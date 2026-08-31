@@ -1,7 +1,8 @@
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { BrandEmptyState } from '../../../components/BrandEmptyState';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
+import { useRefresh } from '../../../hooks/useRefresh';
 import { spacing, useTheme } from '../../../theme';
 import { useCityExperiences } from '../hooks/useExperiences';
 
@@ -14,6 +15,7 @@ export function CityDetailScreen({ route, navigation }: CityDetailScreenProps) {
   const t = useTheme();
   const { country, city } = route.params;
   const { profile } = useCurrentUser();
+  const refresh = useRefresh();
   const { data: experiences = [] } = useCityExperiences(profile?.uid, country, city);
 
   return (
@@ -27,6 +29,14 @@ export function CityDetailScreen({ route, navigation }: CityDetailScreenProps) {
         contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg }}
         data={experiences}
         keyExtractor={(item) => item.experienceId}
+        refreshControl={
+          <RefreshControl
+            refreshing={refresh.refreshing}
+            onRefresh={refresh.onRefresh}
+            tintColor={t.colors.accent}
+            colors={[t.colors.accent]}
+          />
+        }
         ListEmptyComponent={<BrandEmptyState title="No experiences here yet" body={`Log something from ${city}.`} />}
         renderItem={({ item }) => (
           <Pressable

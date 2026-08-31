@@ -1,180 +1,238 @@
 /**
- * Planned trip detail: unordered itinerary checklist, adding items from
- * saved (priority) then recommended sources (functional_specification.md
- * §4.2), and the completion flow prompting logbook conversion per item
- * with a skip option (§4.3).
+ * Planned trip detail — an itinerary of places to visit, a status, and the
+ * completion flow (functional_specification.md §4; 2026-08 Planner rework:
+ * itinerary is the only section, populated from a nearby-place search;
+ * completion collects photos and moves the trip to the Logbook; a
+ * completed trip can be reverted).
  */
-import { useState } from 'react';
-import { FlatList, Pressable, Text, View } from 'react-native';
-import { TravelStyleVector, zeroTravelStyleVector } from '@amiva/core';
+import { Alert, Image, Pressable, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Button } from '../../../components/Button';
+import { Card } from '../../../components/Card';
 import { ScreenContainer } from '../../../components/ScreenContainer';
-import { TextField } from '../../../components/TextField';
-import { TravelStyleSliders } from '../../../components/TravelStyleSliders';
+import { useRefresh } from '../../../hooks/useRefresh';
+import { canComplete, displayPlannedTripStatus } from '../../../lib/plannedTripStatus';
+import { placePhotoUrl } from '../../../lib/placePhoto';
+import { PlannerStackParamList } from '../../../navigation/types';
 import { radius, spacing, useTheme } from '../../../theme';
 import { StatusSteps } from '../components/StatusSteps';
-import { StarRating } from '../../logbook/components/StarRating';
 import { usePlannedTrip, usePlannedTripItems } from '../../../hooks/usePlannedTripData';
-import { ConversionDecision, useConvertPlannedTrip } from '../hooks/useConvertPlannedTrip';
-import { useAddPlannedTripItem, useSetPlannedTripStatus } from '../hooks/usePlannedTrips';
-import { useSavedExperiences } from '../hooks/useSavedExperiences';
-import { useSavedPlaces } from '../hooks/useSavedPlaces';
+import {
+  useDeletePlannedTrip,
+  useRemovePlannedTripItem,
+  useSetPlannedTripStatus,
+} from '../hooks/usePlannedTrips';
+import { useRevertCompletedTrip } from '../hooks/useRevertCompletedTrip';
 
 interface PlannedTripDetailScreenProps {
   route: { params: { plannedTripId: string } };
+  navigation: {
+    navigate: <T extends keyof PlannerStackParamList>(screen: T, params?: PlannerStackParamList[T]) => void;
+    goBack: () => void;
+  };
 }
 
-export function PlannedTripDetailScreen({ route }: PlannedTripDetailScreenProps) {
+function fmtRange(start: Date, end: Date): string {
+  return `${start.toDateString()} – ${end.toDateString()}`;
+}
+
+export function PlannedTripDetailScreen({ route, navigation }: PlannedTripDetailScreenProps) {
   const t = useTheme();
+  const rootNav = useNavigation<{ navigate: (screen: string, params?: unknown) => void }>();
   const { plannedTripId } = route.params;
   const { data: trip } = usePlannedTrip(plannedTripId);
   const { data: items = [] } = usePlannedTripItems(plannedTripId);
-  const { data: savedExperiences } = useSavedExperiences();
-  const { data: savedPlaces } = useSavedPlaces();
-  const addItem = useAddPlannedTripItem();
   const setStatus = useSetPlannedTripStatus();
-
-  const [completing, setCompleting] = useState(false);
-  const [decisions, setDecisions] = useState<Record<string, ConversionDecision>>({});
-  const convert = useConvertPlannedTrip(plannedTripId);
+  const removeItem = useRemovePlannedTripItem();
+  const revert = useRevertCompletedTrip(plannedTripId);
+  const deletePlan = useDeletePlannedTrip();
+  const refresh = useRefresh();
 
   if (!trip) return null;
 
-  const savedNotYetAdded = savedExperiences.filter((e) => !items.some((item) => item.placeId === e.placeId));
-  const savedPlacesNotYetAdded = savedPlaces.filter((p) => !items.some((item) => item.placeId === p.placeId));
+  const completed = trip.status === 'completed';
+  const shownStatus = displayPlannedTripStatus(trip.status, trip.startDate);
 
-  async function submitConversion() {
-    await convert.mutateAsync(items.map((item) => decisions[item.itemId] ?? { itemId: item.itemId, action: 'skip' }));
-    await setStatus.mutateAsync({ plannedTripId, status: 'completed' });
-    setCompleting(false);
+  function confirmRevert() {
+    Alert.alert(
+      'Revert this trip?',
+      'The Logbook trip it created will be deleted. Any experiences you already logged into it are kept as standalone entries.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Revert', style: 'destructive', onPress: () => revert.mutate() },
+      ],
+    );
+  }
+
+  function confirmDelete() {
+    Alert.alert('Delete this plan?', 'The plan and its itinerary are removed. This can’t be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deletePlan.mutateAsync(plannedTripId);
+            navigation.goBack();
+          } catch (err) {
+            Alert.alert('Could not delete plan', err instanceof Error ? err.message : 'Please try again.');
+          }
+        },
+      },
+    ]);
   }
 
   return (
-    <ScreenContainer>
-      <Text style={t.type.displayMd}>{trip.locations.join(', ')}</Text>
-      <StatusSteps status={trip.status} />
+    <ScreenContainer onRefresh={refresh.onRefresh} refreshing={refresh.refreshing}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm }}>
+        <View style={{ flex: 1 }}>
+          <Text style={t.type.displayMd}>{trip.name || trip.location}</Text>
+          <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
+            {trip.location} · {fmtRange(trip.startDate, trip.endDate)}
+          </Text>
+        </View>
+        {!completed && (
+          <Button
+            label="Edit"
+            variant="secondary"
+            onPress={() => navigation.navigate('EditPlannedTrip', { plannedTripId })}
+          />
+        )}
+      </View>
 
-      {trip.status !== 'completed' && !completing && (
-        <Button label="Mark trip completed" variant="warm" onPress={() => setCompleting(true)} />
+      <StatusSteps status={shownStatus} />
+
+      {!completed && (
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          {trip.status === 'upcoming' ? (
+            <Button
+              label="Back to planning"
+              variant="secondary"
+              onPress={() => setStatus.mutate({ plannedTripId, status: 'planning' })}
+            />
+          ) : (
+            <Button
+              label="Mark as upcoming"
+              variant="secondary"
+              onPress={() => setStatus.mutate({ plannedTripId, status: 'upcoming' })}
+            />
+          )}
+        </View>
       )}
 
-      {completing ? (
-        <View style={{ gap: spacing.md }}>
-          <Text style={t.type.subtitle}>Convert items to your Logbook</Text>
-          {items.map((item) => (
-            <ConversionRow
-              key={item.itemId}
-              itemId={item.itemId}
-              title={item.title}
-              decision={decisions[item.itemId]}
-              onChange={(d) => setDecisions((prev) => ({ ...prev, [item.itemId]: d }))}
-            />
-          ))}
-          <Button label="Finish" onPress={submitConversion} loading={convert.isPending || setStatus.isPending} />
+      {trip.notes ? (
+        <View style={{ gap: spacing.xxs }}>
+          <Text style={t.type.label}>Notes</Text>
+          <Text style={t.type.body}>{trip.notes}</Text>
         </View>
+      ) : null}
+      {trip.accommodation ? (
+        <View style={{ gap: spacing.xxs }}>
+          <Text style={t.type.label}>Accommodation</Text>
+          <Text style={t.type.body}>{trip.accommodation}</Text>
+        </View>
+      ) : null}
+
+      {completed ? (
+        <Card padded style={{ gap: spacing.sm, borderLeftWidth: 3, borderLeftColor: t.colors.accentWarm }}>
+          <Text style={t.type.subtitle}>Completed and moved to your Logbook</Text>
+          {trip.convertedToTripId ? (
+            <Button
+              label="View in Logbook"
+              onPress={() =>
+                rootNav.navigate('Logbook', {
+                  screen: 'TripDetail',
+                  params: { tripId: trip.convertedToTripId },
+                })
+              }
+            />
+          ) : null}
+          <Button
+            label={revert.isPending ? 'Reverting…' : 'Revert — I completed this by mistake'}
+            variant="secondary"
+            onPress={confirmRevert}
+            loading={revert.isPending}
+          />
+          <Pressable onPress={confirmDelete} style={{ alignSelf: 'center', paddingVertical: spacing.xs }}>
+            <Text style={[t.type.label, { color: t.colors.danger }]}>
+              {deletePlan.isPending ? 'Deleting…' : 'Delete plan'}
+            </Text>
+          </Pressable>
+        </Card>
       ) : (
         <>
-          <View style={{ gap: spacing.xs }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm }}>
             <Text style={t.type.subtitle}>Itinerary</Text>
-            {items.map((item) => (
-              <Text key={item.itemId} style={t.type.body}>
-                • {item.title} ({item.source})
-              </Text>
-            ))}
-            {items.length === 0 && <Text style={t.type.body}>Nothing added yet.</Text>}
+            <Button
+              label="Add places"
+              variant="secondary"
+              onPress={() => navigation.navigate('AddPlacesToPlan', { plannedTripId })}
+            />
           </View>
 
-          <View style={{ gap: spacing.xs }}>
-            <Text style={t.type.subtitle}>Add from your saves</Text>
-            {savedNotYetAdded.map((experience) => (
-              <Pressable
-                key={experience.experienceId}
-                onPress={() =>
-                  addItem.mutate({
-                    plannedTripId,
-                    source: 'saved',
-                    placeId: experience.placeId,
-                    title: experience.title,
-                    categoryScores: experience.categoryScores,
-                  })
-                }
-                style={{ paddingVertical: spacing.xxs }}
-              >
-                <Text style={{ color: t.colors.accent }}>+ {experience.title}</Text>
-              </Pressable>
-            ))}
-            {savedNotYetAdded.length === 0 && <Text style={t.type.bodySmall}>No saved experiences to add.</Text>}
-          </View>
+          {items.length === 0 ? (
+            <Text style={[t.type.body, { color: t.colors.textSecondary }]}>
+              No stops yet — tap “Add places” to browse spots near {trip.location}.
+            </Text>
+          ) : (
+            items.map((item) => {
+              const photoUri = item.photoRef ? placePhotoUrl(item.photoRef) : undefined;
+              return (
+                <View
+                  key={item.itemId}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    backgroundColor: t.colors.surface,
+                    borderWidth: 1,
+                    borderColor: t.colors.border,
+                    borderRadius: radius.card,
+                    padding: spacing.sm,
+                  }}
+                >
+                  {photoUri ? (
+                    <Image
+                      source={{ uri: photoUri }}
+                      style={{ width: 48, height: 48, borderRadius: radius.chip, backgroundColor: t.colors.surfaceAlt }}
+                    />
+                  ) : (
+                    <View
+                      style={{ width: 48, height: 48, borderRadius: radius.chip, backgroundColor: t.colors.surfaceAlt }}
+                    />
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={t.type.body} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    {item.city ? (
+                      <Text style={[t.type.caption, { color: t.colors.textSecondary }]} numberOfLines={1}>
+                        {item.city}
+                        {item.country ? `, ${item.country}` : ''}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() => removeItem.mutate({ itemId: item.itemId, plannedTripId })}
+                    style={{ paddingHorizontal: spacing.xs }}
+                  >
+                    <Text style={[t.type.label, { color: t.colors.danger }]}>Remove</Text>
+                  </Pressable>
+                </View>
+              );
+            })
+          )}
 
-          <View style={{ gap: spacing.xs }}>
-            <Text style={t.type.subtitle}>Add from your saved places</Text>
-            {savedPlacesNotYetAdded.map((place) => (
-              <Pressable
-                key={place.placeId}
-                onPress={() =>
-                  addItem.mutate({
-                    plannedTripId,
-                    source: 'recommended',
-                    placeId: place.placeId,
-                    title: place.name,
-                    categoryScores: place.categoryScores,
-                  })
-                }
-                style={{ paddingVertical: spacing.xxs }}
-              >
-                <Text style={{ color: t.colors.accent }}>+ {place.name}</Text>
-              </Pressable>
-            ))}
-            {savedPlacesNotYetAdded.length === 0 && <Text style={t.type.bodySmall}>No saved places to add.</Text>}
-          </View>
+          {canComplete(trip.endDate) && (
+            <Button
+              label="Mark trip completed"
+              variant="warm"
+              onPress={() => navigation.navigate('CompletePlannedTrip', { plannedTripId })}
+            />
+          )}
         </>
       )}
     </ScreenContainer>
-  );
-}
-
-function ConversionRow({
-  itemId,
-  title,
-  decision,
-  onChange,
-}: {
-  itemId: string;
-  title: string;
-  decision: ConversionDecision | undefined;
-  onChange: (d: ConversionDecision) => void;
-}) {
-  const t = useTheme();
-  const [expanded, setExpanded] = useState(false);
-  const [rating, setRating] = useState(5);
-  const [notes, setNotes] = useState('');
-  const [categoryScores, setCategoryScores] = useState<TravelStyleVector>(zeroTravelStyleVector());
-
-  return (
-    <View style={{ borderWidth: 1, borderColor: t.colors.border, borderRadius: radius.card, padding: spacing.sm, gap: spacing.xs }}>
-      <Text style={t.type.subtitle}>{title}</Text>
-      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <Button label="Skip" variant="secondary" onPress={() => onChange({ itemId, action: 'skip' })} />
-        <Button label={expanded ? 'Editing…' : 'Log it'} onPress={() => setExpanded(true)} />
-      </View>
-      {expanded && (
-        <View style={{ gap: spacing.sm }}>
-          <StarRating value={rating} onChange={setRating} />
-          <TextField label="Notes" value={notes} onChangeText={setNotes} multiline />
-          <TravelStyleSliders value={categoryScores} onChange={setCategoryScores} />
-          <Button
-            label="Confirm"
-            onPress={() =>
-              onChange({
-                itemId,
-                action: 'convert',
-                details: { photoUrls: [], rating, notes, categoryScores, date: new Date().toISOString(), dateSource: 'manual' },
-              })
-            }
-          />
-        </View>
-      )}
-      {decision && <Text style={t.type.caption}>{decision.action === 'skip' ? 'Will skip' : 'Ready to log'}</Text>}
-    </View>
   );
 }
