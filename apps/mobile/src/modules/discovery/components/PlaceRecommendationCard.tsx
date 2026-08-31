@@ -1,22 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { toMatchPercent } from '@amiva/core';
-import { MatchBadge } from '../../../components/MatchBadge';
+import { Card } from '../../../components/Card';
+import { MatchScoreBadge } from '../../../components/MatchScoreBadge';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { SavedPlaceRepository } from '../../../repositories/savedPlaceRepository';
-import { colors, radius, spacing, typography } from '../../../theme';
+import { radius, spacing, useTheme } from '../../../theme';
 import { PlaceRecommendationResult } from '../hooks/useRecommendations';
 
 interface PlaceRecommendationCardProps {
   place: PlaceRecommendationResult;
 }
 
-/** A raw Google Place, not an Amiva post — no ExperienceDetail to open
- * (no POI detail page in MVP, functional_specification.md §7), so this
- * card is just the match preview + a save action, feeding
- * `savedPlaces` -> Planner's "Add from your saved places"
- * (PlannedTripDetailScreen.tsx). */
 export function PlaceRecommendationCard({ place }: PlaceRecommendationCardProps) {
+  const t = useTheme();
   const { profile } = useCurrentUser();
   const queryClient = useQueryClient();
 
@@ -49,43 +46,39 @@ export function PlaceRecommendationCard({ place }: PlaceRecommendationCardProps)
   });
 
   return (
-    <View style={styles.card}>
-      <View style={styles.headerRow}>
-        <Text style={typography.subtitle} numberOfLines={1}>
+    <Card padded style={{ gap: spacing.xs }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm }}>
+        <Text style={[t.type.subtitle, { flex: 1 }]} numberOfLines={1}>
           {place.name}
         </Text>
-        <MatchBadge matchPercent={toMatchPercent(place.matchScore)} />
+        <MatchScoreBadge
+          matchPercent={toMatchPercent(place.matchScore)}
+          vectorA={profile?.travelStyle}
+          vectorB={place.categoryScores}
+          detailTitle={place.name}
+        />
       </View>
-      <Text style={typography.bodySmall}>
+      <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
         {place.city}, {place.country}
       </Text>
-      <Pressable hitSlop={8} onPress={() => toggleSave.mutate()} style={styles.saveRow}>
-        <Text style={styles.saveLabel}>{savedQuery.data ? '✓ Saved' : '+ Save'}</Text>
+      <Pressable
+        hitSlop={8}
+        onPress={() => toggleSave.mutate()}
+        style={{
+          alignSelf: 'flex-start',
+          marginTop: spacing.xxs,
+          paddingVertical: spacing.xxs,
+          paddingHorizontal: spacing.sm,
+          borderRadius: radius.pill,
+          backgroundColor: savedQuery.data ? t.colors.accent : t.colors.accentMuted,
+        }}
+      >
+        <Text
+          style={[t.type.label, { color: savedQuery.data ? t.colors.textOnAccent : t.colors.accent }]}
+        >
+          {savedQuery.data ? 'Saved' : 'Save'}
+        </Text>
       </Pressable>
-    </View>
+    </Card>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.sm,
-    gap: spacing.xxs,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  saveRow: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.xxs,
-  },
-  saveLabel: {
-    ...typography.caption,
-    color: colors.accent,
-  },
-});

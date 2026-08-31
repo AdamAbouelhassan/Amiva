@@ -6,7 +6,7 @@ import { Privacy, PrivacyPicker } from '../../../components/PrivacyPicker';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { TextField } from '../../../components/TextField';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
-import { spacing, typography } from '../../../theme';
+import { spacing, useTheme } from '../../../theme';
 import { useCreatePlannedTrip } from '../hooks/usePlannedTrips';
 
 interface CreatePlannedTripScreenProps {
@@ -14,6 +14,7 @@ interface CreatePlannedTripScreenProps {
 }
 
 export function CreatePlannedTripScreen({ navigation }: CreatePlannedTripScreenProps) {
+  const t = useTheme();
   const { profile } = useCurrentUser();
   const [location, setLocation] = useState('');
   const [startDate, setStartDate] = useState(new Date());
@@ -35,24 +36,24 @@ export function CreatePlannedTripScreen({ navigation }: CreatePlannedTripScreenP
 
   return (
     <ScreenContainer>
-      <Text style={typography.displayMd}>New planned trip</Text>
+      <Text style={t.type.displayMd}>New planned trip</Text>
       <TextField label="Where to?" value={location} onChangeText={setLocation} placeholder="Country or city" />
 
       <View style={{ gap: spacing.xs }}>
-        <Text style={typography.subtitle}>Start date</Text>
+        <Text style={t.type.subtitle}>Start date</Text>
         <DateTimePicker value={startDate} mode="date" display={Platform.OS === 'ios' ? 'inline' : 'default'} onChange={(_, d) => d && setStartDate(d)} />
       </View>
       <View style={{ gap: spacing.xs }}>
-        <Text style={typography.subtitle}>End date</Text>
+        <Text style={t.type.subtitle}>End date</Text>
         <DateTimePicker value={endDate} mode="date" display={Platform.OS === 'ios' ? 'inline' : 'default'} onChange={(_, d) => d && setEndDate(d)} />
       </View>
 
       <View style={{ gap: spacing.xs }}>
-        <Text style={typography.subtitle}>Visibility</Text>
+        <Text style={t.type.subtitle}>Visibility</Text>
         <PrivacyPicker value={visibility} onChange={setVisibility} />
       </View>
 
-      <Button label="Create" onPress={submit} loading={createPlannedTrip.isPending} disabled={!location.trim()} />
+      <Button label="Create" variant="warm" onPress={submit} loading={createPlannedTrip.isPending} disabled={!location.trim()} />
     </ScreenContainer>
   );
 }

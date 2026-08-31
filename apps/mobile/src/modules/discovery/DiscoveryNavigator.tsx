@@ -1,6 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { DiscoveryStackParamList } from '../../navigation/types';
-import { colors } from '../../theme';
+import { useStackScreenOptions } from '../../navigation/screenOptions';
 // Reused from Logbook — one screen, shown identically whether reached from
 // the feed or from a user's own Logbook (functional_specification.md §2.6:
 // match % + radar chart wherever an experience is viewed).
@@ -14,7 +14,7 @@ const Stack = createNativeStackNavigator<DiscoveryStackParamList>();
 
 export function DiscoveryNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerTintColor: colors.textPrimary }}>
+    <Stack.Navigator screenOptions={useStackScreenOptions()}>
       <Stack.Screen name="DiscoverHome" component={DiscoverHomeScreen} options={{ title: 'Discover' }} />
       <Stack.Screen name="Feed" component={FeedScreen} options={{ title: 'Feed' }} />
       <Stack.Screen name="Trending" component={TrendingScreen} options={{ title: 'Trending' }} />

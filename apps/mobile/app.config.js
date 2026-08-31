@@ -3,26 +3,30 @@
  * vars (not committed) rather than being hardcoded into app.json. Read at
  * runtime via `expo-constants`'s `expoConfig.extra` (see
  * src/lib/env.ts).
+ *
+ * Brand imagery lives in ./assets/brand/ (see the UI overhaul plan). The
+ * three source files are raw flattened rasters for now — the user swaps in
+ * cleaned versions at the SAME paths later, so nothing here composites or
+ * crops them:
+ *   - amiva-icon-card.png     → splash / loading screen only
+ *   - amiva-mobile-icon.png   → OS app icon only
+ *   - amiva-mark-gradient.png → in-app branding (referenced from components)
  */
+const CREAM = '#FBF8F0'; // theme token: --color-cream (light background)
+const SURFACE_DARK = '#1B222C'; // theme token: --color-surface-dark
+
 module.exports = {
   expo: {
     name: 'Amiva',
     slug: 'amiva',
     version: '0.1.0',
     orientation: 'portrait',
-    userInterfaceStyle: 'light',
-    icon: './assets/icon.png',
-    splash: {
-      // Was relying on Expo Go's implicit "no splash.image -> fall back to
-      // the app icon" behavior, which is why this used to be the old
-      // placeholder teal-square icon.png full-bleed. Now explicit, using
-      // the real icon (assets/icon.png), contained on the theme's
-      // off-white background (theme/colors.ts's `background`) instead of
-      // stretched to fill the screen.
-      image: './assets/icon.png',
-      resizeMode: 'contain',
-      backgroundColor: '#FAF7F2',
-    },
+    userInterfaceStyle: 'automatic',
+    icon: './assets/brand/amiva-mobile-icon.png',
+    // TODO(brand): once a tightly-cropped, square, shadow-free icon master
+    // exists, switch `icon` to the { light, dark, tinted } object form and
+    // give dark/tinted a --color-surface-dark ground. Can't derive that
+    // from a flat raster here.
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
@@ -31,10 +35,28 @@ module.exports = {
     android: {
       package: 'com.amiva.app',
       adaptiveIcon: {
-        backgroundColor: '#FAF7F2',
+        foregroundImage: './assets/brand/amiva-mobile-icon.png',
+        backgroundColor: CREAM,
       },
     },
-    plugins: ['expo-image-picker', 'expo-asset'],
+    plugins: [
+      'expo-image-picker',
+      'expo-asset',
+      'expo-font',
+      [
+        'expo-splash-screen',
+        {
+          image: './assets/brand/amiva-icon-card.png',
+          imageWidth: 220,
+          resizeMode: 'contain',
+          backgroundColor: CREAM,
+          dark: {
+            image: './assets/brand/amiva-icon-card.png',
+            backgroundColor: SURFACE_DARK,
+          },
+        },
+      ],
+    ],
     extra: {
       firebaseApiKey: process.env.AMIVA_FIREBASE_API_KEY,
       firebaseAuthDomain: process.env.AMIVA_FIREBASE_AUTH_DOMAIN,

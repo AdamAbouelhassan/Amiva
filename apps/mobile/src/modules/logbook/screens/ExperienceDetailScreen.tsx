@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Image, ScrollView, Text, View } from 'react-native';
-import { MatchBadge } from '../../../components/MatchBadge';
-import { RadarChart } from '../../../components/RadarChart';
+import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Card } from '../../../components/Card';
+import { MatchScoreBadge } from '../../../components/MatchScoreBadge';
 import { ScreenContainer } from '../../../components/ScreenContainer';
+import { TravelStyleRadar } from '../../../components/TravelStyleRadar';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { useMatchScore } from '../../../hooks/useMatchScore';
 import { SaveRepository } from '../../../repositories/saveRepository';
-import { colors, spacing, typography } from '../../../theme';
+import { radius, spacing, useTheme } from '../../../theme';
 import { useExperience } from '../hooks/useExperiences';
 
 interface ExperienceDetailScreenProps {
@@ -14,6 +15,7 @@ interface ExperienceDetailScreenProps {
 }
 
 export function ExperienceDetailScreen({ route }: ExperienceDetailScreenProps) {
+  const t = useTheme();
   const { experienceId } = route.params;
   const { profile } = useCurrentUser();
   const { data: experience } = useExperience(experienceId);
@@ -33,51 +35,70 @@ export function ExperienceDetailScreen({ route }: ExperienceDetailScreenProps) {
 
   async function toggleSave() {
     if (!profile) return;
-    if (saved) {
-      await SaveRepository.unsave(profile.uid, experienceId);
-    } else {
-      await SaveRepository.save(profile.uid, experienceId);
-    }
+    if (saved) await SaveRepository.unsave(profile.uid, experienceId);
+    else await SaveRepository.save(profile.uid, experienceId);
     setSaved(!saved);
   }
 
   return (
     <ScreenContainer>
       {experience.photoUrls.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ gap: spacing.xs }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {experience.photoUrls.map((url) => (
-            <Image key={url} source={{ uri: url }} style={{ width: 280, height: 200, borderRadius: 12, marginRight: spacing.sm }} />
+            <Image
+              key={url}
+              source={{ uri: url }}
+              style={{ width: 280, height: 200, borderRadius: radius.card, marginRight: spacing.sm }}
+            />
           ))}
         </ScrollView>
       )}
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm }}>
         <View style={{ flex: 1 }}>
-          <Text style={typography.displayMd}>{experience.title}</Text>
-          <Text style={typography.bodySmall}>
+          <Text style={t.type.displayMd}>{experience.title}</Text>
+          <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
             {experience.city}, {experience.country} · {experience.date.toDateString()}
           </Text>
-          <Text style={{ color: colors.accent }}>{'★'.repeat(experience.rating)}</Text>
+          <Text style={{ color: t.colors.warning }}>{'★'.repeat(experience.rating)}</Text>
         </View>
-        {!isOwner && matchScore.data && <MatchBadge matchPercent={matchScore.data.matchPercent} />}
+        {!isOwner && matchScore.data && (
+          <MatchScoreBadge
+            matchPercent={matchScore.data.matchPercent}
+            vectorA={profile?.travelStyle}
+            vectorB={experience.categoryScores}
+            detailTitle={experience.title}
+          />
+        )}
       </View>
 
       {isOwner && experience.notes ? (
-        <View>
-          <Text style={typography.subtitle}>Your notes</Text>
-          <Text style={typography.body}>{experience.notes}</Text>
-        </View>
+        <Card padded>
+          <Text style={[t.type.subtitle, { marginBottom: spacing.xxs }]}>Your notes</Text>
+          <Text style={t.type.body}>{experience.notes}</Text>
+        </Card>
       ) : null}
 
-      <View style={{ alignItems: 'center' }}>
-        <Text style={typography.subtitle}>Category profile</Text>
-        <RadarChart series={[{ vector: experience.categoryScores, color: colors.accent }]} />
+      <View style={{ alignItems: 'center', gap: spacing.xs }}>
+        <Text style={t.type.subtitle}>Category profile</Text>
+        <TravelStyleRadar series={[{ vector: experience.categoryScores }]} highlightTop size={280} />
       </View>
 
       {!isOwner && (
-        <Text onPress={toggleSave} style={[typography.subtitle, { color: colors.accent, textAlign: 'center' }]}>
-          {saved ? '✓ Saved' : 'Save'}
-        </Text>
+        <Pressable
+          onPress={toggleSave}
+          style={{
+            alignSelf: 'center',
+            paddingVertical: spacing.xs,
+            paddingHorizontal: spacing.lg,
+            borderRadius: radius.pill,
+            backgroundColor: saved ? t.colors.accent : t.colors.accentMuted,
+          }}
+        >
+          <Text style={[t.type.subtitle, { color: saved ? t.colors.textOnAccent : t.colors.accent }]}>
+            {saved ? 'Saved' : 'Save'}
+          </Text>
+        </Pressable>
       )}
     </ScreenContainer>
   );

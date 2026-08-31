@@ -2,22 +2,23 @@ import { useQuery } from '@tanstack/react-query';
 import { Text, View } from 'react-native';
 import { toMatchPercent } from '@amiva/core';
 import { ProfileIdentity } from '../../../components/ProfileIdentity';
-import { RadarChart } from '../../../components/RadarChart';
 import { ScreenContainer } from '../../../components/ScreenContainer';
+import { TravelStyleRadar, TravelStyleValueList } from '../../../components/TravelStyleRadar';
+import { Card } from '../../../components/Card';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { orNull } from '../../../lib/queryHelpers';
 import { UserRepository } from '../../../repositories/userRepository';
-import { colors, spacing, typography } from '../../../theme';
+import { radius, spacing, useTheme } from '../../../theme';
 import { useFriendEdge } from '../hooks/useFriends';
 
 interface FriendDetailScreenProps {
   route: { params: { friendId: string } };
 }
 
-/** Overlaid radar charts + compatibility % detail
- * (functional_specification.md §2.6, §6.4) — mutual/two-way, so this
- * looks identical from either friend's side. */
+/** Overlaid radar charts + compatibility % (functional_specification.md
+ * §2.6, §6.4) — mutual/two-way, identical from either side. */
 export function FriendDetailScreen({ route }: FriendDetailScreenProps) {
+  const t = useTheme();
   const { friendId } = route.params;
   const { profile } = useCurrentUser();
   const { data: edge } = useFriendEdge(friendId);
@@ -30,36 +31,60 @@ export function FriendDetailScreen({ route }: FriendDetailScreenProps) {
 
   return (
     <ScreenContainer>
-      <View style={{ alignItems: 'center', gap: spacing.xs }}>
-        <ProfileIdentity
-          layout="stacked"
-          name={friend.name}
-          username={friend.username}
-          photoUrl={friend.profilePhotoUrl}
-        />
-        <Text style={typography.statNumber}>{toMatchPercent(edge.compatibilityScore)}% compatible</Text>
-      </View>
-
-      <RadarChart
-        series={[
-          { vector: profile.travelStyle, color: colors.accent, fillOpacity: 0.25 },
-          { vector: friend.travelStyle, color: colors.textSecondary, fillOpacity: 0.2 },
-        ]}
+      <ProfileIdentity
+        layout="stacked"
+        name={friend.name}
+        username={friend.username}
+        photoUrl={friend.profilePhotoUrl}
       />
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.lg }}>
-        <Legend color={colors.accent} label="You" />
-        <Legend color={colors.textSecondary} label={friend.name} />
+      <View
+        style={{
+          alignSelf: 'center',
+          backgroundColor: t.colors.accentMuted,
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.xs,
+          borderRadius: radius.pill,
+        }}
+      >
+        <Text style={[t.type.statNumber, { color: t.colors.accent }]}>
+          {toMatchPercent(edge.compatibilityScore)}% compatible
+        </Text>
       </View>
+
+      <View style={{ alignItems: 'center' }}>
+        <TravelStyleRadar
+          size={300}
+          series={[
+            { vector: profile.travelStyle, kind: 'primary' },
+            { vector: friend.travelStyle, kind: 'compare' },
+          ]}
+        />
+      </View>
+
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.lg }}>
+        <Legend color={t.colors.accent} label="You" />
+        <Legend color={t.colors.radarCompare} label={friend.name} dashed />
+      </View>
+
+      <Card padded>
+        <Text style={[t.type.subtitle, { marginBottom: spacing.xs }]}>{friend.name}'s style</Text>
+        <TravelStyleValueList vector={friend.travelStyle} />
+      </Card>
     </ScreenContainer>
   );
 }
 
-function Legend({ color, label }: { color: string; label: string }) {
+function Legend({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
+  const t = useTheme();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xxs }}>
-      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />
-      <Text style={typography.bodySmall}>{label}</Text>
+      <View
+        style={{ width: 14, borderBottomWidth: 3, borderColor: color, borderStyle: dashed ? 'dashed' : 'solid' }}
+      />
+      <Text style={t.type.bodySmall} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 }

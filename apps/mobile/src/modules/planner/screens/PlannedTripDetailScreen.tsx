@@ -11,7 +11,8 @@ import { Button } from '../../../components/Button';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { TextField } from '../../../components/TextField';
 import { TravelStyleSliders } from '../../../components/TravelStyleSliders';
-import { colors, spacing, typography } from '../../../theme';
+import { radius, spacing, useTheme } from '../../../theme';
+import { StatusSteps } from '../components/StatusSteps';
 import { StarRating } from '../../logbook/components/StarRating';
 import { usePlannedTrip, usePlannedTripItems } from '../../../hooks/usePlannedTripData';
 import { ConversionDecision, useConvertPlannedTrip } from '../hooks/useConvertPlannedTrip';
@@ -24,6 +25,7 @@ interface PlannedTripDetailScreenProps {
 }
 
 export function PlannedTripDetailScreen({ route }: PlannedTripDetailScreenProps) {
+  const t = useTheme();
   const { plannedTripId } = route.params;
   const { data: trip } = usePlannedTrip(plannedTripId);
   const { data: items = [] } = usePlannedTripItems(plannedTripId);
@@ -49,16 +51,16 @@ export function PlannedTripDetailScreen({ route }: PlannedTripDetailScreenProps)
 
   return (
     <ScreenContainer>
-      <Text style={typography.displayMd}>{trip.locations.join(', ')}</Text>
-      <Text style={typography.bodySmall}>Status: {trip.status}</Text>
+      <Text style={t.type.displayMd}>{trip.locations.join(', ')}</Text>
+      <StatusSteps status={trip.status} />
 
       {trip.status !== 'completed' && !completing && (
-        <Button label="Mark trip completed" variant="secondary" onPress={() => setCompleting(true)} />
+        <Button label="Mark trip completed" variant="warm" onPress={() => setCompleting(true)} />
       )}
 
       {completing ? (
         <View style={{ gap: spacing.md }}>
-          <Text style={typography.subtitle}>Convert items to your Logbook</Text>
+          <Text style={t.type.subtitle}>Convert items to your Logbook</Text>
           {items.map((item) => (
             <ConversionRow
               key={item.itemId}
@@ -73,17 +75,17 @@ export function PlannedTripDetailScreen({ route }: PlannedTripDetailScreenProps)
       ) : (
         <>
           <View style={{ gap: spacing.xs }}>
-            <Text style={typography.subtitle}>Itinerary</Text>
+            <Text style={t.type.subtitle}>Itinerary</Text>
             {items.map((item) => (
-              <Text key={item.itemId} style={typography.body}>
+              <Text key={item.itemId} style={t.type.body}>
                 • {item.title} ({item.source})
               </Text>
             ))}
-            {items.length === 0 && <Text style={typography.body}>Nothing added yet.</Text>}
+            {items.length === 0 && <Text style={t.type.body}>Nothing added yet.</Text>}
           </View>
 
           <View style={{ gap: spacing.xs }}>
-            <Text style={typography.subtitle}>Add from your saves</Text>
+            <Text style={t.type.subtitle}>Add from your saves</Text>
             {savedNotYetAdded.map((experience) => (
               <Pressable
                 key={experience.experienceId}
@@ -98,14 +100,14 @@ export function PlannedTripDetailScreen({ route }: PlannedTripDetailScreenProps)
                 }
                 style={{ paddingVertical: spacing.xxs }}
               >
-                <Text style={{ color: colors.accent }}>+ {experience.title}</Text>
+                <Text style={{ color: t.colors.accent }}>+ {experience.title}</Text>
               </Pressable>
             ))}
-            {savedNotYetAdded.length === 0 && <Text style={typography.bodySmall}>No saved experiences to add.</Text>}
+            {savedNotYetAdded.length === 0 && <Text style={t.type.bodySmall}>No saved experiences to add.</Text>}
           </View>
 
           <View style={{ gap: spacing.xs }}>
-            <Text style={typography.subtitle}>Add from your saved places</Text>
+            <Text style={t.type.subtitle}>Add from your saved places</Text>
             {savedPlacesNotYetAdded.map((place) => (
               <Pressable
                 key={place.placeId}
@@ -120,10 +122,10 @@ export function PlannedTripDetailScreen({ route }: PlannedTripDetailScreenProps)
                 }
                 style={{ paddingVertical: spacing.xxs }}
               >
-                <Text style={{ color: colors.accent }}>+ {place.name}</Text>
+                <Text style={{ color: t.colors.accent }}>+ {place.name}</Text>
               </Pressable>
             ))}
-            {savedPlacesNotYetAdded.length === 0 && <Text style={typography.bodySmall}>No saved places to add.</Text>}
+            {savedPlacesNotYetAdded.length === 0 && <Text style={t.type.bodySmall}>No saved places to add.</Text>}
           </View>
         </>
       )}
@@ -142,14 +144,15 @@ function ConversionRow({
   decision: ConversionDecision | undefined;
   onChange: (d: ConversionDecision) => void;
 }) {
+  const t = useTheme();
   const [expanded, setExpanded] = useState(false);
   const [rating, setRating] = useState(5);
   const [notes, setNotes] = useState('');
   const [categoryScores, setCategoryScores] = useState<TravelStyleVector>(zeroTravelStyleVector());
 
   return (
-    <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: spacing.sm, gap: spacing.xs }}>
-      <Text style={typography.subtitle}>{title}</Text>
+    <View style={{ borderWidth: 1, borderColor: t.colors.border, borderRadius: radius.card, padding: spacing.sm, gap: spacing.xs }}>
+      <Text style={t.type.subtitle}>{title}</Text>
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
         <Button label="Skip" variant="secondary" onPress={() => onChange({ itemId, action: 'skip' })} />
         <Button label={expanded ? 'Editing…' : 'Log it'} onPress={() => setExpanded(true)} />
@@ -171,7 +174,7 @@ function ConversionRow({
           />
         </View>
       )}
-      {decision && <Text style={typography.caption}>{decision.action === 'skip' ? 'Will skip' : 'Ready to log'}</Text>}
+      {decision && <Text style={t.type.caption}>{decision.action === 'skip' ? 'Will skip' : 'Ready to log'}</Text>}
     </View>
   );
 }

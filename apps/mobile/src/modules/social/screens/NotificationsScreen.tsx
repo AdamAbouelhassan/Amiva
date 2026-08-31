@@ -1,14 +1,14 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FlatList, Pressable, Text, View } from 'react-native';
+import { BrandEmptyState } from '../../../components/BrandEmptyState';
 import { ScreenContainer } from '../../../components/ScreenContainer';
+import { NotificationIcon } from '../../../components/icons/NotificationIcon';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { NotificationRepository } from '../../../repositories/notificationRepository';
 import { NotificationDoc } from '../../../repositories/types';
-import { colors, spacing, typography } from '../../../theme';
+import { spacing, useTheme } from '../../../theme';
 
-/** Exactly the four notification types
- * (functional_specification.md §6.5) — "no notification for likes or
- * comments, since neither feature exists." */
+/** Exactly the four notification types (functional_specification.md §6.5). */
 const NOTIFICATION_COPY: Record<NotificationDoc['type'], string> = {
   trip_completed: 'A friend completed a trip.',
   friend_added: 'You have a new friend connection.',
@@ -17,6 +17,7 @@ const NOTIFICATION_COPY: Record<NotificationDoc['type'], string> = {
 };
 
 export function NotificationsScreen() {
+  const t = useTheme();
   const { profile } = useCurrentUser();
   const queryClient = useQueryClient();
   const query = useQuery({
@@ -33,29 +34,42 @@ export function NotificationsScreen() {
 
   return (
     <ScreenContainer scroll={false}>
-      <Text style={[typography.displayMd, { padding: spacing.lg, paddingBottom: 0 }]}>Notifications</Text>
+      <Text style={[t.type.displayMd, { padding: spacing.screen, paddingBottom: spacing.xs }]}>Notifications</Text>
       <FlatList
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
+        contentContainerStyle={{ padding: spacing.screen, paddingTop: 0, gap: spacing.xs }}
         data={query.data ?? []}
         keyExtractor={(item) => item.notificationId}
         refreshing={query.isLoading}
-        ListEmptyComponent={!query.isLoading ? <Text style={typography.body}>Nothing yet.</Text> : null}
+        ListEmptyComponent={
+          !query.isLoading ? (
+            <BrandEmptyState
+              title="Nothing yet"
+              body="Trip completions, new friends, group joins, and strong new matches land here."
+            />
+          ) : null
+        }
         renderItem={({ item }) => (
           <Pressable
             onPress={() => markRead(item)}
             style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.sm,
               paddingVertical: spacing.sm,
               borderBottomWidth: 1,
-              borderBottomColor: colors.border,
-              opacity: item.read ? 0.6 : 1,
+              borderBottomColor: t.colors.border,
+              opacity: item.read ? 0.55 : 1,
             }}
           >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={typography.body}>{NOTIFICATION_COPY[item.type]}</Text>
-              {!item.read && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent }} />}
+            <NotificationIcon type={item.type} size={30} />
+            <View style={{ flex: 1 }}>
+              <Text style={t.type.body}>{NOTIFICATION_COPY[item.type]}</Text>
+              <Text style={t.type.caption}>{item.createdAt.toLocaleString()}</Text>
             </View>
-            <Text style={typography.caption}>{item.createdAt.toLocaleString()}</Text>
+            {!item.read && (
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.colors.accent }} />
+            )}
           </Pressable>
         )}
       />

@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native';
-import { spacing, typography } from '../theme';
+import { spacing, useTheme } from '../theme';
 import { Avatar } from './Avatar';
 
 interface ProfileIdentityProps {
@@ -18,6 +18,7 @@ interface ProfileIdentityProps {
 /** The one way a user is shown anywhere in the app: profile photo, then
  * a bold name with the @username unbolded underneath it. */
 export function ProfileIdentity({ name, username, photoUrl, layout = 'row', avatarSize }: ProfileIdentityProps) {
+  const t = useTheme();
   const stacked = layout === 'stacked';
   const size = avatarSize ?? (stacked ? 96 : 40);
   return (
@@ -29,13 +30,13 @@ export function ProfileIdentity({ name, username, photoUrl, layout = 'row', avat
         flexShrink: 1,
       }}
     >
-      <Avatar uri={photoUrl} size={size} />
+      <Avatar uri={photoUrl} size={size} name={name} />
       <View style={{ flexShrink: 1, alignItems: stacked ? 'center' : 'flex-start' }}>
-        <Text style={stacked ? typography.displayMd : typography.subtitle} numberOfLines={1}>
+        <Text style={stacked ? t.type.title : t.type.subtitle} numberOfLines={1}>
           {name}
         </Text>
         {username ? (
-          <Text style={typography.bodySmall} numberOfLines={1}>
+          <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]} numberOfLines={1}>
             @{username}
           </Text>
         ) : null}

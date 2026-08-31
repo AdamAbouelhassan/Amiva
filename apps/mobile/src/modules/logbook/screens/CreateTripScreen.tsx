@@ -11,7 +11,7 @@ import { Privacy, PrivacyPicker } from '../../../components/PrivacyPicker';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { TextField } from '../../../components/TextField';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
-import { spacing, typography } from '../../../theme';
+import { spacing, useTheme } from '../../../theme';
 import { useCreateTrip } from '../hooks/useTrips';
 
 interface CreateTripScreenProps {
@@ -19,6 +19,7 @@ interface CreateTripScreenProps {
 }
 
 export function CreateTripScreen({ navigation }: CreateTripScreenProps) {
+  const t = useTheme();
   const { profile } = useCurrentUser();
   const [country, setCountry] = useState('');
   const [startDate, setStartDate] = useState(new Date());
@@ -40,11 +41,11 @@ export function CreateTripScreen({ navigation }: CreateTripScreenProps) {
 
   return (
     <ScreenContainer>
-      <Text style={typography.displayMd}>New trip</Text>
+      <Text style={t.type.displayMd}>New trip</Text>
       <TextField label="Country" value={country} onChangeText={setCountry} placeholder="e.g. Japan" />
 
       <View style={{ gap: spacing.xs }}>
-        <Text style={typography.subtitle}>Start date</Text>
+        <Text style={t.type.subtitle}>Start date</Text>
         <DateTimePicker
           value={startDate}
           mode="date"
@@ -54,7 +55,7 @@ export function CreateTripScreen({ navigation }: CreateTripScreenProps) {
       </View>
 
       <View style={{ gap: spacing.xs }}>
-        <Text style={typography.subtitle}>End date</Text>
+        <Text style={t.type.subtitle}>End date</Text>
         <DateTimePicker
           value={endDate}
           mode="date"
@@ -64,7 +65,7 @@ export function CreateTripScreen({ navigation }: CreateTripScreenProps) {
       </View>
 
       <View style={{ gap: spacing.xs }}>
-        <Text style={typography.subtitle}>Visibility</Text>
+        <Text style={t.type.subtitle}>Visibility</Text>
         <PrivacyPicker value={visibility} onChange={setVisibility} />
       </View>
 

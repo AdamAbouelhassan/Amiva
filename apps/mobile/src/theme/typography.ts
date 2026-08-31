@@ -1,23 +1,63 @@
 import { TextStyle } from 'react-native';
-import { colors } from './colors';
+import type { ThemeColors } from './themes';
 
-/** Clean sans-serif, clear hierarchy (style guide). Uses the platform
- * system font — no custom font loading needed for MVP. */
-const fontFamily = undefined; // system default
+/**
+ * Type system (brief §1.2): a rounded geometric sans (**Baloo 2**) for
+ * display/headings/the match numerals — personality, only ever at ≥22pt —
+ * and **Inter** for all body/UI text. Scale: 34 / 28 / 22 / 17 / 15 / 13.
+ *
+ * Weight comes from picking the family *variant*, never `fontWeight` on a
+ * single word (brief §1.2). Colour is baked per-theme, so this is a factory.
+ */
+export const fonts = {
+  displayBold: 'Baloo2_700Bold',
+  displaySemi: 'Baloo2_600SemiBold',
+  bodyRegular: 'Inter_400Regular',
+  bodyMedium: 'Inter_500Medium',
+  bodySemi: 'Inter_600SemiBold',
+  bodyBold: 'Inter_700Bold',
+} as const;
 
-type TypeScale = Record<
-  'displayLg' | 'displayMd' | 'title' | 'subtitle' | 'body' | 'bodySmall' | 'caption' | 'statNumber',
+/** Every font face this app loads (see App.tsx `useFonts`). */
+export { useFonts } from '@expo-google-fonts/inter';
+export {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
+export { Baloo2_600SemiBold, Baloo2_700Bold } from '@expo-google-fonts/baloo-2';
+
+export type TypeScale = Record<
+  | 'displayLg'
+  | 'displayMd'
+  | 'title'
+  | 'subtitle'
+  | 'body'
+  | 'bodySmall'
+  | 'caption'
+  | 'label'
+  | 'statNumber',
   TextStyle
 >;
 
-export const typography: TypeScale = {
-  displayLg: { fontFamily, fontSize: 32, fontWeight: '700', color: colors.textPrimary, lineHeight: 38 },
-  displayMd: { fontFamily, fontSize: 24, fontWeight: '700', color: colors.textPrimary, lineHeight: 30 },
-  title: { fontFamily, fontSize: 20, fontWeight: '600', color: colors.textPrimary, lineHeight: 26 },
-  subtitle: { fontFamily, fontSize: 16, fontWeight: '600', color: colors.textPrimary, lineHeight: 22 },
-  body: { fontFamily, fontSize: 15, fontWeight: '400', color: colors.textPrimary, lineHeight: 21 },
-  bodySmall: { fontFamily, fontSize: 13, fontWeight: '400', color: colors.textSecondary, lineHeight: 18 },
-  caption: { fontFamily, fontSize: 11, fontWeight: '500', color: colors.textSecondary, lineHeight: 15 },
-  // Used for match %/compatibility % displays — visually distinct, accented.
-  statNumber: { fontFamily, fontSize: 28, fontWeight: '700', color: colors.accent, lineHeight: 32 },
-};
+export function makeType(c: ThemeColors): TypeScale {
+  return {
+    displayLg: { fontFamily: fonts.displayBold, fontSize: 34, lineHeight: 40, color: c.textPrimary },
+    displayMd: { fontFamily: fonts.displayBold, fontSize: 28, lineHeight: 34, color: c.textPrimary },
+    title: { fontFamily: fonts.displaySemi, fontSize: 22, lineHeight: 28, color: c.textPrimary },
+    subtitle: { fontFamily: fonts.bodySemi, fontSize: 17, lineHeight: 24, color: c.textPrimary },
+    body: { fontFamily: fonts.bodyRegular, fontSize: 15, lineHeight: 22, color: c.textPrimary },
+    bodySmall: { fontFamily: fonts.bodyRegular, fontSize: 13, lineHeight: 19, color: c.textSecondary },
+    caption: {
+      fontFamily: fonts.bodySemi,
+      fontSize: 12,
+      lineHeight: 16,
+      letterSpacing: 0.3,
+      color: c.textSecondary,
+    },
+    label: { fontFamily: fonts.bodyMedium, fontSize: 13, lineHeight: 18, color: c.textSecondary },
+    // Match %, compatibility %, Logbook stat counts — the display face, accented.
+    statNumber: { fontFamily: fonts.displayBold, fontSize: 28, lineHeight: 32, color: c.accent },
+  };
+}

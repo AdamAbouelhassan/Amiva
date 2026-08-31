@@ -4,9 +4,9 @@
  * repositories/experienceRepository.ts's MAX_EXPERIENCE_PHOTOS check.
  */
 import * as ImagePicker from 'expo-image-picker';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import { MAX_EXPERIENCE_PHOTOS } from '@amiva/core';
-import { colors, radius, spacing, typography } from '../../../theme';
+import { radius, spacing, useTheme } from '../../../theme';
 
 interface PhotoPickerProps {
   localUris: string[];
@@ -28,6 +28,8 @@ function parseExifDate(value: string): Date | undefined {
 }
 
 export function PhotoPicker({ localUris, onChange, onExifDateDetected }: PhotoPickerProps) {
+  const t = useTheme();
+
   async function addPhoto() {
     if (localUris.length >= MAX_EXPERIENCE_PHOTOS) return;
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -53,50 +55,34 @@ export function PhotoPicker({ localUris, onChange, onExifDateDetected }: PhotoPi
 
   return (
     <View>
-      <Text style={typography.subtitle}>Photos ({localUris.length}/{MAX_EXPERIENCE_PHOTOS})</Text>
-      <View style={styles.row}>
+      <Text style={t.type.subtitle}>
+        Photos ({localUris.length}/{MAX_EXPERIENCE_PHOTOS})
+      </Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs }}>
         {localUris.map((uri) => (
-          <Pressable key={uri} onPress={() => removePhoto(uri)} style={styles.thumbWrapper}>
-            <Image source={{ uri }} style={styles.thumb} />
-            <Text style={styles.removeLabel}>Remove</Text>
+          <Pressable key={uri} onPress={() => removePhoto(uri)} style={{ alignItems: 'center' }}>
+            <Image source={{ uri }} style={{ width: 72, height: 72, borderRadius: radius.chip }} />
+            <Text style={[t.type.caption, { color: t.colors.danger }]}>Remove</Text>
           </Pressable>
         ))}
         {localUris.length < MAX_EXPERIENCE_PHOTOS && (
-          <Pressable style={styles.addButton} onPress={addPhoto} accessibilityRole="button">
-            <Text style={{ color: colors.accent, fontSize: 24 }}>+</Text>
+          <Pressable
+            onPress={addPhoto}
+            accessibilityRole="button"
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: radius.chip,
+              borderWidth: 1,
+              borderColor: t.colors.accent,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ color: t.colors.accent, fontSize: 24 }}>+</Text>
           </Pressable>
         )}
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-  },
-  thumbWrapper: {
-    alignItems: 'center',
-  },
-  thumb: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.sm,
-  },
-  removeLabel: {
-    ...typography.caption,
-    color: colors.danger,
-  },
-  addButton: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

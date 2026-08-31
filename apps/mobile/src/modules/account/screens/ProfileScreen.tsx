@@ -1,10 +1,12 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { topCategories } from '@amiva/core';
+import { Card } from '../../../components/Card';
+import { CategoryChip } from '../../../components/CategoryChip';
 import { ProfileIdentity } from '../../../components/ProfileIdentity';
-import { RadarChart, TravelStyleValueList } from '../../../components/RadarChart';
 import { ScreenContainer } from '../../../components/ScreenContainer';
+import { TravelStyleRadar, TravelStyleValueList } from '../../../components/TravelStyleRadar';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
-import { CATEGORY_LABELS, colors, spacing, typography } from '../../../theme';
+import { spacing } from '../../../theme';
 
 export function ProfileScreen() {
   const { profile } = useCurrentUser();
@@ -23,22 +25,17 @@ export function ProfileScreen() {
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, justifyContent: 'center' }}>
         {top3.map((category) => (
-          <View
-            key={category}
-            style={{
-              paddingHorizontal: spacing.sm,
-              paddingVertical: spacing.xxs,
-              borderRadius: 999,
-              backgroundColor: colors.accentMuted,
-            }}
-          >
-            <Text style={[typography.caption, { color: colors.accent }]}>{CATEGORY_LABELS[category]}</Text>
-          </View>
+          <CategoryChip key={category} category={category} selected />
         ))}
       </View>
 
-      <RadarChart series={[{ vector: profile.travelStyle, color: colors.accent }]} />
-      <TravelStyleValueList vector={profile.travelStyle} />
+      <View style={{ alignItems: 'center' }}>
+        <TravelStyleRadar series={[{ vector: profile.travelStyle }]} highlightTop size={280} />
+      </View>
+
+      <Card padded>
+        <TravelStyleValueList vector={profile.travelStyle} />
+      </Card>
     </ScreenContainer>
   );
 }

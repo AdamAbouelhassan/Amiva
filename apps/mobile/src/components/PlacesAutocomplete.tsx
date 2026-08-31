@@ -5,10 +5,10 @@
  * components, per spec.
  */
 import { useEffect, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { TextField } from './TextField';
 import { env } from '../lib/env';
-import { colors, spacing, typography } from '../theme';
+import { radius, spacing, useTheme } from '../theme';
 
 export interface SelectedPlace {
   placeId: string;
@@ -36,6 +36,7 @@ function extractComponent(components: Array<{ long_name: string; types: string[]
 }
 
 export function PlacesAutocomplete({ onSelect }: PlacesAutocompleteProps) {
+  const t = useTheme();
   const [query, setQuery] = useState('');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [selected, setSelected] = useState<SelectedPlace | undefined>();
@@ -97,12 +98,22 @@ export function PlacesAutocomplete({ onSelect }: PlacesAutocompleteProps) {
       />
       {predictions.length > 0 && (
         <FlatList
-          style={styles.predictionList}
+          style={{
+            maxHeight: 200,
+            borderWidth: 1,
+            borderColor: t.colors.border,
+            borderRadius: radius.chip,
+            marginTop: spacing.xxs,
+            backgroundColor: t.colors.surface,
+          }}
           data={predictions}
           keyExtractor={(item) => item.place_id}
           renderItem={({ item }) => (
-            <Pressable style={styles.predictionRow} onPress={() => selectPrediction(item)}>
-              <Text style={typography.body}>{item.description}</Text>
+            <Pressable
+              style={{ padding: spacing.sm, borderBottomWidth: 1, borderBottomColor: t.colors.border }}
+              onPress={() => selectPrediction(item)}
+            >
+              <Text style={t.type.body}>{item.description}</Text>
             </Pressable>
           )}
         />
@@ -110,19 +121,3 @@ export function PlacesAutocomplete({ onSelect }: PlacesAutocompleteProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  predictionList: {
-    maxHeight: 200,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    marginTop: spacing.xxs,
-    backgroundColor: colors.surface,
-  },
-  predictionRow: {
-    padding: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-});

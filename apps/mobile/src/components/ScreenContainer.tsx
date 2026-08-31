@@ -1,11 +1,12 @@
 import { PropsWithChildren } from 'react';
-import { ScrollView, StyleSheet, View, ViewProps } from 'react-native';
+import { ScrollView, View, ViewProps } from 'react-native';
 import { Edge, SafeAreaView } from 'react-native-safe-area-context';
-import { colors, spacing } from '../theme';
+import { spacing, useTheme } from '../theme';
 
 interface ScreenContainerProps extends PropsWithChildren {
   scroll?: boolean;
   style?: ViewProps['style'];
+  contentStyle?: ViewProps['style'];
   /** Inset the top edge for the status bar / notch. Only needed for
    * screens rendered outside a navigator header (SignIn, Onboarding) —
    * every screen inside a stack navigator already gets that inset from
@@ -16,28 +17,27 @@ interface ScreenContainerProps extends PropsWithChildren {
 
 /** The one place page background/padding is set — every screen renders
  * inside this instead of ad-hoc View/SafeAreaView combos. */
-export function ScreenContainer({ children, scroll = true, style, safeAreaTop = false }: ScreenContainerProps) {
+export function ScreenContainer({
+  children,
+  scroll = true,
+  style,
+  contentStyle,
+  safeAreaTop = false,
+}: ScreenContainerProps) {
+  const t = useTheme();
   const Container = scroll ? ScrollView : View;
   const edges: Edge[] = safeAreaTop ? ['top', 'left', 'right'] : ['left', 'right'];
   return (
-    <SafeAreaView style={styles.safeArea} edges={edges}>
-      <Container style={[styles.content, style]} contentContainerStyle={scroll ? styles.scrollContent : undefined}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: t.colors.background }} edges={edges}>
+      <Container
+        style={[{ flex: 1 }, style]}
+        contentContainerStyle={
+          scroll ? [{ padding: spacing.screen, gap: spacing.lg }, contentStyle] : undefined
+        }
+        keyboardShouldPersistTaps={scroll ? 'handled' : undefined}
+      >
         {children}
       </Container>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: spacing.lg,
-    gap: spacing.lg,
-  },
-});

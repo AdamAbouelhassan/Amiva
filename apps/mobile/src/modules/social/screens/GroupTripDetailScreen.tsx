@@ -1,19 +1,41 @@
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { toMatchPercent } from '@amiva/core';
+import { AnimatedCheck } from '../../../components/AnimatedCheck';
 import { Button } from '../../../components/Button';
-import { MatchBadge } from '../../../components/MatchBadge';
+import { Card } from '../../../components/Card';
+import { MatchScoreBadge } from '../../../components/MatchScoreBadge';
+import { ProfileIdentity } from '../../../components/ProfileIdentity';
 import { ScreenContainer } from '../../../components/ScreenContainer';
-import { colors, spacing, typography } from '../../../theme';
+import { Section } from '../../../components/Section';
+import { orNull } from '../../../lib/queryHelpers';
+import { UserRepository } from '../../../repositories/userRepository';
+import { radius, spacing, useTheme } from '../../../theme';
 import { useFriends } from '../hooks/useFriends';
-import { useAddCollaborator, usePlannedTrip, usePlannedTripItems, useToggleItemCompleted } from '../hooks/useGroupTrip';
+import {
+  useAddCollaborator,
+  usePlannedTrip,
+  usePlannedTripItems,
+  useToggleItemCompleted,
+} from '../hooks/useGroupTrip';
 import { useGroupRecommendationCandidates } from '../hooks/useGroupRecommendations';
 
 interface GroupTripDetailScreenProps {
   route: { params: { plannedTripId: string } };
 }
 
+function useUserName(uid: string) {
+  return useQuery({ queryKey: ['users', uid], queryFn: () => UserRepository.getById(uid).then(orNull) });
+}
+
+function CollaboratorPill({ uid }: { uid: string }) {
+  const { data: user } = useUserName(uid);
+  return <ProfileIdentity name={user?.name ?? '…'} username={user?.username} photoUrl={user?.profilePhotoUrl} />;
+}
+
 export function GroupTripDetailScreen({ route }: GroupTripDetailScreenProps) {
+  const t = useTheme();
   const { plannedTripId } = route.params;
   const { data: trip } = usePlannedTrip(plannedTripId);
   const { data: items = [] } = usePlannedTripItems(plannedTripId);
@@ -27,66 +49,104 @@ export function GroupTripDetailScreen({ route }: GroupTripDetailScreenProps) {
 
   if (!trip) return null;
 
+  const addable = friends.filter(
+    (f) => !trip.collaboratorIds.includes(f.friendId) && f.friendId !== trip.ownerId,
+  );
+
   return (
     <ScreenContainer>
-      <Text style={typography.displayMd}>{trip.locations.join(', ')}</Text>
-      <Text style={typography.bodySmall}>
-        {trip.startDate.toDateString()} – {trip.endDate.toDateString()}
-      </Text>
-
-      <View style={{ gap: spacing.xs }}>
-        <Text style={typography.subtitle}>Collaborators ({trip.collaboratorIds.length})</Text>
-        {friends
-          .filter((f) => !trip.collaboratorIds.includes(f.friendId) && f.friendId !== trip.ownerId)
-          .map((f) => (
-            <Pressable key={f.friendId} onPress={() => addCollaborator.mutate(f.friendId)}>
-              <Text style={{ color: colors.accent }}>+ Add friend {f.friendId}</Text>
-            </Pressable>
-          ))}
+      <View style={{ gap: spacing.xxs }}>
+        <Text style={t.type.displayMd}>{trip.locations.join(', ')}</Text>
+        <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
+          {trip.startDate.toDateString()} – {trip.endDate.toDateString()}
+        </Text>
       </View>
 
-      <View style={{ gap: spacing.xs }}>
-        <Text style={typography.subtitle}>Itinerary (unordered checklist)</Text>
+      <Section title={`Collaborators (${collaboratorIds.length})`}>
+        <Card padded style={{ gap: spacing.sm }}>
+          {collaboratorIds.map((uid) => (
+            <CollaboratorPill key={uid} uid={uid} />
+          ))}
+        </Card>
+        {addable.map((f) => (
+          <Pressable
+            key={f.friendId}
+            onPress={() => addCollaborator.mutate(f.friendId)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs }}
+          >
+            <Text style={[t.type.subtitle, { color: t.colors.accentWarmText }]}>+</Text>
+            <CollaboratorPill uid={f.friendId} />
+          </Pressable>
+        ))}
+      </Section>
+
+      <Section title="Itinerary" hint="An unordered checklist — tick things off as you go.">
+        {items.length === 0 && (
+          <Text style={[t.type.body, { color: t.colors.textSecondary }]}>No items yet.</Text>
+        )}
         {items.map((item) => (
           <Pressable
             key={item.itemId}
             onPress={() => toggleItem.mutate({ itemId: item.itemId, completed: !item.completed })}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xxs }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs }}
           >
-            <Text>{item.completed ? '☑' : '☐'}</Text>
-            <Text style={[typography.body, item.completed && { textDecorationLine: 'line-through' }]}>{item.title}</Text>
+            <AnimatedCheck checked={item.completed} />
+            <Text
+              style={[
+                t.type.body,
+                item.completed && { textDecorationLine: 'line-through', color: t.colors.textSecondary },
+              ]}
+            >
+              {item.title}
+            </Text>
           </Pressable>
         ))}
-        {items.length === 0 && <Text style={typography.body}>No items yet.</Text>}
-      </View>
+      </Section>
 
-      <View style={{ gap: spacing.sm }}>
-        <Text style={typography.subtitle}>Group recommendations</Text>
-        <Text style={typography.bodySmall}>
-          When the group's styles align, we suggest one pick. When they diverge, we show what fits each person instead
-          of forcing a compromise.
-        </Text>
-        <Button label="Check group matches" variant="secondary" onPress={() => setShowCandidates(true)} />
-        {candidates.error && <Text style={[typography.bodySmall, { color: colors.danger }]}>{candidates.error}</Text>}
-
+      <Section
+        title="Group recommendations"
+        hint="When the group's styles align we suggest one pick. When they diverge we show what fits each person instead of forcing a compromise."
+      >
+        <Button label="Check group matches" variant="warm" onPress={() => setShowCandidates(true)} />
         {candidates.data.map(({ experienceId, title, recommendation }) => (
-          <View key={experienceId} style={{ paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border }}>
-            <Text style={typography.body}>{title}</Text>
+          <Card key={experienceId} padded style={{ gap: spacing.xs }}>
+            <Text style={t.type.subtitle}>{title}</Text>
             {recommendation.type === 'blended' ? (
-              <MatchBadge matchPercent={toMatchPercent(recommendation.matchScore ?? 0)} />
+              <MatchScoreBadge matchPercent={toMatchPercent(recommendation.matchScore ?? 0)} />
             ) : (
               <View style={{ gap: spacing.xxs }}>
-                <Text style={typography.caption}>Group diverges — aligned per person:</Text>
-                {recommendation.perCollaborator?.map((p) => (
-                  <Text key={p.collaboratorId} style={typography.bodySmall}>
-                    {p.collaboratorId}: {toMatchPercent(p.matchScore)}%
-                  </Text>
-                ))}
+                <Text style={[t.type.caption, { color: t.colors.warning }]}>Group diverges — fit per person:</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                  {recommendation.perCollaborator?.map((p) => (
+                    <PerPersonChip key={p.collaboratorId} uid={p.collaboratorId} matchScore={p.matchScore} />
+                  ))}
+                </View>
               </View>
             )}
-          </View>
+          </Card>
         ))}
-      </View>
+      </Section>
     </ScreenContainer>
+  );
+}
+
+function PerPersonChip({ uid, matchScore }: { uid: string; matchScore: number }) {
+  const t = useTheme();
+  const { data: user } = useUserName(uid);
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xxs,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xxs,
+        borderRadius: radius.pill,
+        backgroundColor: t.colors.surfaceAlt,
+      }}
+    >
+      <Text style={t.type.caption}>{user?.name ?? '…'}</Text>
+      <Text style={[t.type.caption, { color: t.colors.accent }]}>{toMatchPercent(matchScore)}%</Text>
+    </View>
   );
 }

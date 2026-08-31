@@ -1,6 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { LogbookStackParamList } from '../../navigation/types';
-import { colors } from '../../theme';
+import { useStackScreenOptions } from '../../navigation/screenOptions';
 import { CityDetailScreen } from './screens/CityDetailScreen';
 import { CreateExperienceScreen } from './screens/CreateExperienceScreen';
 import { CreateTripScreen } from './screens/CreateTripScreen';
@@ -12,7 +12,7 @@ const Stack = createNativeStackNavigator<LogbookStackParamList>();
 
 export function LogbookNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerTintColor: colors.textPrimary }}>
+    <Stack.Navigator screenOptions={useStackScreenOptions()}>
       <Stack.Screen name="LogbookHome" component={LogbookHomeScreen} options={{ title: 'Logbook' }} />
       <Stack.Screen name="TripDetail" component={TripDetailScreen} options={{ title: 'Trip' }} />
       <Stack.Screen name="CityDetail" component={CityDetailScreen} options={{ title: 'City' }} />

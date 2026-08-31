@@ -1,32 +1,48 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
-import { colors, radius, spacing, typography } from '../theme';
+import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import { radius, shadow, spacing, useTheme } from '../theme';
+
+type Variant = 'primary' | 'secondary' | 'warm';
 
 interface ButtonProps {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary';
+  /** `warm` = coral, for forward-looking / Planner CTAs (brief §3.3). */
+  variant?: Variant;
   disabled?: boolean;
   loading?: boolean;
+  style?: ViewStyle;
 }
 
-export function Button({ label, onPress, variant = 'primary', disabled, loading }: ButtonProps) {
-  const isPrimary = variant === 'primary';
+export function Button({ label, onPress, variant = 'primary', disabled, loading, style }: ButtonProps) {
+  const t = useTheme();
+  const busy = disabled || loading;
+
+  const fills: Record<Variant, { bg: string; fg: string; border: string }> = {
+    primary: { bg: t.colors.accent, fg: t.colors.textOnAccent, border: t.colors.accent },
+    warm: { bg: t.colors.accentWarm, fg: t.colors.textOnAccent, border: t.colors.accentWarm },
+    secondary: { bg: 'transparent', fg: t.colors.accent, border: t.colors.accent },
+  };
+  const c = fills[variant];
+
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={busy}
       accessibilityRole="button"
+      accessibilityState={{ disabled: !!busy, busy: !!loading }}
       style={({ pressed }) => [
         styles.base,
-        isPrimary ? styles.primary : styles.secondary,
-        (disabled || loading) && styles.disabled,
-        pressed && !disabled && !loading && styles.pressed,
+        { backgroundColor: c.bg, borderColor: c.border },
+        variant !== 'secondary' && !busy && shadow.resting,
+        busy && styles.disabled,
+        pressed && !busy && styles.pressed,
+        style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? colors.textOnAccent : colors.accent} />
+        <ActivityIndicator color={c.fg} />
       ) : (
-        <Text style={[styles.label, isPrimary ? styles.labelPrimary : styles.labelSecondary]}>{label}</Text>
+        <Text style={[styles.label, { color: c.fg, fontFamily: t.type.subtitle.fontFamily }]}>{label}</Text>
       )}
     </Pressable>
   );
@@ -34,33 +50,15 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading 
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: radius.md,
+    borderRadius: radius.button,
+    borderWidth: 1,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 48,
   },
-  primary: {
-    backgroundColor: colors.accent,
-  },
-  secondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  label: {
-    ...typography.subtitle,
-  },
-  labelPrimary: {
-    color: colors.textOnAccent,
-  },
-  labelSecondary: {
-    color: colors.accent,
-  },
+  label: { fontSize: 16 },
+  disabled: { opacity: 0.45 },
+  pressed: { opacity: 0.9, transform: [{ scale: 0.985 }] },
 });

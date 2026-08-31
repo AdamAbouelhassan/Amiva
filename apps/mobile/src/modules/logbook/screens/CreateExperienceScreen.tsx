@@ -13,10 +13,11 @@ import { Button } from '../../../components/Button';
 import { PlacesAutocomplete, SelectedPlace } from '../../../components/PlacesAutocomplete';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { TextField } from '../../../components/TextField';
+import { TravelStyleRadar } from '../../../components/TravelStyleRadar';
 import { TravelStyleSliders } from '../../../components/TravelStyleSliders';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { compressAndUploadImage } from '../../../lib/uploadImage';
-import { spacing, typography } from '../../../theme';
+import { spacing, useTheme } from '../../../theme';
 import { PhotoPicker } from '../components/PhotoPicker';
 import { StarRating } from '../components/StarRating';
 import { useCreateExperience } from '../hooks/useExperiences';
@@ -27,6 +28,7 @@ interface CreateExperienceScreenProps {
 }
 
 export function CreateExperienceScreen({ route, navigation }: CreateExperienceScreenProps) {
+  const t = useTheme();
   const { profile } = useCurrentUser();
   const tripId = route.params?.tripId;
 
@@ -76,7 +78,7 @@ export function CreateExperienceScreen({ route, navigation }: CreateExperienceSc
 
   return (
     <ScreenContainer>
-      <Text style={typography.displayMd}>Log an experience</Text>
+      <Text style={t.type.displayMd}>Log an experience</Text>
 
       <PlacesAutocomplete onSelect={setPlace} />
 
@@ -90,7 +92,7 @@ export function CreateExperienceScreen({ route, navigation }: CreateExperienceSc
       />
 
       <View style={{ gap: spacing.xs }}>
-        <Text style={typography.subtitle}>Rating</Text>
+        <Text style={t.type.subtitle}>Rating</Text>
         <StarRating value={rating} onChange={setRating} />
       </View>
 
@@ -104,7 +106,7 @@ export function CreateExperienceScreen({ route, navigation }: CreateExperienceSc
       />
 
       <View style={{ gap: spacing.xs }}>
-        <Text style={typography.subtitle}>Date {dateSource === 'exif' ? '(from photo)' : ''}</Text>
+        <Text style={t.type.subtitle}>Date {dateSource === 'exif' ? '(from photo)' : ''}</Text>
         <DateTimePicker
           value={date}
           mode="date"
@@ -119,10 +121,13 @@ export function CreateExperienceScreen({ route, navigation }: CreateExperienceSc
       </View>
 
       <View style={{ gap: spacing.sm }}>
-        <Text style={typography.subtitle}>Category profile</Text>
-        <Text style={typography.bodySmall}>
+        <Text style={t.type.subtitle}>Category profile</Text>
+        <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
           Rate this experience across the same 8 categories — this is what powers everyone's match % against it.
         </Text>
+        <View style={{ alignItems: 'center' }}>
+          <TravelStyleRadar series={[{ vector: categoryScores }]} size={200} showLabels={false} />
+        </View>
         <TravelStyleSliders value={categoryScores} onChange={setCategoryScores} />
       </View>
 

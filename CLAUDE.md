@@ -17,6 +17,46 @@ Functions) and a real Firebase dev project is live and deployed. The stuff
 below is what a fresh session needs to know that isn't obvious from reading
 code cold — hard-won tonight, don't rediscover it the slow way.
 
+**UI/UX overhaul (2026-08-30):** the whole mobile app was re-skinned onto a
+brand design system. What changed that you must not fight:
+- **Theming is `useTheme()`, not static imports.** `import { colors,
+  typography } from '../theme'` no longer exists. Components call
+  `const t = useTheme()` and read `t.colors.*` (semantic), `t.type.*`
+  (typography, colour baked per theme), `t.category(cat)` / `t.categoryText(cat)`
+  (fills vs AA-safe text), `t.isDark`, `t.mode`, `t.setMode`. Static, theme-
+  independent scales (`spacing`, `radius`, `shadow`) are still plain imports
+  from `../theme`. Tokens live in `theme/{tokens,themes}.ts`; **full light +
+  dark**. Never hardcode a hex in a component.
+- **`<TravelStyleRadar>`** (was `RadarChart`) and **`<MatchScoreBadge>`**
+  (was `MatchBadge`, opens `<MatchDetailSheet>` on tap) are the two shared
+  signature components — reuse, don't reimplement. Radar axis *display*
+  order is `RADAR_AXIS_ORDER` (theme), deliberately ≠ the canonical
+  `TRAVEL_STYLE_CATEGORIES` in core (which stays locked to cosine-vector
+  alignment).
+- **Reanimated 4** drives the radar morph and the badge count-up. Two
+  startup-crash traps, both surfacing as `Exception in HostFunction:
+  <unknown>` at `[runtime not ready]`:
+  1. **Never add the worklets/reanimated Babel plugin to
+     `babel.config.js`** — `babel-preset-expo` 54 auto-adds it when
+     `react-native-worklets` is installed; a manual entry double-transforms
+     every worklet.
+  2. **`react-native-worklets` must be pinned to `0.5.1` and
+     `react-native-reanimated` to `4.1.1`** — the exact versions in
+     `expo/bundledNativeModules.json` / Expo Go SDK 54. `npx expo install
+     react-native-reanimated` alone resolves reanimated to `~4.1.7`, which
+     drags in worklets `0.8.x`, and the 0.5↔0.8 JSI ABI change crashes
+     against Expo Go's native `0.5.1`. Run `npx expo install --check` after
+     touching these.
+  Fonts: **Baloo 2** (display) + **Inter** (body) via `@expo-google-fonts`,
+  loaded in `App.tsx`. Motion is gated by `useReducedMotion()`.
+- **Brand art** is in `apps/mobile/assets/brand/` — `amiva-icon-card.png`
+  (splash), `amiva-mobile-icon.png` (OS icon), `amiva-mark-gradient.png`
+  (in-app, via `<BrandMark>`). They are still raw flattened rasters; the
+  user swaps in cleaned/transparent versions at the SAME paths later.
+  `app.config.js` already points at them. Don't crop/composite them here.
+- Jest is unaffected (ts-jest, node env, no component render tests). `npx
+  tsc --noEmit` + `npx expo export` both clean.
+
 **Live project:** `amivadev` (see `.firebaserc`). Firestore (`us-central1`
 — must stay single-region, see gotcha below), Storage, security rules, and
 all 12 Cloud Functions are deployed. `apps/mobile/.env.local` holds the

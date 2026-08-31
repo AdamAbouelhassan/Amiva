@@ -1,16 +1,33 @@
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  DarkTheme as NavDarkTheme,
+  DefaultTheme as NavDefaultTheme,
+  NavigationContainer,
+  Theme as NavTheme,
+} from '@react-navigation/native';
+import { useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { AuthBootstrap } from '../modules/account/components/AuthBootstrap';
 import { OnboardingScreen } from '../modules/account/screens/OnboardingScreen';
 import { SignInScreen } from '../modules/account/screens/SignInScreen';
+import { BrandMark } from '../components/icons/BrandMark';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { colors } from '../theme';
+import { spacing, useTheme } from '../theme';
 import { MainTabs } from './MainTabs';
 
 function LoadingScreen() {
+  const t = useTheme();
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-      <ActivityIndicator color={colors.accent} />
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.lg,
+        backgroundColor: t.colors.background,
+      }}
+    >
+      <BrandMark size={72} />
+      <ActivityIndicator color={t.colors.accent} />
     </View>
   );
 }
@@ -28,8 +45,27 @@ function Gate() {
 }
 
 export function RootNavigator() {
+  const t = useTheme();
+
+  const navTheme = useMemo<NavTheme>(() => {
+    const base = t.isDark ? NavDarkTheme : NavDefaultTheme;
+    return {
+      ...base,
+      dark: t.isDark,
+      colors: {
+        ...base.colors,
+        primary: t.colors.accent,
+        background: t.colors.background,
+        card: t.colors.surface,
+        text: t.colors.textPrimary,
+        border: t.colors.border,
+        notification: t.colors.accentWarm,
+      },
+    };
+  }, [t]);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navTheme}>
       <AuthBootstrap />
       <Gate />
     </NavigationContainer>
