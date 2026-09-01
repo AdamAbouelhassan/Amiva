@@ -155,14 +155,23 @@ into it, restores `status: 'planning'`. The planner create/edit form hides
 the photo picker (`<TripFormFields photos={false}>`). Diverges from
 functional_specification.md §4.2/§4.3 — documented product decision.
 
-**Tab motion + icon actions (2026-08-31):** the bottom tab bar is
-`position:'absolute'` + **opaque** (`t.colors.surface`, hairline top
-border) — scroll content clears it via **`hooks/useTabBarInset.ts`**
+**Tab motion + icon actions (2026-08-31):** the bottom tab bar is a
+**custom `navigation/GlassTabBar.tsx`** (`Tab.Navigator`'s `tabBar` prop,
+not the default bar) — `position:'absolute'`, short (`BAR_H` 48) with big
+28px icons, a **spring-sliding selection bubble** behind the active tab
+(`SPRING` = the exact `SegmentedControl` spring) and the active icon
+lifts + scales. On **iOS 26** the bar background is real
+Apple Liquid Glass (**`components/GlassSurface.tsx`** → `expo-glass-effect`
+`GlassView`, gated by `LIQUID_GLASS = isLiquidGlassAvailable()` — true in
+Expo Go on an iOS 26 device) and the bubble is a tinted `GlassView` lens;
+elsewhere both are solid (`surface` bar + hairline border, `accentMuted`
+bubble). The bar reports its height via `BottomTabBarHeightCallbackContext`
+so scroll content still clears it via **`hooks/useTabBarInset.ts`**
 (`BottomTabBarHeightContext`, 0 outside a tab nav) wired into
 `ScreenContainer` (scroll) + every `scroll={false}`+FlatList screen's
-`contentContainerStyle`. `tabBarShowLabel:false`; **no text labels** —
-`NavIcon` is Ionicons, hollow (`*-outline`) when inactive / filled when
-`focused` (Spotify-style). `MainTabs` wraps each tab in
+`contentContainerStyle`. **No text labels** — `NavIcon` is Ionicons,
+hollow (`*-outline`) when inactive / filled when `focused` (Spotify-style).
+`MainTabs` wraps each tab in
 **`components/FocusFade.tsx`** (fade+rise on focus — module-level
 components, never inline render props). In-page tabs (Discovery / Logbook
 / FriendDetail) render panes through **`components/TabPanes.tsx`**
@@ -172,14 +181,50 @@ solid pill (`radius.chip - 3`, concentric; API unchanged). Card `Save` /
 (Ionicons via `@expo/vector-icons`, `Ionicons.font` in `App.tsx`
 `useFonts`; `tone="danger"` = red glyph on `colors.dangerMuted`).
 `PlaceRecommendationCard` + saved-place rows: **tapping the card opens
-Google Maps** (the "Maps" button is gone).
+Google Maps** (the "Maps" button is gone). `ExperienceDetailScreen` has an
+**"Open in Maps"** button (`lib/mapsUrl.ts` `openInGoogleMaps`, pinned by
+`experience.placeId`); `PlannedTripDetailScreen` itinerary rows open Maps
+on tap (via `item.placeId` / `lat` / `lng`).
 
-**Native Liquid Glass was tried and dropped (2026-08-31):** `expo-glass-effect`
-`GlassView` only renders real glass on an iOS 26 device and looked broken
-in the fallback / on-device (square pill, invisible on the tab bar), so
-`GlassSurface.tsx` was deleted and the surfaces are plain solid. `expo-glass-effect`
-/ `expo-blur` remain installed but unused. Don't re-add a glass wrapper
-without an iOS 26 test device.
+**Liquid Glass — tab bar only (2026-09-01):** `GlassSurface.tsx` (native
+`GlassView`, iOS-26-gated) backs the **custom `GlassTabBar`** (bar bg +
+sliding bubble lens). Tried on the `SegmentedControl` pill too and dropped
+there (square-corner GlassView that didn't clip to `borderRadius`) — the
+pill is a plain solid surface. `expo-blur` is installed but unused (no
+blur fallback — non-26 gets a plain opaque surface). Test glass changes on
+a real iOS 26 device; simulators/older iOS just show the fallback.
+
+**`experiences.placeName` (2026-09-01):** the Google Maps place name,
+denormalised onto the experience at log time (from `SelectedPlace.name`)
+so the logbook shows *where* an entry is without a `places` lookup. `''`
+on pre-2026-09-01 docs — always guard (`placeName || \`${city}, ${country}\``).
+Shown on `ExperienceDetailScreen` (pin + name line) and `ExperienceRow`.
+Location isn't editable, so `update` never touches it.
+
+**Planner registers `CreateExperience` (2026-09-01):** every stack with a
+"Log this" affordance (Discovery / Logbook / Social / **Planner**) now
+registers the (Logbook) `CreateExperienceScreen` + a `CreateExperienceParams`
+route, so `useLogExperienceNav` resolves `navigate('CreateExperience')`
+in-stack instead of bubbling to another tab (was landing on Social when
+invoked from `AddPlacesToPlanScreen`).
+
+**`CreateExperienceScreen` trip picker (2026-09-01):** the "Add to a trip"
+chip row is now a **`components/SelectField.tsx`** dropdown (collapsed
+field → inline scrolling menu, `DateField`-style; the generic minimal
+select for unbounded option lists) and sits **below** the photo picker.
+`value={selectedTripId}` (`string | undefined`), first option `undefined`
+= "No trip".
+
+**`RecommendationsScreen` filter bar (2026-09-01):** quick-return
+collapsing header — the location/keyword/category filters are an absolute
+`Animated.View` (solid bg + hairline base) inside an `overflow:'hidden'`
+wrapper (so it can't bleed over the tabs). `hidden` (0…headerH px)
+follows the drag delta while scrolling, then **snaps** fully open/closed
+on `onEndDrag`/`onMomentumEnd` (and always opens at scrollY≤0), so a small
+upward flick brings search back without scrolling to the top and it never
+rests half-collapsed. List `paddingTop:headerH` stays constant → no gap.
+No opacity animation (the scroll-linked fade + the earlier translate-snap
+both looked messy).
 
 **Screen-body header actions (2026-08-31):** the "Saved" (Discovery) and
 "Settings" (Profile) actions moved from `headerRight` into the screen

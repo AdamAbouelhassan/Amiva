@@ -68,6 +68,10 @@ export interface ExperienceDoc {
   ownerId: string;
   tripId?: string;
   placeId: string;
+  /** The Google Maps place name, denormalised at log time so the logbook
+   * can show *where* an entry is without a `places` lookup. `''` on
+   * experiences logged before 2026-09-01. */
+  placeName: string;
   city: string;
   country: string;
   title: string;

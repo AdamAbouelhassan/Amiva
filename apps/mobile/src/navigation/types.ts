@@ -58,6 +58,9 @@ export type PlannerStackParamList = {
   EditPlannedTrip: { plannedTripId: string };
   AddPlacesToPlan: { plannedTripId: string };
   CompletePlannedTrip: { plannedTripId: string };
+  // Registered so "Log this" from AddPlacesToPlan stays inside the Planner
+  // stack instead of bubbling to another tab (reuses the Logbook screen).
+  CreateExperience: CreateExperienceParams;
 };
 
 export type AccountStackParamList = {

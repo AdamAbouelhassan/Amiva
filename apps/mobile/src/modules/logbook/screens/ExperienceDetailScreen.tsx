@@ -1,5 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { ScrollView, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { AppImage } from '../../../components/AppImage';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
@@ -12,6 +13,7 @@ import { useLogExperienceNav } from '../../../hooks/useLogExperienceNav';
 import { useMatchScore } from '../../../hooks/useMatchScore';
 import { useRefresh } from '../../../hooks/useRefresh';
 import { useSaveToggle } from '../../../hooks/useSaves';
+import { openInGoogleMaps } from '../../../lib/mapsUrl';
 import { radius, spacing, useTheme } from '../../../theme';
 import { useExperience } from '../hooks/useExperiences';
 
@@ -55,6 +57,14 @@ export function ExperienceDetailScreen({ route }: ExperienceDetailScreenProps) {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm }}>
         <View style={{ flex: 1 }}>
           <Text style={t.type.displayMd}>{experience.title}</Text>
+          {experience.placeName ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+              <Ionicons name="location" size={13} color={t.colors.accent} />
+              <Text style={[t.type.bodySmall, { color: t.colors.textPrimary }]} numberOfLines={1}>
+                {experience.placeName}
+              </Text>
+            </View>
+          ) : null}
           <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
             {experience.city}, {experience.country} · {experience.date.toDateString()}
           </Text>
@@ -86,6 +96,19 @@ export function ExperienceDetailScreen({ route }: ExperienceDetailScreenProps) {
           </View>
         )}
       </View>
+
+      <Button
+        label="Open in Maps"
+        variant="secondary"
+        onPress={() =>
+          openInGoogleMaps({
+            name: experience.title,
+            city: experience.city,
+            country: experience.country,
+            placeId: experience.placeId,
+          })
+        }
+      />
 
       {isOwner && experience.notes ? (
         <Card padded>

@@ -1,6 +1,8 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { PlannerStackParamList } from '../../navigation/types';
 import { useStackScreenOptions } from '../../navigation/screenOptions';
+// Reused from Logbook — "Log this" from AddPlacesToPlan opens it in-stack.
+import { CreateExperienceScreen } from '../logbook/screens/CreateExperienceScreen';
 import { AddPlacesToPlanScreen } from './screens/AddPlacesToPlanScreen';
 import { CompletePlannedTripScreen } from './screens/CompletePlannedTripScreen';
 import { CreatePlannedTripScreen } from './screens/CreatePlannedTripScreen';
@@ -30,6 +32,11 @@ export function PlannerNavigator() {
         name="CompletePlannedTrip"
         component={CompletePlannedTripScreen}
         options={{ title: 'Complete trip', presentation: 'modal' }}
+      />
+      <Stack.Screen
+        name="CreateExperience"
+        component={CreateExperienceScreen}
+        options={{ title: 'Log experience', presentation: 'modal' }}
       />
     </Stack.Navigator>
   );

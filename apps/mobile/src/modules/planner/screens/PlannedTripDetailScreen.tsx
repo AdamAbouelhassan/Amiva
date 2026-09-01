@@ -12,6 +12,7 @@ import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useRefresh } from '../../../hooks/useRefresh';
+import { openInGoogleMaps } from '../../../lib/mapsUrl';
 import { canComplete, displayPlannedTripStatus } from '../../../lib/plannedTripStatus';
 import { placePhotoUrl } from '../../../lib/placePhoto';
 import { PlannerStackParamList } from '../../../navigation/types';
@@ -179,8 +180,20 @@ export function PlannedTripDetailScreen({ route, navigation }: PlannedTripDetail
             items.map((item) => {
               const photoUri = item.photoRef ? placePhotoUrl(item.photoRef) : undefined;
               return (
-                <View
+                <Pressable
                   key={item.itemId}
+                  accessibilityRole="link"
+                  accessibilityLabel={`Open ${item.title} in Maps`}
+                  onPress={() =>
+                    openInGoogleMaps({
+                      name: item.title,
+                      city: item.city,
+                      country: item.country,
+                      placeId: item.placeId,
+                      lat: item.lat,
+                      lng: item.lng,
+                    })
+                  }
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -211,7 +224,7 @@ export function PlannedTripDetailScreen({ route, navigation }: PlannedTripDetail
                   >
                     <Text style={[t.type.label, { color: t.colors.danger }]}>Remove</Text>
                   </Pressable>
-                </View>
+                </Pressable>
               );
             })
           )}

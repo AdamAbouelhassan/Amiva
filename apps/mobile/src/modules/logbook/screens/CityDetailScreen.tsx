@@ -45,11 +45,10 @@ export function CityDetailScreen({ route, navigation }: CityDetailScreenProps) {
           <ExperienceRow
             experience={item}
             onPress={() => navigation.navigate('ExperienceDetail', { experienceId: item.experienceId })}
-            subtitle={`${'★'.repeat(item.rating)} · ${item.date.toLocaleDateString(undefined, {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })}`}
+            subtitle={`${item.placeName ? `${item.placeName} · ` : ''}${'★'.repeat(item.rating)} · ${item.date.toLocaleDateString(
+              undefined,
+              { month: 'short', day: 'numeric', year: 'numeric' },
+            )}`}
           />
         )}
       />

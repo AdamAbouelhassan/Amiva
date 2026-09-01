@@ -1,13 +1,11 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StyleSheet } from 'react-native';
 import { AccountNavigator } from '../modules/account/AccountNavigator';
 import { DiscoveryNavigator } from '../modules/discovery/DiscoveryNavigator';
 import { LogbookNavigator } from '../modules/logbook/LogbookNavigator';
 import { PlannerNavigator } from '../modules/planner/PlannerNavigator';
 import { SocialNavigator } from '../modules/social/SocialNavigator';
 import { FocusFade } from '../components/FocusFade';
-import { NavIcon, NavIconName } from '../components/icons/NavIcon';
-import { useTheme } from '../theme';
+import { GlassTabBar } from './GlassTabBar';
 import { MainTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -42,26 +40,10 @@ const AccountTab = () => (
 );
 
 export function MainTabs() {
-  const t = useTheme();
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarShowLabel: false,
-        tabBarActiveTintColor: t.colors.accent,
-        tabBarInactiveTintColor: t.colors.textSecondary,
-        // Floats over content; scroll lists clear it via `useTabBarInset()`.
-        tabBarStyle: {
-          position: 'absolute',
-          backgroundColor: t.colors.surface,
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: t.colors.border,
-          elevation: 0,
-        },
-        tabBarIcon: ({ color, size, focused }) => (
-          <NavIcon name={route.name as NavIconName} color={color} size={size ?? 24} focused={focused} />
-        ),
-      })}
+      tabBar={(props) => <GlassTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Discovery" component={DiscoveryTab} />
       <Tab.Screen name="Logbook" component={LogbookTab} />

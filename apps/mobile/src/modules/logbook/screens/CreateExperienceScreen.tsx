@@ -6,19 +6,20 @@
  * up correctly back in the Discovery feed.
  */
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { TravelStyleVector, zeroTravelStyleVector } from '@amiva/core';
 import { Button } from '../../../components/Button';
 import { DateField } from '../../../components/DateField';
 import { PlacesAutocomplete, SelectedPlace } from '../../../components/PlacesAutocomplete';
 import { ScreenContainer } from '../../../components/ScreenContainer';
+import { SelectField } from '../../../components/SelectField';
 import { TextField } from '../../../components/TextField';
 import { TravelStyleRadar } from '../../../components/TravelStyleRadar';
 import { TravelStyleSliders } from '../../../components/TravelStyleSliders';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { placePhotoUrl } from '../../../lib/placePhoto';
 import { uploadPhotoSet } from '../../../lib/uploadPhotos';
-import { radius, spacing, useTheme } from '../../../theme';
+import { spacing, useTheme } from '../../../theme';
 import { CreateExperienceParams } from '../../../navigation/types';
 import { PhotoPicker } from '../components/PhotoPicker';
 import { StarRating } from '../components/StarRating';
@@ -101,35 +102,6 @@ export function CreateExperienceScreen({ route, navigation }: CreateExperienceSc
 
       <PlacesAutocomplete onSelect={setPlace} initialPlace={prefill?.place} />
 
-      {!lockedTripId && trips.length > 0 && (
-        <View style={{ gap: spacing.xs }}>
-          <Text style={t.type.label}>Add to a trip (optional)</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-            {[{ tripId: undefined as string | undefined, name: 'No trip' }, ...trips].map((option) => {
-              const selected = selectedTripId === option.tripId;
-              return (
-                <Pressable
-                  key={option.tripId ?? 'none'}
-                  onPress={() => setSelectedTripId(option.tripId)}
-                  style={{
-                    paddingHorizontal: spacing.sm,
-                    paddingVertical: spacing.xs,
-                    borderRadius: radius.chip,
-                    borderWidth: 1,
-                    borderColor: selected ? t.colors.accent : t.colors.border,
-                    backgroundColor: selected ? t.colors.accent : t.colors.surface,
-                  }}
-                >
-                  <Text style={[t.type.label, { color: selected ? t.colors.textOnAccent : t.colors.textSecondary }]}>
-                    {option.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      )}
-
       <TextField label="Title" value={title} onChangeText={setTitle} placeholder="What did you do?" />
       <TextField
         label="Notes (private)"
@@ -159,6 +131,19 @@ export function CreateExperienceScreen({ route, navigation }: CreateExperienceSc
           </Text>
         )}
       </View>
+
+      {!lockedTripId && trips.length > 0 && (
+        <SelectField
+          label="Trip (optional)"
+          value={selectedTripId}
+          onChange={setSelectedTripId}
+          placeholder="No trip"
+          options={[
+            { value: undefined, label: 'No trip' },
+            ...trips.map((tr) => ({ value: tr.tripId, label: tr.name })),
+          ]}
+        />
+      )}
 
       <DateField
         label={`Date${dateSource === 'exif' ? ' (from photo)' : ''}`}

@@ -1,8 +1,9 @@
 /**
  * "Log this" — turn an existing experience (a friend's post, one you saved)
- * or a saved place into a pre-filled "Log an experience" form. Works from
- * any screen in the Discovery or Logbook stacks (both register
- * `CreateExperience`).
+ * or a saved place into a pre-filled "Log an experience" form. Every stack
+ * that surfaces a "Log this" affordance (Discovery, Logbook, Social,
+ * Planner) registers `CreateExperience`, so `navigate` resolves in-stack
+ * and closing the form returns to where you started.
  */
 import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';

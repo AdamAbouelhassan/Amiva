@@ -37,11 +37,10 @@ export function ExperienceRow({
         </Text>
         <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]} numberOfLines={1}>
           {subtitle ??
-            `${experience.city}, ${experience.country} · ${experience.date.toLocaleDateString(undefined, {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })}`}
+            `${experience.placeName || `${experience.city}, ${experience.country}`} · ${experience.date.toLocaleDateString(
+              undefined,
+              { month: 'short', day: 'numeric', year: 'numeric' },
+            )}`}
         </Text>
       </View>
     </Pressable>
