@@ -1,4 +1,5 @@
-import { Image, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { AppImage } from '../../../components/AppImage';
 import { TripDoc } from '../../../repositories/types';
 import { radius, spacing, useTheme } from '../../../theme';
 
@@ -26,14 +27,7 @@ export function TripRow({ trip, onPress }: { trip: TripDoc; onPress: () => void 
         padding: spacing.sm,
       }}
     >
-      {trip.coverPhotoUrl ? (
-        <Image
-          source={{ uri: trip.coverPhotoUrl }}
-          style={{ width: 56, height: 56, borderRadius: radius.chip, backgroundColor: t.colors.surfaceAlt }}
-        />
-      ) : (
-        <View style={{ width: 56, height: 56, borderRadius: radius.chip, backgroundColor: t.colors.surfaceAlt }} />
-      )}
+      <AppImage uri={trip.coverPhotoUrl} style={{ width: 56, height: 56, borderRadius: radius.chip }} />
       <View style={{ flex: 1 }}>
         <Text style={t.type.subtitle} numberOfLines={1}>
           {trip.name}

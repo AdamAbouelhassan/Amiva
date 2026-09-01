@@ -1,12 +1,14 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import { radius, shadow, spacing, useTheme } from '../theme';
 
-type Variant = 'primary' | 'secondary' | 'warm';
+type Variant = 'primary' | 'secondary' | 'warm' | 'danger';
 
 interface ButtonProps {
   label: string;
   onPress: () => void;
-  /** `warm` = coral, for forward-looking / Planner CTAs (brief §3.3). */
+  /** `warm` = coral, for forward-looking / Planner CTAs (brief §3.3).
+   * `danger` = red outline, for destructive actions a user would regret
+   * tapping by accident (delete, sign out, revert). */
   variant?: Variant;
   disabled?: boolean;
   loading?: boolean;
@@ -21,8 +23,10 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
     primary: { bg: t.colors.accent, fg: t.colors.textOnAccent, border: t.colors.accent },
     warm: { bg: t.colors.accentWarm, fg: t.colors.textOnAccent, border: t.colors.accentWarm },
     secondary: { bg: 'transparent', fg: t.colors.accent, border: t.colors.accent },
+    danger: { bg: 'transparent', fg: t.colors.danger, border: t.colors.danger },
   };
   const c = fills[variant];
+  const flat = variant === 'secondary' || variant === 'danger';
 
   return (
     <Pressable
@@ -33,7 +37,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
       style={({ pressed }) => [
         styles.base,
         { backgroundColor: c.bg, borderColor: c.border },
-        variant !== 'secondary' && !busy && shadow.resting,
+        !flat && !busy && shadow.resting,
         busy && styles.disabled,
         pressed && !busy && styles.pressed,
         style,

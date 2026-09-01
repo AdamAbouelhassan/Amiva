@@ -1,52 +1,36 @@
 /**
  * Minimal date-range field. Collapsed, it's a single row showing the
- * range; tapping expands two `DateField`s (start / end). The end picker
- * always opens at (and can't go before) the start date.
+ * range; tapping expands one `RangeCalendar` where the user picks the
+ * start and end on the same month grid (Google-Flights style).
  */
 import { useState } from 'react';
-import { LayoutAnimation, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LayoutAnimation, Pressable, StyleSheet, Text, View } from 'react-native';
 import { radius, spacing, useTheme } from '../theme';
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { DateField } from './DateField';
+import { RangeCalendar } from './RangeCalendar';
 
 interface DateRangeFieldProps {
   label?: string;
   startDate: Date;
   endDate: Date;
   onChange: (range: { startDate: Date; endDate: Date }) => void;
+  minimumDate?: Date;
 }
 
 function fmt(date: Date): string {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export function DateRangeField({ label, startDate, endDate, onChange }: DateRangeFieldProps) {
+export function DateRangeField({ label, startDate, endDate, onChange, minimumDate }: DateRangeFieldProps) {
   const t = useTheme();
   const reduceMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
-
-  const animate = () => {
-    if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  };
-
-  const setStart = (d: Date | null) => {
-    if (!d) return;
-    // Keep the end on/after the new start — this also makes the end picker
-    // open at the start date the first time the user touches it.
-    const nextEnd = endDate.getTime() < d.getTime() ? d : endDate;
-    onChange({ startDate: d, endDate: nextEnd });
-  };
-
-  const setEnd = (d: Date | null) => {
-    if (!d) return;
-    onChange({ startDate, endDate: d.getTime() < startDate.getTime() ? startDate : d });
-  };
 
   return (
     <View style={styles.container}>
       <Pressable
         onPress={() => {
-          animate();
+          if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
           setExpanded((v) => !v);
         }}
         style={[
@@ -64,14 +48,12 @@ export function DateRangeField({ label, startDate, endDate, onChange }: DateRang
       </Pressable>
 
       {expanded ? (
-        <View style={[styles.body, Platform.OS === 'ios' ? undefined : styles.bodyRow]}>
-          <View style={{ flex: 1 }}>
-            <DateField label="Start" value={startDate} onChange={setStart} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <DateField label="End" value={endDate} onChange={setEnd} minimumDate={startDate} />
-          </View>
-        </View>
+        <RangeCalendar
+          startDate={startDate}
+          endDate={endDate}
+          onChange={onChange}
+          minimumDate={minimumDate}
+        />
       ) : null}
     </View>
   );
@@ -89,6 +71,4 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     minHeight: 56,
   },
-  body: { gap: spacing.sm },
-  bodyRow: { flexDirection: 'row' },
 });

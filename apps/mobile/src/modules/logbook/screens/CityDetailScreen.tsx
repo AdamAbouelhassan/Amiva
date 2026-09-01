@@ -1,9 +1,11 @@
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { BrandEmptyState } from '../../../components/BrandEmptyState';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { useRefresh } from '../../../hooks/useRefresh';
+import { useTabBarInset } from '../../../hooks/useTabBarInset';
 import { spacing, useTheme } from '../../../theme';
+import { ExperienceRow } from '../components/ExperienceRow';
 import { useCityExperiences } from '../hooks/useExperiences';
 
 interface CityDetailScreenProps {
@@ -16,6 +18,7 @@ export function CityDetailScreen({ route, navigation }: CityDetailScreenProps) {
   const { country, city } = route.params;
   const { profile } = useCurrentUser();
   const refresh = useRefresh();
+  const tabInset = useTabBarInset();
   const { data: experiences = [] } = useCityExperiences(profile?.uid, country, city);
 
   return (
@@ -26,7 +29,7 @@ export function CityDetailScreen({ route, navigation }: CityDetailScreenProps) {
       </View>
       <FlatList
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg }}
+        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg + tabInset, gap: spacing.sm }}
         data={experiences}
         keyExtractor={(item) => item.experienceId}
         refreshControl={
@@ -39,15 +42,15 @@ export function CityDetailScreen({ route, navigation }: CityDetailScreenProps) {
         }
         ListEmptyComponent={<BrandEmptyState title="No experiences here yet" body={`Log something from ${city}.`} />}
         renderItem={({ item }) => (
-          <Pressable
-            style={{ paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: t.colors.border }}
+          <ExperienceRow
+            experience={item}
             onPress={() => navigation.navigate('ExperienceDetail', { experienceId: item.experienceId })}
-          >
-            <Text style={t.type.subtitle}>{item.title}</Text>
-            <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
-              {'★'.repeat(item.rating)} · {item.date.toDateString()}
-            </Text>
-          </Pressable>
+            subtitle={`${'★'.repeat(item.rating)} · ${item.date.toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}`}
+          />
         )}
       />
     </ScreenContainer>

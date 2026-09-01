@@ -9,11 +9,14 @@ import { BrandEmptyState } from '../../../components/BrandEmptyState';
 import { Button } from '../../../components/Button';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { SegmentedControl } from '../../../components/SegmentedControl';
+import { TabPanes } from '../../../components/TabPanes';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { useRefresh } from '../../../hooks/useRefresh';
+import { useTabBarInset } from '../../../hooks/useTabBarInset';
 import { LogbookStackParamList } from '../../../navigation/types';
 import { ExperienceDoc, TripDoc } from '../../../repositories/types';
 import { radius, spacing, useTheme } from '../../../theme';
+import { ExperienceRow } from '../components/ExperienceRow';
 import { TripRow } from '../components/TripRow';
 import { useLogbookDrilldown } from '../hooks/useLogbookDrilldown';
 import { useTrips } from '../hooks/useTrips';
@@ -42,9 +45,10 @@ export function LogbookHomeScreen({ navigation }: LogbookHomeScreenProps) {
   const { countries, stats, experiences, isLoading } = useLogbookDrilldown(profile?.uid);
   const { data: trips = [], isLoading: tripsLoading } = useTrips(profile?.uid);
   const refresh = useRefresh();
+  const tabInset = useTabBarInset();
   const [tab, setTab] = useState<Tab>('trips');
 
-  const refreshControl = (
+  const makeRC = () => (
     <RefreshControl
       refreshing={refresh.refreshing}
       onRefresh={refresh.onRefresh}
@@ -52,6 +56,7 @@ export function LogbookHomeScreen({ navigation }: LogbookHomeScreenProps) {
       colors={[t.colors.accent]}
     />
   );
+  const listPad = { paddingHorizontal: spacing.screen, paddingBottom: spacing.lg + tabInset };
 
   const timeline = useMemo<TimelineItem[]>(() => {
     const items: TimelineItem[] = [
@@ -78,7 +83,7 @@ export function LogbookHomeScreen({ navigation }: LogbookHomeScreenProps) {
   const loading = isLoading || tripsLoading;
 
   return (
-    <ScreenContainer scroll={false}>
+    <ScreenContainer scroll={false} safeAreaTop>
       <View style={{ padding: spacing.screen, gap: spacing.md }}>
         <Text style={t.type.displayMd}>Logbook</Text>
 
@@ -117,93 +122,100 @@ export function LogbookHomeScreen({ navigation }: LogbookHomeScreenProps) {
         />
       </View>
 
-      {tab === 'trips' && (
-        <FlatList
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg, gap: spacing.sm }}
-          data={trips}
-          keyExtractor={(item) => item.tripId}
-          refreshControl={refreshControl}
-          ListEmptyComponent={
-            !loading ? (
-              <BrandEmptyState
-                title="No trips yet"
-                body="Create a trip to collect experiences, photos, and notes in one place."
-                action={{ label: 'Log a trip', onPress: () => navigation.navigate('CreateTrip') }}
+      <TabPanes
+        activeKey={tab}
+        panes={[
+          {
+            key: 'trips',
+            node: (
+              <FlatList
+                style={{ flex: 1 }}
+                contentContainerStyle={{ ...listPad, gap: spacing.sm }}
+                data={trips}
+                keyExtractor={(item) => item.tripId}
+                refreshControl={makeRC()}
+                ListEmptyComponent={
+                  !loading ? (
+                    <BrandEmptyState
+                      title="No trips yet"
+                      body="Create a trip to collect experiences, photos, and notes in one place."
+                      action={{ label: 'Log a trip', onPress: () => navigation.navigate('CreateTrip') }}
+                    />
+                  ) : null
+                }
+                renderItem={({ item }) => (
+                  <TripRow trip={item} onPress={() => navigation.navigate('TripDetail', { tripId: item.tripId })} />
+                )}
               />
-            ) : null
-          }
-          renderItem={({ item }) => (
-            <TripRow trip={item} onPress={() => navigation.navigate('TripDetail', { tripId: item.tripId })} />
-          )}
-        />
-      )}
-
-      {tab === 'countries' && (
-        <FlatList
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg }}
-          data={countryRows}
-          keyExtractor={(item) => item.country}
-          refreshControl={refreshControl}
-          ListEmptyComponent={
-            !loading ? (
-              <BrandEmptyState
-                title="Nothing logged by country yet"
-                body="Countries appear here once you add a trip or log an experience."
+            ),
+          },
+          {
+            key: 'countries',
+            node: (
+              <FlatList
+                style={{ flex: 1 }}
+                contentContainerStyle={listPad}
+                data={countryRows}
+                keyExtractor={(item) => item.country}
+                refreshControl={makeRC()}
+                ListEmptyComponent={
+                  !loading ? (
+                    <BrandEmptyState
+                      title="Nothing logged by country yet"
+                      body="Countries appear here once you add a trip or log an experience."
+                    />
+                  ) : null
+                }
+                renderItem={({ item }) => (
+                  <Pressable
+                    style={{ paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: t.colors.border }}
+                    onPress={() => navigation.navigate('CountryDetail', { country: item.country })}
+                  >
+                    <Text style={t.type.subtitle}>{item.country}</Text>
+                    <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
+                      {[
+                        item.tripCount > 0 ? `${item.tripCount} ${item.tripCount === 1 ? 'trip' : 'trips'}` : null,
+                        item.experienceCount > 0
+                          ? `${item.experienceCount} ${item.experienceCount === 1 ? 'experience' : 'experiences'}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || 'No entries yet'}
+                    </Text>
+                  </Pressable>
+                )}
               />
-            ) : null
-          }
-          renderItem={({ item }) => (
-            <Pressable
-              style={{ paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: t.colors.border }}
-              onPress={() => navigation.navigate('CountryDetail', { country: item.country })}
-            >
-              <Text style={t.type.subtitle}>{item.country}</Text>
-              <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
-                {[
-                  item.tripCount > 0 ? `${item.tripCount} ${item.tripCount === 1 ? 'trip' : 'trips'}` : null,
-                  item.experienceCount > 0
-                    ? `${item.experienceCount} ${item.experienceCount === 1 ? 'experience' : 'experiences'}`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ') || 'No entries yet'}
-              </Text>
-            </Pressable>
-          )}
-        />
-      )}
-
-      {tab === 'timeline' && (
-        <FlatList
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg, gap: spacing.xs }}
-          data={timeline}
-          keyExtractor={(item) => `${item.kind}:${item.id}`}
-          refreshControl={refreshControl}
-          ListEmptyComponent={
-            !loading ? (
-              <BrandEmptyState title="Nothing logged yet" body="Your timeline fills in as you log trips and experiences." />
-            ) : null
-          }
-          renderItem={({ item }) =>
-            item.kind === 'trip' ? (
-              <TripRow trip={item.trip} onPress={() => navigation.navigate('TripDetail', { tripId: item.trip.tripId })} />
-            ) : (
-              <Pressable
-                style={{ paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: t.colors.border }}
-                onPress={() => navigation.navigate('ExperienceDetail', { experienceId: item.exp.experienceId })}
-              >
-                <Text style={t.type.subtitle}>{item.exp.title}</Text>
-                <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
-                  {item.exp.city}, {item.exp.country} · {item.exp.date.toDateString()}
-                </Text>
-              </Pressable>
-            )
-          }
-        />
-      )}
+            ),
+          },
+          {
+            key: 'timeline',
+            node: (
+              <FlatList
+                style={{ flex: 1 }}
+                contentContainerStyle={{ ...listPad, gap: spacing.sm }}
+                data={timeline}
+                keyExtractor={(item) => `${item.kind}:${item.id}`}
+                refreshControl={makeRC()}
+                ListEmptyComponent={
+                  !loading ? (
+                    <BrandEmptyState title="Nothing logged yet" body="Your timeline fills in as you log trips and experiences." />
+                  ) : null
+                }
+                renderItem={({ item }) =>
+                  item.kind === 'trip' ? (
+                    <TripRow trip={item.trip} onPress={() => navigation.navigate('TripDetail', { tripId: item.trip.tripId })} />
+                  ) : (
+                    <ExperienceRow
+                      experience={item.exp}
+                      onPress={() => navigation.navigate('ExperienceDetail', { experienceId: item.exp.experienceId })}
+                    />
+                  )
+                }
+              />
+            ),
+          },
+        ]}
+      />
     </ScreenContainer>
   );
 }

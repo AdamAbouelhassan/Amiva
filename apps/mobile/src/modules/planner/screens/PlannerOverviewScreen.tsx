@@ -4,6 +4,7 @@ import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useRefresh } from '../../../hooks/useRefresh';
+import { useTabBarInset } from '../../../hooks/useTabBarInset';
 import { displayPlannedTripStatus } from '../../../lib/plannedTripStatus';
 import { spacing, useTheme } from '../../../theme';
 import { StatusSteps } from '../components/StatusSteps';
@@ -18,10 +19,11 @@ interface PlannerOverviewScreenProps {
 export function PlannerOverviewScreen({ navigation }: PlannerOverviewScreenProps) {
   const t = useTheme();
   const refresh = useRefresh();
+  const tabInset = useTabBarInset();
   const { data: trips = [], isLoading } = usePlannedTrips();
 
   return (
-    <ScreenContainer scroll={false}>
+    <ScreenContainer scroll={false} safeAreaTop>
       <View style={{ padding: spacing.screen, gap: spacing.sm }}>
         <Text style={t.type.displayMd}>Planner</Text>
         <Button label="Plan a trip" variant="warm" onPress={() => navigation.navigate('CreatePlannedTrip')} />
@@ -29,7 +31,7 @@ export function PlannerOverviewScreen({ navigation }: PlannerOverviewScreenProps
 
       <FlatList
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg, gap: spacing.sm }}
+        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg + tabInset, gap: spacing.sm }}
         data={trips}
         keyExtractor={(item) => item.plannedTripId}
         refreshControl={

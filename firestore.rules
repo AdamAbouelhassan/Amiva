@@ -125,8 +125,15 @@ service cloud.firestore {
     }
 
     // --- saves ---------------------------------------------------------------
+    // Doc id is `{userId}_{experienceId}`. A `get` on a *missing* save (the
+    // common "is this saved?" check for an unsaved item) evaluates the rule
+    // with `resource == null`, so `resource.data.userId` would error and the
+    // read would be denied — hence the explicit null branch, gated on the
+    // id prefix (Firebase uids never contain `_`).
     match /saves/{saveId} {
-      allow read: if isOwner(resource.data.userId);
+      allow read: if resource == null
+        ? (isSignedIn() && saveId.split('_')[0] == request.auth.uid)
+        : isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
       allow delete: if isOwner(resource.data.userId); // "unsave"
       allow update: if false; // saves are immutable — delete + recreate instead
@@ -137,7 +144,10 @@ service cloud.firestore {
     // just keyed by placeId since a recommended place was never logged as
     // an experience. Feeds Planner's "Add from your saved places".
     match /savedPlaces/{savedPlaceId} {
-      allow read: if isOwner(resource.data.userId);
+      // Same missing-doc caveat as `saves` — id is `{userId}_{placeId}`.
+      allow read: if resource == null
+        ? (isSignedIn() && savedPlaceId.split('_')[0] == request.auth.uid)
+        : isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
       allow delete: if isOwner(resource.data.userId); // "unsave"
       allow update: if false;

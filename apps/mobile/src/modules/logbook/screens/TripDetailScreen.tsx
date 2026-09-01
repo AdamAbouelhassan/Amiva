@@ -1,9 +1,11 @@
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
+import { AppImage } from '../../../components/AppImage';
 import { Button } from '../../../components/Button';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useRefresh } from '../../../hooks/useRefresh';
 import { LogbookStackParamList } from '../../../navigation/types';
 import { radius, spacing, useTheme } from '../../../theme';
+import { ExperienceRow } from '../components/ExperienceRow';
 import { useTrip } from '../hooks/useTrips';
 import { useTripExperiences } from '../hooks/useExperiences';
 
@@ -37,7 +39,7 @@ export function TripDetailScreen({ route, navigation }: TripDetailScreenProps) {
   return (
     <ScreenContainer onRefresh={refresh.onRefresh} refreshing={refresh.refreshing}>
       {trip.coverPhotoUrl ? (
-        <Image source={{ uri: trip.coverPhotoUrl }} style={{ width: '100%', height: 200, borderRadius: radius.card }} />
+        <AppImage uri={trip.coverPhotoUrl} style={{ width: '100%', height: 200, borderRadius: radius.card }} />
       ) : null}
 
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm }}>
@@ -67,7 +69,7 @@ export function TripDetailScreen({ route, navigation }: TripDetailScreenProps) {
       {trip.photoUrls.length > 0 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs }}>
           {trip.photoUrls.map((uri) => (
-            <Image key={uri} source={{ uri }} style={{ width: 120, height: 120, borderRadius: radius.chip }} />
+            <AppImage key={uri} uri={uri} style={{ width: 120, height: 120, borderRadius: radius.chip }} />
           ))}
         </ScrollView>
       ) : null}
@@ -78,19 +80,14 @@ export function TripDetailScreen({ route, navigation }: TripDetailScreenProps) {
         onPress={() => navigation.navigate('CreateExperience', { tripId })}
       />
 
-      <View style={{ gap: spacing.xs }}>
+      <View style={{ gap: spacing.sm }}>
         <Text style={t.type.label}>Experiences</Text>
         {experiences.map((experience) => (
-          <Pressable
+          <ExperienceRow
             key={experience.experienceId}
-            style={{ paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: t.colors.border }}
+            experience={experience}
             onPress={() => navigation.navigate('ExperienceDetail', { experienceId: experience.experienceId })}
-          >
-            <Text style={t.type.subtitle}>{experience.title}</Text>
-            <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
-              {experience.city} · {experience.date.toDateString()}
-            </Text>
-          </Pressable>
+          />
         ))}
         {experiences.length === 0 && (
           <Text style={[t.type.body, { color: t.colors.textSecondary }]}>No experiences yet.</Text>

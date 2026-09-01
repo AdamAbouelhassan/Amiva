@@ -1,16 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Image, Pressable, Share, Text, View } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import { Pressable, Share, Text, View } from 'react-native';
 import { toMatchPercent } from '@amiva/core';
+import { AppImage } from '../../../components/AppImage';
 import { Card } from '../../../components/Card';
+import { IconButton } from '../../../components/IconButton';
 import { MatchScoreBadge } from '../../../components/MatchScoreBadge';
 import { ProfileIdentity } from '../../../components/ProfileIdentity';
 import { orNull } from '../../../lib/queryHelpers';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { useLogExperienceNav } from '../../../hooks/useLogExperienceNav';
+import { useSaveToggle } from '../../../hooks/useSaves';
 import { useExperience } from '../../logbook/hooks/useExperiences';
-import { SaveRepository } from '../../../repositories/saveRepository';
 import { UserRepository } from '../../../repositories/userRepository';
-import { radius, spacing, useTheme } from '../../../theme';
+import { spacing, useTheme } from '../../../theme';
 
 interface FeedItemCardProps {
   experienceId: string;
@@ -22,29 +24,14 @@ interface FeedItemCardProps {
 export function FeedItemCard({ experienceId, isFriend, matchScore, onPress }: FeedItemCardProps) {
   const t = useTheme();
   const { profile } = useCurrentUser();
-  const queryClient = useQueryClient();
   const logNav = useLogExperienceNav();
   const { data: experience } = useExperience(experienceId);
+  const save = useSaveToggle(experienceId);
 
   const ownerQuery = useQuery({
     queryKey: ['users', experience?.ownerId],
     queryFn: () => UserRepository.getById(experience!.ownerId).then(orNull),
     enabled: !!experience,
-  });
-
-  const savedQuery = useQuery({
-    queryKey: ['saves', profile?.uid, experienceId],
-    queryFn: () => SaveRepository.isSaved(profile!.uid, experienceId),
-    enabled: !!profile,
-  });
-
-  const toggleSave = useMutation({
-    mutationFn: async () => {
-      if (!profile) return;
-      if (savedQuery.data) await SaveRepository.unsave(profile.uid, experienceId);
-      else await SaveRepository.save(profile.uid, experienceId);
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['saves', profile?.uid, experienceId] }),
   });
 
   if (!experience) return null;
@@ -53,11 +40,7 @@ export function FeedItemCard({ experienceId, isFriend, matchScore, onPress }: Fe
   return (
     <Card padded={false} elevation="raised" style={{ overflow: 'hidden' }}>
       <Pressable onPress={onPress}>
-        {experience.photoUrls[0] ? (
-          <Image source={{ uri: experience.photoUrls[0] }} style={{ width: '100%', height: 190 }} />
-        ) : (
-          <View style={{ width: '100%', height: 96, backgroundColor: t.colors.surfaceAlt }} />
-        )}
+        <AppImage uri={experience.photoUrls[0]} style={{ width: '100%', height: experience.photoUrls[0] ? 190 : 96 }} />
         <View style={{ padding: spacing.md, gap: spacing.xs }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm }}>
             <ProfileIdentity
@@ -83,51 +66,30 @@ export function FeedItemCard({ experienceId, isFriend, matchScore, onPress }: Fe
           </Text>
 
           {/* Save is the only engagement action (spec §5.1 — no likes/comments). */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xxs }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xxs }}>
             {!isOwner && (
-              <Pressable
-                onPress={() => toggleSave.mutate()}
-                hitSlop={8}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: spacing.xxs,
-                  paddingVertical: spacing.xxs,
-                  paddingHorizontal: spacing.sm,
-                  borderRadius: radius.pill,
-                  backgroundColor: savedQuery.data ? t.colors.accent : t.colors.accentMuted,
-                }}
-              >
-                <Text
-                  style={[
-                    t.type.label,
-                    { color: savedQuery.data ? t.colors.textOnAccent : t.colors.accent },
-                  ]}
-                >
-                  {savedQuery.data ? 'Saved' : 'Save'}
-                </Text>
-              </Pressable>
+              <IconButton
+                name={save.saved ? 'bookmark' : 'bookmark-outline'}
+                active={save.saved}
+                onPress={save.toggle}
+                accessibilityLabel={save.saved ? 'Saved' : 'Save'}
+              />
             )}
             {!isOwner && (
-              <Pressable
-                hitSlop={8}
+              <IconButton
+                name="add-circle-outline"
                 onPress={() => logNav.fromExperience(experience)}
-                style={{ paddingVertical: spacing.xxs, paddingHorizontal: spacing.sm }}
-              >
-                <Text style={[t.type.label, { color: t.colors.accent }]}>
-                  {logNav.preparing ? 'Opening…' : 'Log this'}
-                </Text>
-              </Pressable>
+                loading={logNav.preparing}
+                accessibilityLabel="Log this in your logbook"
+              />
             )}
-            <Pressable
-              hitSlop={8}
+            <IconButton
+              name="share-social-outline"
               onPress={() =>
                 Share.share({ message: `${experience.title} — ${experience.city}, ${experience.country} on Amiva` })
               }
-              style={{ paddingVertical: spacing.xxs, paddingHorizontal: spacing.sm }}
-            >
-              <Text style={[t.type.label, { color: t.colors.textSecondary }]}>Share</Text>
-            </Pressable>
+              accessibilityLabel="Share"
+            />
           </View>
         </View>
       </Pressable>

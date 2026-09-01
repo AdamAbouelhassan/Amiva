@@ -155,6 +155,73 @@ into it, restores `status: 'planning'`. The planner create/edit form hides
 the photo picker (`<TripFormFields photos={false}>`). Diverges from
 functional_specification.md §4.2/§4.3 — documented product decision.
 
+**Tab motion + icon actions (2026-08-31):** the bottom tab bar is
+`position:'absolute'` + **opaque** (`t.colors.surface`, hairline top
+border) — scroll content clears it via **`hooks/useTabBarInset.ts`**
+(`BottomTabBarHeightContext`, 0 outside a tab nav) wired into
+`ScreenContainer` (scroll) + every `scroll={false}`+FlatList screen's
+`contentContainerStyle`. `tabBarShowLabel:false`; **no text labels** —
+`NavIcon` is Ionicons, hollow (`*-outline`) when inactive / filled when
+`focused` (Spotify-style). `MainTabs` wraps each tab in
+**`components/FocusFade.tsx`** (fade+rise on focus — module-level
+components, never inline render props). In-page tabs (Discovery / Logbook
+/ FriendDetail) render panes through **`components/TabPanes.tsx`**
+(kept-mounted, cross-dissolve). `SegmentedControl` has a spring-sliding
+solid pill (`radius.chip - 3`, concentric; API unchanged). Card `Save` /
+`Log this` / `Share` / `Remove` are **`components/IconButton.tsx`**
+(Ionicons via `@expo/vector-icons`, `Ionicons.font` in `App.tsx`
+`useFonts`; `tone="danger"` = red glyph on `colors.dangerMuted`).
+`PlaceRecommendationCard` + saved-place rows: **tapping the card opens
+Google Maps** (the "Maps" button is gone).
+
+**Native Liquid Glass was tried and dropped (2026-08-31):** `expo-glass-effect`
+`GlassView` only renders real glass on an iOS 26 device and looked broken
+in the fallback / on-device (square pill, invisible on the tab bar), so
+`GlassSurface.tsx` was deleted and the surfaces are plain solid. `expo-glass-effect`
+/ `expo-blur` remain installed but unused. Don't re-add a glass wrapper
+without an iOS 26 test device.
+
+**Screen-body header actions (2026-08-31):** the "Saved" (Discovery) and
+"Settings" (Profile) actions moved from `headerRight` into the screen
+body as plain accent-text `Pressable`s — iOS 26 wraps native nav-bar
+buttons in an unwanted bordered glass capsule. New `headerRight` actions
+should go in the body too.
+
+**Tab home screens have no native header (2026-09-01):** the 5 first
+screens (`DiscoverHome`, `LogbookHome`, `PlannerOverview`, `FriendsList`,
+`Profile`) set `headerShown:false` and render their own `displayMd` title
+in-body (was showing the title twice). They pass `safeAreaTop` to
+`ScreenContainer` (or `edges={['top',...]}` on a raw `SafeAreaView`) for
+the notch inset. Nested/pushed screens keep their native header + back
+button.
+
+**Dangerous buttons are red (2026-08-31):** `<Button variant="danger">`
+(red outline) for sign-out / revert / any high-regret action; delete
+links stay red text (`colors.danger`). `colors.dangerMuted` is the faint
+red disc behind `IconButton tone="danger"`.
+
+**Date range picker (2026-08-31):** `<DateRangeField>` expands to one
+**`components/RangeCalendar.tsx`** (custom month grid, no native picker) —
+tap once for start, again for end, third tap restarts. `<DateField>`
+(single date) still wraps `@react-native-community/datetimepicker`.
+
+**Images + friend profiles (2026-08-31):** every network image now goes
+through **`components/AppImage.tsx`** (wraps `expo-image` — real
+memory+disk cache so lists don't re-download on remount — with a pulsing
+`surfaceAlt` skeleton until `onLoadEnd`, gated by `useReducedMotion`).
+Plain RN `<Image>` only survives for local `require()` assets
+(`BrandMark`). **`FriendDetailScreen`** is now 3 tabs — Compatibility
+(overlaid radar + % + top-3 `CategoryChip`s, **no** `TravelStyleValueList`
+number dump), Trips (their visible logbook trips + non-completed plans, via
+`ProfileTrip`/`ProfilePlannedTrip` display cards), Logbook (their visible
+experience ids → `FeedItemCard`). Backed by the new **`getUserProfileContent`**
+callable (`lib/userProfileContent.ts` + adapter) — Admin-SDK, the
+enforcement point: per-trip/plan `visibility` via `isVisibleTo` (+ planned-
+trip collaborators), experiences gated by the owner's *account*
+`privacySetting` (they have no per-doc visibility). Payload never carries
+`visibility`/`collaboratorIds`. `ExperienceDetail` + `CreateExperience` are
+now also registered in the Social stack (reused from Logbook).
+
 **Delete (2026-08-31):** experiences, Logbook trips, and planned trips can
 all be deleted by their owner — destructive `Pressable` on the Edit screen
 (`EditExperienceScreen` / `EditTripScreen` / `EditPlannedTripScreen`), plus
@@ -269,6 +336,16 @@ every test tonight used to authenticate.
   `usernames/{username}` lookup collection instead of a query over
   `users` — same pattern applies to any other "look up by a field, gated
   by privacy" case.
+- **A read rule that dereferences `resource.data.*` denies a `get` on a
+  MISSING doc** — `resource` is `null`, so `resource.data.userId` errors
+  and the whole read is refused (client sees `permission-denied`, not
+  "doesn't exist"). Bit `saves` / `savedPlaces` on 2026-09-01: the
+  "is this saved?" check (`getDoc` of `{uid}_{id}`) threw for any *unsaved*
+  item, so React Query kept the last `true` and the bookmark icon stuck
+  filled after an un-save. Fix: rule has an explicit `resource == null`
+  branch gated on the id prefix (`saveId.split('_')[0] == request.auth.uid`;
+  Firebase uids never contain `_`), plus `isSaved()` swallows the error →
+  `false` as a belt-and-braces client guard.
 - **React Query v5 throws if a `queryFn` ever resolves `undefined`**
   (v4 allowed it silently). Repositories use `T | undefined` for "not
   found" — wrap those calls with `orNull` (`apps/mobile/src/lib/

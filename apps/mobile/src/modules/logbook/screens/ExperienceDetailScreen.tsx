@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
-import { Image, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
+import { AppImage } from '../../../components/AppImage';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
+import { IconButton } from '../../../components/IconButton';
 import { MatchScoreBadge } from '../../../components/MatchScoreBadge';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { TravelStyleRadar } from '../../../components/TravelStyleRadar';
@@ -10,7 +11,7 @@ import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { useLogExperienceNav } from '../../../hooks/useLogExperienceNav';
 import { useMatchScore } from '../../../hooks/useMatchScore';
 import { useRefresh } from '../../../hooks/useRefresh';
-import { SaveRepository } from '../../../repositories/saveRepository';
+import { useSaveToggle } from '../../../hooks/useSaves';
 import { radius, spacing, useTheme } from '../../../theme';
 import { useExperience } from '../hooks/useExperiences';
 
@@ -22,10 +23,10 @@ export function ExperienceDetailScreen({ route }: ExperienceDetailScreenProps) {
   const t = useTheme();
   const { experienceId } = route.params;
   const { profile } = useCurrentUser();
-  const queryClient = useQueryClient();
   const { data: experience } = useExperience(experienceId);
   const logNav = useLogExperienceNav();
   const refresh = useRefresh();
+  const save = useSaveToggle(experienceId);
   const navigation = useNavigation<{ navigate: (screen: 'EditExperience', params: { experienceId: string }) => void }>();
 
   const matchScore = useMatchScore(
@@ -33,36 +34,18 @@ export function ExperienceDetailScreen({ route }: ExperienceDetailScreenProps) {
     { type: 'experience', experienceId },
   );
 
-  const savedQuery = useQuery({
-    queryKey: ['saves', profile?.uid, experienceId],
-    queryFn: () => SaveRepository.isSaved(profile!.uid, experienceId),
-    enabled: !!profile,
-  });
-
-  const toggleSave = useMutation({
-    mutationFn: async () => {
-      if (!profile) return;
-      if (savedQuery.data) await SaveRepository.unsave(profile.uid, experienceId);
-      else await SaveRepository.save(profile.uid, experienceId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['saves'] });
-      queryClient.invalidateQueries({ queryKey: ['experiences', 'saved'] });
-    },
-  });
-
   if (!experience) return null;
   const isOwner = profile?.uid === experience.ownerId;
-  const saved = !!savedQuery.data;
+  const saved = save.saved;
 
   return (
     <ScreenContainer onRefresh={refresh.onRefresh} refreshing={refresh.refreshing}>
       {experience.photoUrls.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {experience.photoUrls.map((url) => (
-            <Image
+            <AppImage
               key={url}
-              source={{ uri: url }}
+              uri={url}
               style={{ width: 280, height: 200, borderRadius: radius.card, marginRight: spacing.sm }}
             />
           ))}
@@ -83,14 +66,25 @@ export function ExperienceDetailScreen({ route }: ExperienceDetailScreenProps) {
             variant="secondary"
             onPress={() => navigation.navigate('EditExperience', { experienceId })}
           />
-        ) : matchScore.data ? (
-          <MatchScoreBadge
-            matchPercent={matchScore.data.matchPercent}
-            vectorA={profile?.travelStyle}
-            vectorB={experience.categoryScores}
-            detailTitle={experience.title}
-          />
-        ) : null}
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            {matchScore.data ? (
+              <MatchScoreBadge
+                matchPercent={matchScore.data.matchPercent}
+                vectorA={profile?.travelStyle}
+                vectorB={experience.categoryScores}
+                detailTitle={experience.title}
+              />
+            ) : null}
+            <IconButton
+              name={saved ? 'bookmark' : 'bookmark-outline'}
+              active={saved}
+              onPress={save.toggle}
+              loading={save.pending}
+              accessibilityLabel={saved ? 'Saved' : 'Save'}
+            />
+          </View>
+        )}
       </View>
 
       {isOwner && experience.notes ? (
@@ -107,19 +101,11 @@ export function ExperienceDetailScreen({ route }: ExperienceDetailScreenProps) {
 
       {!isOwner && (
         <View style={{ gap: spacing.sm }}>
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <View style={{ flex: 1 }}>
-              <Button
-                label={saved ? 'Saved' : 'Save'}
-                variant={saved ? 'primary' : 'secondary'}
-                onPress={() => toggleSave.mutate()}
-                loading={toggleSave.isPending}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button label="Log this experience" onPress={() => logNav.fromExperience(experience)} loading={logNav.preparing} />
-            </View>
-          </View>
+          <Button
+            label="Log this experience"
+            onPress={() => logNav.fromExperience(experience)}
+            loading={logNav.preparing}
+          />
           <Text style={[t.type.caption, { color: t.colors.textSecondary, textAlign: 'center' }]}>
             Been here too? “Log this experience” starts a logbook entry pre-filled with the place and category profile.
           </Text>

@@ -5,8 +5,9 @@
  * completion collects photos and moves the trip to the Logbook; a
  * completed trip can be reverted).
  */
-import { Alert, Image, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { AppImage } from '../../../components/AppImage';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { ScreenContainer } from '../../../components/ScreenContainer';
@@ -149,7 +150,7 @@ export function PlannedTripDetailScreen({ route, navigation }: PlannedTripDetail
           ) : null}
           <Button
             label={revert.isPending ? 'Reverting…' : 'Revert — I completed this by mistake'}
-            variant="secondary"
+            variant="danger"
             onPress={confirmRevert}
             loading={revert.isPending}
           />
@@ -191,16 +192,7 @@ export function PlannedTripDetailScreen({ route, navigation }: PlannedTripDetail
                     padding: spacing.sm,
                   }}
                 >
-                  {photoUri ? (
-                    <Image
-                      source={{ uri: photoUri }}
-                      style={{ width: 48, height: 48, borderRadius: radius.chip, backgroundColor: t.colors.surfaceAlt }}
-                    />
-                  ) : (
-                    <View
-                      style={{ width: 48, height: 48, borderRadius: radius.chip, backgroundColor: t.colors.surfaceAlt }}
-                    />
-                  )}
+                  <AppImage uri={photoUri} style={{ width: 48, height: 48, borderRadius: radius.chip }} />
                   <View style={{ flex: 1 }}>
                     <Text style={t.type.body} numberOfLines={1}>
                       {item.title}

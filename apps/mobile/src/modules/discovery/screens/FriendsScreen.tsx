@@ -2,6 +2,7 @@ import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { BrandEmptyState } from '../../../components/BrandEmptyState';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useRefresh } from '../../../hooks/useRefresh';
+import { useTabBarInset } from '../../../hooks/useTabBarInset';
 import { spacing, useTheme } from '../../../theme';
 import { ActivityCard } from '../components/ActivityCard';
 import { useFriendsActivity } from '../hooks/useFriendsActivity';
@@ -13,6 +14,7 @@ interface FriendsScreenProps {
 export function FriendsScreen({ navigation }: FriendsScreenProps) {
   const t = useTheme();
   const refresh = useRefresh();
+  const tabInset = useTabBarInset();
   const { items, isLoading, error } = useFriendsActivity();
 
   return (
@@ -25,7 +27,7 @@ export function FriendsScreen({ navigation }: FriendsScreenProps) {
 
       <FlatList
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: spacing.screen, gap: spacing.lg }}
+        contentContainerStyle={{ padding: spacing.screen, paddingBottom: spacing.screen + tabInset, gap: spacing.lg }}
         data={items}
         keyExtractor={(item) => item.id}
         refreshControl={

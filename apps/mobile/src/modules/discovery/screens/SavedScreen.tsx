@@ -5,12 +5,14 @@
  * (functional_specification.md §5.1); this is where you review it, remove
  * it, or turn it into a logged experience.
  */
-import { FlatList, Image, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { AppImage } from '../../../components/AppImage';
 import { BrandEmptyState } from '../../../components/BrandEmptyState';
-import { Button } from '../../../components/Button';
+import { IconButton } from '../../../components/IconButton';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useLogExperienceNav } from '../../../hooks/useLogExperienceNav';
 import { useRefresh } from '../../../hooks/useRefresh';
+import { useTabBarInset } from '../../../hooks/useTabBarInset';
 import { SavedItem, useSavedItems, useUnsaveExperience, useUnsavePlace } from '../../../hooks/useSaves';
 import { openInGoogleMaps } from '../../../lib/mapsUrl';
 import { placePhotoUrl } from '../../../lib/placePhoto';
@@ -26,6 +28,7 @@ interface SavedScreenProps {
 export function SavedScreen({ navigation }: SavedScreenProps) {
   const t = useTheme();
   const refresh = useRefresh();
+  const tabInset = useTabBarInset();
   const { items, isLoading } = useSavedItems();
   const unsaveExperience = useUnsaveExperience();
   const unsavePlace = useUnsavePlace();
@@ -42,7 +45,7 @@ export function SavedScreen({ navigation }: SavedScreenProps) {
 
       <FlatList
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg, gap: spacing.sm }}
+        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg + tabInset, gap: spacing.sm }}
         data={items}
         keyExtractor={(item) => `${item.kind}:${item.id}`}
         refreshControl={
@@ -68,7 +71,15 @@ export function SavedScreen({ navigation }: SavedScreenProps) {
             onOpen={
               item.kind === 'experience'
                 ? () => navigation.navigate('ExperienceDetail', { experienceId: item.experience.experienceId })
-                : undefined
+                : () =>
+                    openInGoogleMaps({
+                      name: item.place.name,
+                      city: item.place.city,
+                      country: item.place.country,
+                      placeId: item.place.placeId,
+                      lat: item.place.lat,
+                      lng: item.place.lng,
+                    })
             }
             onLog={() =>
               item.kind === 'experience'
@@ -117,6 +128,9 @@ function SavedRow({
   return (
     <View
       style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
         backgroundColor: t.colors.surface,
         borderWidth: 1,
         borderColor: t.colors.border,
@@ -127,16 +141,9 @@ function SavedRow({
       <Pressable
         onPress={onOpen}
         disabled={!onOpen}
-        style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}
+        style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center', flex: 1 }}
       >
-        {photoUri ? (
-          <Image
-            source={{ uri: photoUri }}
-            style={{ width: 56, height: 56, borderRadius: radius.chip, backgroundColor: t.colors.surfaceAlt }}
-          />
-        ) : (
-          <View style={{ width: 56, height: 56, borderRadius: radius.chip, backgroundColor: t.colors.surfaceAlt }} />
-        )}
+        <AppImage uri={photoUri} style={{ width: 52, height: 52, borderRadius: radius.chip }} />
         <View style={{ flex: 1 }}>
           <Text style={t.type.subtitle} numberOfLines={1}>
             {title}
@@ -147,32 +154,8 @@ function SavedRow({
         </View>
       </Pressable>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs }}>
-        <View style={{ flex: 1 }}>
-          <Button label="Log this" variant="secondary" onPress={onLog} loading={busy} />
-        </View>
-        {item.kind === 'place' && (
-          <Pressable
-            hitSlop={8}
-            onPress={() =>
-              openInGoogleMaps({
-                name: item.place.name,
-                city: item.place.city,
-                country: item.place.country,
-                placeId: item.place.placeId,
-                lat: item.place.lat,
-                lng: item.place.lng,
-              })
-            }
-            style={{ paddingVertical: spacing.xs, paddingHorizontal: spacing.sm }}
-          >
-            <Text style={[t.type.label, { color: t.colors.textSecondary }]}>Maps</Text>
-          </Pressable>
-        )}
-        <Pressable hitSlop={8} onPress={onRemove} style={{ paddingVertical: spacing.xs, paddingHorizontal: spacing.sm }}>
-          <Text style={[t.type.label, { color: t.colors.danger }]}>Remove</Text>
-        </Pressable>
-      </View>
+      <IconButton name="add-circle-outline" onPress={onLog} loading={busy} accessibilityLabel="Log this" size={32} />
+      <IconButton name="trash-outline" tone="danger" onPress={onRemove} accessibilityLabel="Remove" size={32} />
     </View>
   );
 }

@@ -66,6 +66,7 @@ export function EditTripScreen({ route, navigation }: EditTripScreenProps) {
           endDate: form.endDate,
           notes: form.notes.trim(),
           accommodation: form.accommodation.trim(),
+          visibility: form.visibility,
           photoUrls,
           // Keep the cover in sync with the gallery's first photo; leave an
           // experience-derived cover alone only when the gallery is empty.

@@ -16,7 +16,7 @@ const Stack = createNativeStackNavigator<LogbookStackParamList>();
 export function LogbookNavigator() {
   return (
     <Stack.Navigator screenOptions={useStackScreenOptions()}>
-      <Stack.Screen name="LogbookHome" component={LogbookHomeScreen} options={{ title: 'Logbook' }} />
+      <Stack.Screen name="LogbookHome" component={LogbookHomeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="TripDetail" component={TripDetailScreen} options={{ title: 'Trip' }} />
       <Stack.Screen
         name="EditTrip"

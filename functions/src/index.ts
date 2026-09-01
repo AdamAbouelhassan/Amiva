@@ -20,6 +20,7 @@ export { sendNotification } from './triggers/sendNotification';
 // "Feed" — was retired when the tab became a friend-activity feed.)
 export { getFriendsActivity } from './triggers/getFriendsActivity';
 export { getPlaceRecommendations } from './triggers/getPlaceRecommendations';
+export { getUserProfileContent } from './triggers/getUserProfileContent';
 
 // Additions beyond the technical spec's §5 table, each required to make an
 // already-specified product behavior actually work under §6's security

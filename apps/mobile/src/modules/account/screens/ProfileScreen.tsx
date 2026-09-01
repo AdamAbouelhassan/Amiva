@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { topCategories } from '@amiva/core';
 import { Card } from '../../../components/Card';
 import { CategoryChip } from '../../../components/CategoryChip';
@@ -7,9 +7,14 @@ import { ScreenContainer } from '../../../components/ScreenContainer';
 import { TravelStyleRadar, TravelStyleValueList } from '../../../components/TravelStyleRadar';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { useRefresh } from '../../../hooks/useRefresh';
-import { spacing } from '../../../theme';
+import { spacing, useTheme } from '../../../theme';
 
-export function ProfileScreen() {
+interface ProfileScreenProps {
+  navigation: { navigate: (screen: 'Settings') => void };
+}
+
+export function ProfileScreen({ navigation }: ProfileScreenProps) {
+  const t = useTheme();
   const { profile } = useCurrentUser();
   const refresh = useRefresh();
   if (!profile) return null;
@@ -17,7 +22,13 @@ export function ProfileScreen() {
   const top3 = topCategories(profile.travelStyle);
 
   return (
-    <ScreenContainer onRefresh={refresh.onRefresh} refreshing={refresh.refreshing}>
+    <ScreenContainer onRefresh={refresh.onRefresh} refreshing={refresh.refreshing} safeAreaTop>
+      <View style={{ alignItems: 'flex-end' }}>
+        <Pressable onPress={() => navigation.navigate('Settings')} hitSlop={8} accessibilityRole="button">
+          <Text style={[t.type.subtitle, { color: t.colors.accent }]}>Settings</Text>
+        </Pressable>
+      </View>
+
       <ProfileIdentity
         layout="stacked"
         name={profile.name}

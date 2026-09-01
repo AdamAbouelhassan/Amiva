@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { Image, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { AppImage } from '../../../components/AppImage';
 import { Avatar } from '../../../components/Avatar';
 import { Card } from '../../../components/Card';
 import { orNull } from '../../../lib/queryHelpers';
@@ -62,11 +63,10 @@ export function ActivityCard({ item, onOpenExperience }: ActivityCardProps) {
       <View style={{ gap: spacing.xs }}>
         {header}
         <Card padded={false} elevation="raised" style={{ overflow: 'hidden' }}>
-          {item.trip.coverPhotoUrl ? (
-            <Image source={{ uri: item.trip.coverPhotoUrl }} style={{ width: '100%', height: 150 }} />
-          ) : (
-            <View style={{ width: '100%', height: 64, backgroundColor: t.colors.surfaceAlt }} />
-          )}
+          <AppImage
+            uri={item.trip.coverPhotoUrl}
+            style={{ width: '100%', height: item.trip.coverPhotoUrl ? 150 : 64 }}
+          />
           <View style={{ padding: spacing.md, gap: 2 }}>
             <Text style={t.type.subtitle} numberOfLines={1}>
               {item.trip.name}

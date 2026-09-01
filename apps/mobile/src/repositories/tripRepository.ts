@@ -62,7 +62,16 @@ export interface CreateTripInput {
 export type UpdateTripPatch = Partial<
   Pick<
     TripDoc,
-    'name' | 'notes' | 'accommodation' | 'photoUrls' | 'coverPhotoUrl' | 'location' | 'country' | 'startDate' | 'endDate'
+    | 'name'
+    | 'notes'
+    | 'accommodation'
+    | 'photoUrls'
+    | 'coverPhotoUrl'
+    | 'location'
+    | 'country'
+    | 'startDate'
+    | 'endDate'
+    | 'visibility'
   >
 > & {
   /** `null` clears a previously-set city. */

@@ -11,6 +11,7 @@ import { LocationSearchField } from '../../../components/LocationSearchField';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { TextField } from '../../../components/TextField';
 import { useRefresh } from '../../../hooks/useRefresh';
+import { useTabBarInset } from '../../../hooks/useTabBarInset';
 import { CATEGORY_LABELS, spacing, useTheme } from '../../../theme';
 import { PlaceRecommendationCard } from '../components/PlaceRecommendationCard';
 import { LocalSection, useRecommendations } from '../hooks/useRecommendations';
@@ -21,6 +22,7 @@ export function RecommendationsScreen() {
   const t = useTheme();
   const rec = useRecommendations();
   const refresh = useRefresh();
+  const tabInset = useTabBarInset();
 
   // Collapsing filter bar (1:1 with scroll, reappears on any upward drag).
   const [headerH, setHeaderH] = useState(190);
@@ -83,7 +85,7 @@ export function RecommendationsScreen() {
 
       <Animated.FlatList
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: headerH + spacing.sm, paddingBottom: spacing.screen, gap: spacing.lg }}
+        contentContainerStyle={{ paddingTop: headerH + spacing.sm, paddingBottom: spacing.screen + tabInset, gap: spacing.lg }}
         onScroll={onScroll}
         refreshControl={
           <RefreshControl

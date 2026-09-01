@@ -9,6 +9,7 @@ import { BrandEmptyState } from '../../../components/BrandEmptyState';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { useRefresh } from '../../../hooks/useRefresh';
+import { useTabBarInset } from '../../../hooks/useTabBarInset';
 import { LogbookStackParamList } from '../../../navigation/types';
 import { TripDoc } from '../../../repositories/types';
 import { spacing, useTheme } from '../../../theme';
@@ -33,6 +34,7 @@ export function CountryDetailScreen({ route, navigation }: CountryDetailScreenPr
   const { country } = route.params;
   const { profile } = useCurrentUser();
   const refresh = useRefresh();
+  const tabInset = useTabBarInset();
   const { data: trips = [] } = useTrips(profile?.uid);
   const { countries } = useLogbookDrilldown(profile?.uid);
 
@@ -72,7 +74,7 @@ export function CountryDetailScreen({ route, navigation }: CountryDetailScreenPr
 
       <FlatList
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg, gap: spacing.sm }}
+        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg + tabInset, gap: spacing.sm }}
         data={rows}
         keyExtractor={(item) => item.id}
         refreshControl={

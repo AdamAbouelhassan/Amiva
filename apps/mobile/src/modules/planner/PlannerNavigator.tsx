@@ -13,7 +13,7 @@ const Stack = createNativeStackNavigator<PlannerStackParamList>();
 export function PlannerNavigator() {
   return (
     <Stack.Navigator screenOptions={useStackScreenOptions()}>
-      <Stack.Screen name="PlannerOverview" component={PlannerOverviewScreen} options={{ title: 'Planner' }} />
+      <Stack.Screen name="PlannerOverview" component={PlannerOverviewScreen} options={{ headerShown: false }} />
       <Stack.Screen name="PlannedTripDetail" component={PlannedTripDetailScreen} options={{ title: 'Planned trip' }} />
       <Stack.Screen name="AddPlacesToPlan" component={AddPlacesToPlanScreen} options={{ title: 'Add places' }} />
       <Stack.Screen

@@ -5,7 +5,8 @@
  * logbook `PhotoPicker` it carries no EXIF-date logic and takes its own cap.
  */
 import * as ImagePicker from 'expo-image-picker';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { AppImage } from './AppImage';
 import { radius, spacing, useTheme } from '../theme';
 
 interface PhotoGalleryPickerProps {
@@ -39,7 +40,7 @@ export function PhotoGalleryPicker({ uris, onChange, label = 'Photos', max = 8 }
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
         {uris.map((uri) => (
           <Pressable key={uri} onPress={() => onChange(uris.filter((u) => u !== uri))} style={{ alignItems: 'center' }}>
-            <Image source={{ uri }} style={{ width: 72, height: 72, borderRadius: radius.chip }} />
+            <AppImage uri={uri} style={{ width: 72, height: 72, borderRadius: radius.chip }} />
             <Text style={[t.type.caption, { color: t.colors.danger }]}>Remove</Text>
           </Pressable>
         ))}

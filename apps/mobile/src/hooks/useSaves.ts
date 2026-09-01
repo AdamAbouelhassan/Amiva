@@ -105,6 +105,49 @@ export function useSavedItems() {
   };
 }
 
+/**
+ * Save-state + toggle for a single experience, with an optimistic icon
+ * flip. The bare `invalidateQueries` version raced the Firestore re-read
+ * and left the bookmark icon stale after an un-save.
+ */
+export function useSaveToggle(experienceId: string) {
+  const queryClient = useQueryClient();
+  const { profile } = useCurrentUser();
+  const key = ['saves', profile?.uid, experienceId] as const;
+
+  const savedQuery = useQuery({
+    queryKey: key,
+    queryFn: () => SaveRepository.isSaved(profile!.uid, experienceId),
+    enabled: !!profile,
+  });
+
+  const mutation = useMutation({
+    // `next` = the state we want to be in after the tap. Passed explicitly
+    // so we never depend on a possibly-stale render closure.
+    mutationFn: async (next: boolean) => {
+      if (!profile) return;
+      if (next) await SaveRepository.save(profile.uid, experienceId);
+      else await SaveRepository.unsave(profile.uid, experienceId);
+    },
+    onMutate: async (next: boolean) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<boolean>(key);
+      queryClient.setQueryData<boolean>(key, next);
+      return { prev };
+    },
+    onError: (_err, _next, ctx) => {
+      queryClient.setQueryData(key, ctx?.prev);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['saves'] });
+      queryClient.invalidateQueries({ queryKey: ['experiences', 'saved'] });
+    },
+  });
+
+  const saved = !!savedQuery.data;
+  return { saved, toggle: () => mutation.mutate(!saved), pending: mutation.isPending };
+}
+
 export function useUnsaveExperience() {
   const queryClient = useQueryClient();
   const { profile } = useCurrentUser();

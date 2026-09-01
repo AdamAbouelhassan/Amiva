@@ -217,7 +217,7 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
       </Section>
 
       <Button label="Edit travel style" variant="secondary" onPress={() => navigation.navigate('EditTravelStyle')} />
-      <Button label="Sign out" variant="secondary" onPress={() => signOut(auth)} />
+      <Button label="Sign out" variant="danger" onPress={() => signOut(auth)} />
 
       {error ? <Text style={[t.type.bodySmall, { color: t.colors.danger }]}>{error}</Text> : null}
     </ScreenContainer>

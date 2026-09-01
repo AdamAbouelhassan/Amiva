@@ -8,6 +8,7 @@ import { ProfileIdentity } from '../../../components/ProfileIdentity';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { useRefresh } from '../../../hooks/useRefresh';
+import { useTabBarInset } from '../../../hooks/useTabBarInset';
 import { orNull } from '../../../lib/queryHelpers';
 import { UserRepository } from '../../../repositories/userRepository';
 import { spacing, useTheme } from '../../../theme';
@@ -22,10 +23,11 @@ interface FriendsListScreenProps {
 export function FriendsListScreen({ navigation }: FriendsListScreenProps) {
   const t = useTheme();
   const refresh = useRefresh();
+  const tabInset = useTabBarInset();
   const { data: friends = [], isLoading, isError, error, refetch } = useFriends();
 
   return (
-    <ScreenContainer scroll={false}>
+    <ScreenContainer scroll={false} safeAreaTop>
       <View style={{ padding: spacing.screen, gap: spacing.sm }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={t.type.displayMd}>Friends</Text>
@@ -38,7 +40,7 @@ export function FriendsListScreen({ navigation }: FriendsListScreenProps) {
 
       <FlatList
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg }}
+        contentContainerStyle={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.lg + tabInset }}
         data={friends}
         keyExtractor={(item) => item.friendId}
         refreshControl={

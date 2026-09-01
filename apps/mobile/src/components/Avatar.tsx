@@ -1,4 +1,5 @@
-import { Image, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { AppImage } from './AppImage';
 import { useTheme } from '../theme';
 
 interface AvatarProps {
@@ -23,7 +24,7 @@ export function Avatar({ uri, size = 40, name }: AvatarProps) {
     borderColor: t.colors.border,
   };
 
-  if (uri) return <Image source={{ uri }} style={shape} />;
+  if (uri) return <AppImage uri={uri} style={shape} />;
 
   const initial = name?.trim()?.[0]?.toUpperCase();
   return (

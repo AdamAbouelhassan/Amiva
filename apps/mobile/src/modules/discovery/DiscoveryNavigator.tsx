@@ -1,8 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Pressable, Text } from 'react-native';
 import { DiscoveryStackParamList } from '../../navigation/types';
 import { useStackScreenOptions } from '../../navigation/screenOptions';
-import { useTheme } from '../../theme';
 // Reused from Logbook — shown identically wherever it's reached
 // (functional_specification.md §2.6).
 import { CreateExperienceScreen } from '../logbook/screens/CreateExperienceScreen';
@@ -14,23 +12,11 @@ import { SavedScreen } from './screens/SavedScreen';
 const Stack = createNativeStackNavigator<DiscoveryStackParamList>();
 
 export function DiscoveryNavigator() {
-  const t = useTheme();
   return (
     <Stack.Navigator screenOptions={useStackScreenOptions()}>
       {/* Local / Trending / Friends are in-page tabs on DiscoveryScreen,
-          not routes. */}
-      <Stack.Screen
-        name="DiscoverHome"
-        component={DiscoveryScreen}
-        options={({ navigation }) => ({
-          title: 'Discover',
-          headerRight: () => (
-            <Pressable onPress={() => navigation.navigate('Saved')} accessibilityRole="button" hitSlop={8}>
-              <Text style={[t.type.subtitle, { color: t.colors.accent }]}>Saved</Text>
-            </Pressable>
-          ),
-        })}
-      />
+          not routes. The "Saved" action lives in the screen body. */}
+      <Stack.Screen name="DiscoverHome" component={DiscoveryScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Saved" component={SavedScreen} options={{ title: 'Saved' }} />
       <Stack.Screen name="ExperienceDetail" component={ExperienceDetailScreen} options={{ title: 'Experience' }} />
       <Stack.Screen

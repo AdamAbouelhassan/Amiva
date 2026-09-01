@@ -10,6 +10,7 @@ import { CategoryIconFilter } from '../../../components/CategoryIconFilter';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { TextField } from '../../../components/TextField';
 import { useRefresh } from '../../../hooks/useRefresh';
+import { useTabBarInset } from '../../../hooks/useTabBarInset';
 import { CATEGORY_LABELS, spacing, useTheme } from '../../../theme';
 import { PlaceRecommendationCard } from '../../discovery/components/PlaceRecommendationCard';
 import { LocalSection } from '../../discovery/hooks/useRecommendations';
@@ -28,6 +29,7 @@ export function AddPlacesToPlanScreen({ route }: AddPlacesToPlanScreenProps) {
   const { data: items = [] } = usePlannedTripItems(plannedTripId);
   const addItem = useAddPlannedTripItem();
   const refresh = useRefresh();
+  const tabInset = useTabBarInset();
 
   const search = usePlaceSearch({ country: trip?.country ?? '', city: trip?.city });
   const addedPlaceIds = useMemo(() => new Set(items.map((i) => i.placeId)), [items]);
@@ -55,7 +57,7 @@ export function AddPlacesToPlanScreen({ route }: AddPlacesToPlanScreenProps) {
 
       <FlatList
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: spacing.screen, paddingTop: spacing.xs, gap: spacing.lg }}
+        contentContainerStyle={{ padding: spacing.screen, paddingTop: spacing.xs, paddingBottom: spacing.screen + tabInset, gap: spacing.lg }}
         data={search.sections}
         keyExtractor={(s) => s.key}
         refreshControl={

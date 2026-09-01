@@ -62,8 +62,14 @@ export const SavedPlaceRepository = {
   },
 
   async isSaved(userId: string, placeId: string): Promise<boolean> {
-    const snap = await getDoc(doc(db, COLLECTION, docId(userId, placeId)));
-    return snap.exists();
+    try {
+      const snap = await getDoc(doc(db, COLLECTION, docId(userId, placeId)));
+      return snap.exists();
+    } catch {
+      // See saveRepository.isSaved — a missing-doc read can be denied by an
+      // older `savedPlaces` rule set; "can't read" ⇒ "not saved".
+      return false;
+    }
   },
 
   /** No orderBy — small personal list, sorted client-side, so this

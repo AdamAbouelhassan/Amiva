@@ -4,8 +4,9 @@
  * repositories/experienceRepository.ts's MAX_EXPERIENCE_PHOTOS check.
  */
 import * as ImagePicker from 'expo-image-picker';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { MAX_EXPERIENCE_PHOTOS } from '@amiva/core';
+import { AppImage } from '../../../components/AppImage';
 import { radius, spacing, useTheme } from '../../../theme';
 
 interface PhotoPickerProps {
@@ -64,7 +65,7 @@ export function PhotoPicker({ localUris, onChange, onExifDateDetected }: PhotoPi
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs }}>
         {localUris.map((uri) => (
           <Pressable key={uri} onPress={() => removePhoto(uri)} style={{ alignItems: 'center' }}>
-            <Image source={{ uri }} style={{ width: 72, height: 72, borderRadius: radius.chip }} />
+            <AppImage uri={uri} style={{ width: 72, height: 72, borderRadius: radius.chip }} />
             <Text style={[t.type.caption, { color: t.colors.danger }]}>Remove</Text>
           </Pressable>
         ))}

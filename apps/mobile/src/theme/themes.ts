@@ -38,6 +38,8 @@ export interface ThemeColors {
   infoText: string;
   success: string;
   danger: string;
+  /** Faint danger tint — background for destructive icon buttons / chips. */
+  dangerMuted: string;
   warning: string;
 
   overlay: string;
@@ -77,6 +79,7 @@ export const lightColors: ThemeColors = {
   infoText: '#2C6C8C',
   success: '#3E8E5A',
   danger: '#C1483A',
+  dangerMuted: '#F6E1DE',
   warning: palette.amber,
 
   overlay: 'rgba(38,49,63,0.45)',
@@ -112,6 +115,7 @@ export const darkColors: ThemeColors = {
   infoText: '#9BD3EE',
   success: '#5BB07C',
   danger: '#E27567',
+  dangerMuted: '#3B2422',
   warning: '#F2A857',
 
   overlay: 'rgba(0,0,0,0.6)',

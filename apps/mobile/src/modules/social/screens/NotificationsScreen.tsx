@@ -5,6 +5,7 @@ import { ScreenContainer } from '../../../components/ScreenContainer';
 import { NotificationIcon } from '../../../components/icons/NotificationIcon';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { useRefresh } from '../../../hooks/useRefresh';
+import { useTabBarInset } from '../../../hooks/useTabBarInset';
 import { NotificationRepository } from '../../../repositories/notificationRepository';
 import { NotificationDoc } from '../../../repositories/types';
 import { spacing, useTheme } from '../../../theme';
@@ -22,6 +23,7 @@ export function NotificationsScreen() {
   const { profile } = useCurrentUser();
   const queryClient = useQueryClient();
   const refresh = useRefresh();
+  const tabInset = useTabBarInset();
   const query = useQuery({
     queryKey: ['notifications', profile?.uid],
     queryFn: () => NotificationRepository.listForRecipient(profile!.uid),
@@ -39,7 +41,7 @@ export function NotificationsScreen() {
       <Text style={[t.type.displayMd, { padding: spacing.screen, paddingBottom: spacing.xs }]}>Notifications</Text>
       <FlatList
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: spacing.screen, paddingTop: 0, gap: spacing.xs }}
+        contentContainerStyle={{ padding: spacing.screen, paddingTop: 0, paddingBottom: spacing.screen + tabInset, gap: spacing.xs }}
         data={query.data ?? []}
         keyExtractor={(item) => item.notificationId}
         refreshControl={

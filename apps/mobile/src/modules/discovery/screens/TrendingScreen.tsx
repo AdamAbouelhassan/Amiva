@@ -2,6 +2,7 @@ import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { BrandEmptyState } from '../../../components/BrandEmptyState';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useRefresh } from '../../../hooks/useRefresh';
+import { useTabBarInset } from '../../../hooks/useTabBarInset';
 import { spacing, useTheme } from '../../../theme';
 import { FeedItemCard } from '../components/FeedItemCard';
 import { useTrending } from '../hooks/useTrending';
@@ -13,6 +14,7 @@ interface TrendingScreenProps {
 export function TrendingScreen({ navigation }: TrendingScreenProps) {
   const t = useTheme();
   const refresh = useRefresh();
+  const tabInset = useTabBarInset();
   const { items, isLoading, error } = useTrending();
 
   return (
@@ -26,7 +28,7 @@ export function TrendingScreen({ navigation }: TrendingScreenProps) {
 
       <FlatList
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: spacing.screen, paddingTop: spacing.xs, gap: spacing.md }}
+        contentContainerStyle={{ padding: spacing.screen, paddingTop: spacing.xs, paddingBottom: spacing.screen + tabInset, gap: spacing.md }}
         data={items}
         keyExtractor={(item) => item.experienceId}
         refreshControl={

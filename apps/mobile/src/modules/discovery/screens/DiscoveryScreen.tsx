@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
-import { View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SegmentedControl } from '../../../components/SegmentedControl';
+import { TabPanes } from '../../../components/TabPanes';
 import { spacing, useTheme } from '../../../theme';
 import { FriendsScreen } from './FriendsScreen';
 import { RecommendationsScreen } from './RecommendationsScreen';
@@ -10,33 +11,29 @@ import { TrendingScreen } from './TrendingScreen';
 type Tab = 'local' | 'trending' | 'friends';
 
 interface DiscoveryScreenProps {
-  navigation: { navigate: (screen: 'ExperienceDetail', params: { experienceId: string }) => void };
+  navigation: {
+    navigate: (screen: 'ExperienceDetail' | 'Saved', params?: { experienceId: string }) => void;
+  };
 }
 
 /** Discovery — three in-page tabs (brief). Local = Google-Places
- * recommendations near a location; Trending = most popular experiences
- * across Amiva; Friends = a chronological friend-activity feed.
- *
- * Each pane is mounted on first visit and then KEPT mounted (toggled via
- * `display`), so switching tabs — or leaving Discovery and coming back —
- * preserves each pane's data, scroll position, and filter state instead of
- * refetching every time. */
+ * recommendations; Trending = most popular experiences; Friends = a
+ * chronological friend-activity feed. Panes are kept mounted (via
+ * `TabPanes`) so scroll position / filters / data survive tab switches;
+ * switching cross-dissolves. */
 export function DiscoveryScreen({ navigation }: DiscoveryScreenProps) {
   const t = useTheme();
   const [tab, setTab] = useState<Tab>('local');
-  const visited = useRef<Set<Tab>>(new Set(['local']));
-  visited.current.add(tab);
-
-  const pane = (key: Tab, node: React.ReactNode) =>
-    visited.current.has(key) ? (
-      <View key={key} style={{ flex: 1, display: tab === key ? 'flex' : 'none' }}>
-        {node}
-      </View>
-    ) : null;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: t.colors.background }} edges={['left', 'right']}>
-      <View style={{ paddingHorizontal: spacing.screen, paddingTop: spacing.sm, paddingBottom: spacing.xs }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: t.colors.background }} edges={['top', 'left', 'right']}>
+      <View style={{ paddingHorizontal: spacing.screen, paddingTop: spacing.sm, paddingBottom: spacing.xs, gap: spacing.sm }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={t.type.displayMd}>Discover</Text>
+          <Pressable onPress={() => navigation.navigate('Saved')} hitSlop={8} accessibilityRole="button">
+            <Text style={[t.type.subtitle, { color: t.colors.accent }]}>Saved</Text>
+          </Pressable>
+        </View>
         <SegmentedControl
           value={tab}
           onChange={setTab}
@@ -48,11 +45,14 @@ export function DiscoveryScreen({ navigation }: DiscoveryScreenProps) {
         />
       </View>
 
-      <View style={{ flex: 1 }}>
-        {pane('local', <RecommendationsScreen />)}
-        {pane('trending', <TrendingScreen navigation={navigation} />)}
-        {pane('friends', <FriendsScreen navigation={navigation} />)}
-      </View>
+      <TabPanes
+        activeKey={tab}
+        panes={[
+          { key: 'local', node: <RecommendationsScreen /> },
+          { key: 'trending', node: <TrendingScreen navigation={navigation} /> },
+          { key: 'friends', node: <FriendsScreen navigation={navigation} /> },
+        ]}
+      />
     </SafeAreaView>
   );
 }
