@@ -4,11 +4,11 @@
  * privacy-filtered server-side (functions getUserProfileContent); this
  * screen only renders what it's handed.
  */
-import { useMemo, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { ComponentProps, useDeferredValue, useMemo, useState } from 'react';
+import { FlatList, RefreshControl, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
-import { toMatchPercent, topCategories } from '@amiva/core';
+import { toMatchPercent, topCategories, TravelStyleVector } from '@amiva/core';
 import { AppImage } from '../../../components/AppImage';
 import { BrandEmptyState } from '../../../components/BrandEmptyState';
 import { CategoryChip } from '../../../components/CategoryChip';
@@ -52,6 +52,9 @@ export function FriendDetailScreen({ route }: FriendDetailScreenProps) {
     navigate: (screen: 'ExperienceDetail', params: { experienceId: string }) => void;
   }>();
   const [tab, setTab] = useState<Tab>('compat');
+  // Segmented control reacts instantly; the pane swap is deferred so the
+  // tap never waits on it (the cross-dissolve runs on the UI thread).
+  const deferredTab = useDeferredValue(tab);
 
   const { data: edge } = useFriendEdge(friendId);
   const { data: friend } = useQuery({
@@ -94,13 +97,23 @@ export function FriendDetailScreen({ route }: FriendDetailScreenProps) {
         <View
           style={{
             alignSelf: 'center',
+            height: 38,
+            justifyContent: 'center',
             backgroundColor: t.colors.accentMuted,
             paddingHorizontal: spacing.lg,
-            paddingVertical: spacing.xs,
             borderRadius: radius.pill,
           }}
         >
-          <Text style={[t.type.statNumber, { color: t.colors.accent }]}>
+          <Text
+            style={{
+              fontFamily: t.type.statNumber.fontFamily,
+              fontSize: 17,
+              lineHeight: 38,
+              color: t.colors.accent,
+              includeFontPadding: false,
+              textAlign: 'center',
+            }}
+          >
             {toMatchPercent(edge.compatibilityScore)}% compatible
           </Text>
         </View>
@@ -116,34 +129,18 @@ export function FriendDetailScreen({ route }: FriendDetailScreenProps) {
       </View>
 
       <TabPanes
-        activeKey={tab}
+        activeKey={deferredTab}
         panes={[
           {
             key: 'compat',
             node: (
-              <ScrollView contentContainerStyle={listPad} refreshControl={makeRC()}>
-                <View style={{ alignItems: 'center', gap: spacing.xs }}>
-                  <Text style={t.type.subtitle}>{friend.name}'s travel style</Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-                    {topCategories(friend.travelStyle).map((c) => (
-                      <CategoryChip key={c} category={c} selected />
-                    ))}
-                  </View>
-                </View>
-                <View style={{ alignItems: 'center', marginTop: spacing.lg }}>
-                  <TravelStyleRadar
-                    size={300}
-                    series={[
-                      { vector: profile.travelStyle, kind: 'primary' },
-                      { vector: friend.travelStyle, kind: 'compare' },
-                    ]}
-                  />
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.lg, marginTop: spacing.md }}>
-                  <Legend color={t.colors.accent} label="You" />
-                  <Legend color={t.colors.radarCompare} label={friend.name} dashed />
-                </View>
-              </ScrollView>
+              <CompatPane
+                myStyle={profile.travelStyle}
+                friendStyle={friend.travelStyle}
+                friendName={friend.name}
+                bottomPad={spacing.md + tabInset}
+                refreshControl={makeRC()}
+              />
             ),
           },
           {
@@ -195,6 +192,70 @@ export function FriendDetailScreen({ route }: FriendDetailScreenProps) {
         ]}
       />
     </ScreenContainer>
+  );
+}
+
+/** The Compatibility tab — sized to fit with no real scroll: the radar is
+ * the largest square that fits in the pane once the chips + legend are
+ * accounted for. Sized off the ScrollView's own (fixed) height so there's
+ * no measure→resize→measure loop. */
+function CompatPane({
+  myStyle,
+  friendStyle,
+  friendName,
+  bottomPad,
+  refreshControl,
+}: {
+  myStyle: TravelStyleVector;
+  friendStyle: TravelStyleVector;
+  friendName: string;
+  bottomPad: number;
+  refreshControl: ComponentProps<typeof ScrollView>['refreshControl'];
+}) {
+  const t = useTheme();
+  const { width } = useWindowDimensions();
+  const [viewportH, setViewportH] = useState(0);
+
+  // Rough vertical cost of the heading + chip row + legend + gaps.
+  const CHROME = 150;
+  // Only render the radar once we know the real size — mounting it with a
+  // guessed size and resizing it makes the animated polygon draw off-centre
+  // (its worklet captured the wrong geometry).
+  const size = Math.max(160, Math.min(width - spacing.screen * 2, viewportH - CHROME - bottomPad));
+
+  return (
+    <ScrollView
+      onLayout={(e) => setViewportH(e.nativeEvent.layout.height)}
+      contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.screen, paddingBottom: bottomPad }}
+      refreshControl={refreshControl}
+    >
+      <View style={{ flex: 1, gap: spacing.sm, paddingTop: spacing.xs, alignItems: 'center' }}>
+        <Text style={t.type.subtitle}>{friendName}'s travel style</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, justifyContent: 'center' }}>
+          {topCategories(friendStyle).map((c) => (
+            <CategoryChip key={c} category={c} selected />
+          ))}
+        </View>
+
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          {viewportH > 0 ? (
+            <TravelStyleRadar
+              size={size}
+              animate={false}
+              series={[
+                { vector: myStyle, kind: 'primary' },
+                { vector: friendStyle, kind: 'compare' },
+              ]}
+            />
+          ) : null}
+        </View>
+
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.lg }}>
+          <Legend color={t.colors.accent} label="You" />
+          <Legend color={t.colors.radarCompare} label={friendName} dashed />
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 

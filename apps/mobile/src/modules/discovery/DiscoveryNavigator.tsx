@@ -6,6 +6,7 @@ import { useStackScreenOptions } from '../../navigation/screenOptions';
 import { CreateExperienceScreen } from '../logbook/screens/CreateExperienceScreen';
 import { EditExperienceScreen } from '../logbook/screens/EditExperienceScreen';
 import { ExperienceDetailScreen } from '../logbook/screens/ExperienceDetailScreen';
+import { MatchDetailScreen } from '../social/screens/MatchDetailScreen';
 import { DiscoveryScreen } from './screens/DiscoveryScreen';
 import { SavedScreen } from './screens/SavedScreen';
 
@@ -28,6 +29,11 @@ export function DiscoveryNavigator() {
         name="CreateExperience"
         component={CreateExperienceScreen}
         options={{ title: 'Log experience', presentation: 'modal' }}
+      />
+      <Stack.Screen
+        name="MatchDetail"
+        component={MatchDetailScreen}
+        options={{ title: 'Compatibility', presentation: 'modal' }}
       />
     </Stack.Navigator>
   );

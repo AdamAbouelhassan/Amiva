@@ -3,7 +3,7 @@
  * its itinerary (2026-08 Planner rework — replaces the old "add from your
  * saves / saved places" lists on the detail screen).
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { BrandEmptyState } from '../../../components/BrandEmptyState';
 import { CategoryIconFilter } from '../../../components/CategoryIconFilter';
@@ -32,7 +32,25 @@ export function AddPlacesToPlanScreen({ route }: AddPlacesToPlanScreenProps) {
   const tabInset = useTabBarInset();
 
   const search = usePlaceSearch({ country: trip?.country ?? '', city: trip?.city });
-  const addedPlaceIds = useMemo(() => new Set(items.map((i) => i.placeId)), [items]);
+  // Just-tapped places, hidden immediately (before the itinerary query
+  // refetches) so they can't be added twice by a quick double-tap.
+  const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
+
+  // Hide places already on the itinerary, just-added ones, and any place
+  // that shows up in more than one category section.
+  const sections = useMemo(() => {
+    const seen = new Set([...items.map((i) => i.placeId), ...justAdded]);
+    return search.sections
+      .map((s) => ({
+        ...s,
+        items: s.items.filter((p) => {
+          if (seen.has(p.placeId)) return false;
+          seen.add(p.placeId);
+          return true;
+        }),
+      }))
+      .filter((s) => s.items.length > 0);
+  }, [search.sections, items, justAdded]);
 
   if (!trip) return null;
 
@@ -58,8 +76,11 @@ export function AddPlacesToPlanScreen({ route }: AddPlacesToPlanScreenProps) {
       <FlatList
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: spacing.screen, paddingTop: spacing.xs, paddingBottom: spacing.screen + tabInset, gap: spacing.lg }}
-        data={search.sections}
+        data={sections}
         keyExtractor={(s) => s.key}
+        initialNumToRender={2}
+        maxToRenderPerBatch={2}
+        windowSize={5}
         refreshControl={
           <RefreshControl
             refreshing={refresh.refreshing}
@@ -83,8 +104,8 @@ export function AddPlacesToPlanScreen({ route }: AddPlacesToPlanScreenProps) {
               <PlaceRecommendationCard
                 key={place.placeId}
                 place={place}
-                added={addedPlaceIds.has(place.placeId)}
-                onAdd={() =>
+                onAdd={() => {
+                  setJustAdded((prev) => new Set(prev).add(place.placeId));
                   addItem.mutate({
                     plannedTripId,
                     source: 'recommended',
@@ -96,8 +117,8 @@ export function AddPlacesToPlanScreen({ route }: AddPlacesToPlanScreenProps) {
                     photoRef: place.photoReferences[0],
                     lat: place.lat,
                     lng: place.lng,
-                  })
-                }
+                  });
+                }}
               />
             ))}
           </View>

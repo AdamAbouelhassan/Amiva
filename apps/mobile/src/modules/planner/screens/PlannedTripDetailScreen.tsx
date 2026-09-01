@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { AppImage } from '../../../components/AppImage';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
+import { PressableScale } from '../../../components/PressableScale';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useRefresh } from '../../../hooks/useRefresh';
 import { openInGoogleMaps } from '../../../lib/mapsUrl';
@@ -180,7 +181,7 @@ export function PlannedTripDetailScreen({ route, navigation }: PlannedTripDetail
             items.map((item) => {
               const photoUri = item.photoRef ? placePhotoUrl(item.photoRef) : undefined;
               return (
-                <Pressable
+                <PressableScale
                   key={item.itemId}
                   accessibilityRole="link"
                   accessibilityLabel={`Open ${item.title} in Maps`}
@@ -201,7 +202,7 @@ export function PlannedTripDetailScreen({ route, navigation }: PlannedTripDetail
                     backgroundColor: t.colors.surface,
                     borderWidth: 1,
                     borderColor: t.colors.border,
-                    borderRadius: radius.card,
+                    borderRad6jinnomk[kl;mnbvnhujgcyfdxts6r5ecgvhjkhnubgi8yvf7tcd6rxs5etgrthyfdrsghfdsef6rrgthguy9f87t6rd57es4frtguyfut8dr7sefrtgyhujikolpi0u90y8t6hoit80igho]ouyhi76hgt69ghi6ighi6gohnuytr8567ghfjiuyius: radius.card,
                     padding: spacing.sm,
                   }}
                 >
@@ -224,7 +225,7 @@ export function PlannedTripDetailScreen({ route, navigation }: PlannedTripDetail
                   >
                     <Text style={[t.type.label, { color: t.colors.danger }]}>Remove</Text>
                   </Pressable>
-                </Pressable>
+                </PressableScale>
               );
             })
           )}

@@ -5,10 +5,11 @@
  * (functional_specification.md §5.1); this is where you review it, remove
  * it, or turn it into a logged experience.
  */
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { AppImage } from '../../../components/AppImage';
 import { BrandEmptyState } from '../../../components/BrandEmptyState';
 import { IconButton } from '../../../components/IconButton';
+import { PressableScale } from '../../../components/PressableScale';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { useLogExperienceNav } from '../../../hooks/useLogExperienceNav';
 import { useRefresh } from '../../../hooks/useRefresh';
@@ -138,7 +139,7 @@ function SavedRow({
         padding: spacing.sm,
       }}
     >
-      <Pressable
+      <PressableScale
         onPress={onOpen}
         disabled={!onOpen}
         style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center', flex: 1 }}
@@ -152,7 +153,7 @@ function SavedRow({
             {subtitle}
           </Text>
         </View>
-      </Pressable>
+      </PressableScale>
 
       <IconButton name="add-circle-outline" onPress={onLog} loading={busy} accessibilityLabel="Log this" size={32} />
       <IconButton name="trash-outline" tone="danger" onPress={onRemove} accessibilityLabel="Remove" size={32} />

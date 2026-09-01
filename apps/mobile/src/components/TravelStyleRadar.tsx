@@ -40,6 +40,10 @@ interface TravelStyleRadarProps {
   size?: number;
   showLabels?: boolean;
   highlightTop?: boolean;
+  /** Morph the primary polygon between vector changes. Leave off for static
+   * comparison views (friend compat, match sheet) — a fixed `<Polygon>` is
+   * used there, sidestepping the animation worklet entirely. */
+  animate?: boolean;
 }
 
 const RINGS = 4;
@@ -50,11 +54,22 @@ function toDisplay(v: TravelStyleVector): number[] {
   return RADAR_AXIS_ORDER.map((c) => Math.max(0, Math.min(CATEGORY_MAX, v[c])));
 }
 
+/** `[v0,v1,…] → "x0,y0 x1,y1 …"` for a radar polygon at the given geometry. */
+function pointsFor(values: number[], center: number, maxRadius: number, cos: number[], sin: number[]): string {
+  return values
+    .map((val, i) => {
+      const r = (val / CATEGORY_MAX) * maxRadius;
+      return `${center + r * (cos[i] ?? 0)},${center + r * (sin[i] ?? 0)}`;
+    })
+    .join(' ');
+}
+
 export function TravelStyleRadar({
   series,
   size = 240,
   showLabels = true,
   highlightTop = false,
+  animate = true,
 }: TravelStyleRadarProps) {
   const t = useTheme();
   const reduced = useReducedMotion();
@@ -70,54 +85,14 @@ export function TravelStyleRadar({
       }),
     [],
   );
+  const cosArr = useMemo(() => axes.map((p) => p.cos), [axes]);
+  const sinArr = useMemo(() => axes.map((p) => p.sin), [axes]);
 
   const primary = series.find((s) => (s.kind ?? 'primary') === 'primary') ?? series[0];
   const compare = series.find((s) => s.kind === 'compare');
 
-  const primaryValues = primary ? toDisplay(primary.vector) : new Array(N).fill(0);
-  const primaryKey = primaryValues.join(',');
-
-  const from = useSharedValue<number[]>(primaryValues);
-  const to = useSharedValue<number[]>(primaryValues);
-  const progress = useSharedValue(1);
-  const cosSv = useSharedValue(axes.map((p) => p.cos));
-  const sinSv = useSharedValue(axes.map((p) => p.sin));
-  const geomSv = useSharedValue({ center, maxRadius });
-
-  useEffect(() => {
-    cosSv.value = axes.map((p) => p.cos);
-    sinSv.value = axes.map((p) => p.sin);
-    geomSv.value = { center, maxRadius };
-  }, [axes, center, maxRadius, cosSv, sinSv, geomSv]);
-
-  useEffect(() => {
-    from.value = to.value;
-    to.value = primaryValues;
-    if (reduced) {
-      progress.value = 1;
-    } else {
-      progress.value = 0;
-      progress.value = withTiming(1, { duration: MORPH_MS, easing: Easing.out(Easing.cubic) });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [primaryKey, reduced]);
-
-  const animatedProps = useAnimatedProps(() => {
-    'worklet';
-    const cx = geomSv.value.center;
-    const mr = geomSv.value.maxRadius;
-    const pts: string[] = [];
-    for (let i = 0; i < N; i++) {
-      const f = from.value[i] ?? 0;
-      const tv = to.value[i] ?? 0;
-      const val = f + (tv - f) * progress.value;
-      const r = (val / CATEGORY_MAX) * mr;
-      const x = cx + r * (cosSv.value[i] ?? 0);
-      const y = cx + r * (sinSv.value[i] ?? 0);
-      pts.push(x + ',' + y);
-    }
-    return { points: pts.join(' ') };
-  });
+  const primaryValues = primary ? toDisplay(primary.vector) : new Array<number>(N).fill(0);
+  const morphing = animate && !reduced;
 
   const rings = useMemo(
     () =>
@@ -199,13 +174,24 @@ export function TravelStyleRadar({
           />
         )}
 
-        <AnimatedPolygon
-          animatedProps={animatedProps}
-          fill="url(#radarFill)"
-          stroke={t.colors.accent}
-          strokeWidth={2.5}
-          strokeLinejoin="round"
-        />
+        {morphing ? (
+          <MorphingPolygon
+            values={primaryValues}
+            center={center}
+            maxRadius={maxRadius}
+            cos={cosArr}
+            sin={sinArr}
+            stroke={t.colors.accent}
+          />
+        ) : (
+          <Polygon
+            points={pointsFor(primaryValues, center, maxRadius, cosArr, sinArr)}
+            fill="url(#radarFill)"
+            stroke={t.colors.accent}
+            strokeWidth={2.5}
+            strokeLinejoin="round"
+          />
+        )}
 
         {primary &&
           RADAR_AXIS_ORDER.map((c, i) => {
@@ -247,6 +233,63 @@ export function TravelStyleRadar({
           })}
       </Svg>
     </View>
+  );
+}
+
+/** The primary polygon when it should morph between vector changes (own
+ * profile, travel-style editor). All geometry is read from the closure so
+ * the worklet re-inits with the current `center`/`maxRadius`. */
+function MorphingPolygon({
+  values,
+  center,
+  maxRadius,
+  cos,
+  sin,
+  stroke,
+}: {
+  values: number[];
+  center: number;
+  maxRadius: number;
+  cos: number[];
+  sin: number[];
+  stroke: string;
+}) {
+  const from = useSharedValue<number[]>(values);
+  const to = useSharedValue<number[]>(values);
+  const progress = useSharedValue(1);
+  const key = values.join(',');
+
+  useEffect(() => {
+    from.value = to.value;
+    to.value = values;
+    progress.value = 0;
+    progress.value = withTiming(1, { duration: MORPH_MS, easing: Easing.out(Easing.cubic) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  const animatedProps = useAnimatedProps(() => {
+    'worklet';
+    const pts: string[] = [];
+    for (let i = 0; i < N; i++) {
+      const f = from.value[i] ?? 0;
+      const tv = to.value[i] ?? 0;
+      const val = f + (tv - f) * progress.value;
+      const r = (val / CATEGORY_MAX) * maxRadius;
+      const x = center + r * (cos[i] ?? 0);
+      const y = center + r * (sin[i] ?? 0);
+      pts.push(x + ',' + y);
+    }
+    return { points: pts.join(' ') };
+  });
+
+  return (
+    <AnimatedPolygon
+      animatedProps={animatedProps}
+      fill="url(#radarFill)"
+      stroke={stroke}
+      strokeWidth={2.5}
+      strokeLinejoin="round"
+    />
   );
 }
 

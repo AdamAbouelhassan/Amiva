@@ -85,7 +85,9 @@ export const PlannedTripRepository = {
   },
 
   /** Every planned trip the user owns or collaborates on
-   * (functional_specification.md §4.1: "multiple trips concurrently"). */
+   * (functional_specification.md §4.1: "multiple trips concurrently"),
+   * soonest start date first. Sorted client-side — the query order only
+   * needs to pull the docs. */
   async listForUser(userId: string): Promise<PlannedTripDoc[]> {
     const [ownedSnap, collabSnap] = await Promise.all([
       getDocs(query(collection(db, COLLECTION), where('ownerId', '==', userId), orderBy('createdAt', 'desc'))),
@@ -95,7 +97,7 @@ export const PlannedTripRepository = {
     for (const d of [...ownedSnap.docs, ...collabSnap.docs]) {
       byId.set(d.id, fromFirestore(d.id, d.data()));
     }
-    return [...byId.values()].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return [...byId.values()].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
   },
 
   async create(input: CreatePlannedTripInput): Promise<PlannedTripDoc> {

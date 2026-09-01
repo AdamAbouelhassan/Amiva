@@ -7,6 +7,7 @@ import { AddFriendScreen } from './screens/AddFriendScreen';
 import { FriendDetailScreen } from './screens/FriendDetailScreen';
 import { FriendsListScreen } from './screens/FriendsListScreen';
 import { GroupTripDetailScreen } from './screens/GroupTripDetailScreen';
+import { MatchDetailScreen } from './screens/MatchDetailScreen';
 import { NotificationsScreen } from './screens/NotificationsScreen';
 
 const Stack = createNativeStackNavigator<SocialStackParamList>();
@@ -24,6 +25,11 @@ export function SocialNavigator() {
         name="CreateExperience"
         component={CreateExperienceScreen}
         options={{ title: 'Log experience', presentation: 'modal' }}
+      />
+      <Stack.Screen
+        name="MatchDetail"
+        component={MatchDetailScreen}
+        options={{ title: 'Compatibility', presentation: 'modal' }}
       />
     </Stack.Navigator>
   );

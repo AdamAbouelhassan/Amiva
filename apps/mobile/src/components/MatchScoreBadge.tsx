@@ -12,20 +12,23 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { TravelStyleVector } from '@amiva/core';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { MatchDetailParams } from '../navigation/types';
 import { radius, spacing, useTheme } from '../theme';
-import { MatchDetailSheet } from './MatchDetailSheet';
 
 interface MatchScoreBadgeProps {
   /** 0–100 (already converted via `toMatchPercent`). */
   matchPercent: number;
   size?: 'sm' | 'lg';
-  /** Supply all three to make the badge open the compatibility sheet on tap. */
+  /** Supply both to make the badge open the compatibility detail on tap.
+   * `vectorA` is the viewer's — the detail screen reads it itself, this is
+   * just the "is a comparison possible" gate. */
   vectorA?: TravelStyleVector;
   vectorB?: TravelStyleVector;
   detailTitle?: string;
-  /** Override the default tap (skips the sheet). */
+  /** Override the default tap (skips the detail screen). */
   onPress?: () => void;
 }
 
@@ -50,8 +53,10 @@ export function MatchScoreBadge({
 }: MatchScoreBadgeProps) {
   const t = useTheme();
   const reduced = useReducedMotion();
+  const navigation = useNavigation<{
+    navigate: (screen: 'MatchDetail', params: MatchDetailParams) => void;
+  }>();
   const [display, setDisplay] = useState(reduced ? matchPercent : 0);
-  const [sheet, setSheet] = useState(false);
   const raf = useRef<number | undefined>(undefined);
 
   useEffect(() => {
@@ -60,12 +65,19 @@ export function MatchScoreBadge({
       return;
     }
     const start = Date.now();
-    const from = 0;
-    const dur = 650;
+    const dur = 550;
+    // Throttle the state writes to ~25/s — a screenful of these mounting
+    // together (a filter change on the recs list) otherwise floods the JS
+    // thread with re-renders and stutters.
+    let lastWrite = 0;
     const tick = () => {
-      const p = Math.min(1, (Date.now() - start) / dur);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setDisplay(Math.round(from + (matchPercent - from) * eased));
+      const now = Date.now();
+      const p = Math.min(1, (now - start) / dur);
+      if (p >= 1 || now - lastWrite >= 40) {
+        lastWrite = now;
+        const eased = 1 - Math.pow(1 - p, 3);
+        setDisplay(Math.round(matchPercent * eased));
+      }
       if (p < 1) raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);
@@ -81,7 +93,7 @@ export function MatchScoreBadge({
   const fill = mix(ramp[i], ramp[Math.min(3, i + 1) as 0 | 1 | 2 | 3], seg - i);
 
   const big = size === 'lg';
-  const canOpenSheet = !!(vectorA && vectorB);
+  const canOpenDetail = !!(vectorA && vectorB);
 
   const body = (
     <View
@@ -116,31 +128,26 @@ export function MatchScoreBadge({
     </View>
   );
 
-  const handlePress = onPress ?? (canOpenSheet ? () => setSheet(true) : undefined);
+  const handlePress =
+    onPress ??
+    (canOpenDetail
+      ? () =>
+          navigation.navigate('MatchDetail', {
+            title: detailTitle ?? 'Compatibility',
+            matchPercent,
+            vector: vectorB!,
+          })
+      : undefined);
+
+  if (!handlePress) return body;
 
   return (
-    <>
-      {handlePress ? (
-        <Pressable
-          onPress={handlePress}
-          accessibilityRole="button"
-          accessibilityLabel={`${matchPercent}% match${canOpenSheet ? ', view compatibility detail' : ''}`}
-        >
-          {body}
-        </Pressable>
-      ) : (
-        body
-      )}
-      {canOpenSheet && (
-        <MatchDetailSheet
-          visible={sheet}
-          onClose={() => setSheet(false)}
-          title={detailTitle ?? 'Compatibility'}
-          vectorA={vectorA!}
-          vectorB={vectorB!}
-          matchPercent={matchPercent}
-        />
-      )}
-    </>
+    <Pressable
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={`${matchPercent}% match${canOpenDetail ? ', view compatibility detail' : ''}`}
+    >
+      {body}
+    </Pressable>
   );
 }

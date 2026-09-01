@@ -8,7 +8,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { httpsCallable } from 'firebase/functions';
-import { useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { TravelStyleCategory, TravelStyleVector } from '@amiva/core';
 import type { SelectedLocation } from '../../../components/LocationSearchField';
 import { useCurrentLocation } from '../../../hooks/useCurrentLocation';
@@ -50,11 +50,24 @@ const getPlaceRecommendationsCallable = httpsCallable<
 
 export function useRecommendations() {
   const [text, setText] = useState('');
+  // What the query actually uses — trails the field by 400ms so typing
+  // stays responsive and doesn't fire a (billed) Places call per keystroke.
+  const [debouncedText, setDebouncedText] = useState('');
   const [category, setCategory] = useState<TravelStyleCategory | undefined>();
+  // The chips render off `category` (instant highlight); the query runs off
+  // the deferred copy so selecting one never blocks the tap. Must be the
+  // primitive, not the `filter` object — `useDeferredValue` on a value
+  // re-created each render loops forever.
+  const deferredCategory = useDeferredValue(category);
   const [location, setLocationState] = useState<SelectedLocation | null>(null);
   const [locationTouched, setLocationTouched] = useState(false);
 
   const current = useCurrentLocation();
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedText(text), 400);
+    return () => clearTimeout(id);
+  }, [text]);
 
   // Pre-fill from the device location once, unless the user has already
   // picked something themselves.
@@ -71,10 +84,10 @@ export function useRecommendations() {
     () => ({
       country: location?.country ?? '',
       city: location?.city,
-      category,
-      text: text.trim() || undefined,
+      category: deferredCategory,
+      text: debouncedText.trim() || undefined,
     }),
-    [location, category, text],
+    [location, deferredCategory, debouncedText],
   );
   const hasLocation = filter.country.length > 0;
 
@@ -90,11 +103,14 @@ export function useRecommendations() {
   });
 
   const sections = query.data ?? [];
+  // A filter changed but the deferred category / the fetch hasn't caught
+  // up: clear the old list to a skeleton until the new one fades in.
+  const loading = query.isFetching || category !== deferredCategory;
 
   return {
     sections,
     hasResults: sections.some((s) => s.items.length > 0),
-    isLoading: query.isLoading,
+    loading,
     error: query.error instanceof Error ? query.error.message : undefined,
     hasSearched: hasLocation,
     // location

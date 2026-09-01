@@ -8,6 +8,7 @@ import { ReactNode, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { motion } from '../theme';
 
 interface Pane {
   key: string;
@@ -39,12 +40,12 @@ function PaneLayer({ active, delta, children }: { active: boolean; delta: number
 
   const style = useAnimatedStyle(() => {
     if (reduceMotion) {
-      return { opacity: withTiming(active ? 1 : 0, { duration: 100 }) };
+      return { opacity: withTiming(active ? 1 : 0, { duration: 90 }) };
     }
-    const x = active ? 0 : delta < 0 ? -14 : 14;
+    const x = active ? 0 : delta < 0 ? -8 : 8;
     return {
-      opacity: withTiming(active ? 1 : 0, { duration: active ? 190 : 130 }),
-      transform: [{ translateX: withSpring(x, { damping: 20, stiffness: 200, mass: 0.6 }) }],
+      opacity: withTiming(active ? 1 : 0, { duration: active ? motion.fadeIn : motion.fadeOut }),
+      transform: [{ translateX: withSpring(x, motion.slide) }],
     };
   }, [active, delta, reduceMotion]);
 

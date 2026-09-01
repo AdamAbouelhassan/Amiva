@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LayoutChangeEvent, Pressable, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { radius, shadow, spacing, useTheme } from '../theme';
+import { motion, radius, shadow, spacing, useTheme } from '../theme';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 
 const PAD = 3;
@@ -31,9 +31,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange }:
     return {
       width: segW,
       opacity: segW > 0 ? 1 : 0,
-      transform: [
-        { translateX: reduceMotion ? x : withSpring(x, { damping: 18, stiffness: 210, mass: 0.7 }) },
-      ],
+      transform: [{ translateX: reduceMotion ? x : withSpring(x, motion.slide) }],
     };
   }, [activeIndex, segW, reduceMotion]);
 

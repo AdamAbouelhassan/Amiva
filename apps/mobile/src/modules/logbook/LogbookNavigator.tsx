@@ -10,6 +10,7 @@ import { EditTripScreen } from './screens/EditTripScreen';
 import { ExperienceDetailScreen } from './screens/ExperienceDetailScreen';
 import { LogbookHomeScreen } from './screens/LogbookHomeScreen';
 import { TripDetailScreen } from './screens/TripDetailScreen';
+import { MatchDetailScreen } from '../social/screens/MatchDetailScreen';
 
 const Stack = createNativeStackNavigator<LogbookStackParamList>();
 
@@ -36,6 +37,11 @@ export function LogbookNavigator() {
         name="EditExperience"
         component={EditExperienceScreen}
         options={{ title: 'Edit experience', presentation: 'modal' }}
+      />
+      <Stack.Screen
+        name="MatchDetail"
+        component={MatchDetailScreen}
+        options={{ title: 'Compatibility', presentation: 'modal' }}
       />
     </Stack.Navigator>
   );

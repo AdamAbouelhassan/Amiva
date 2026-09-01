@@ -20,6 +20,12 @@ export interface ExperiencePrefill {
 
 export type CreateExperienceParams = { tripId?: string; prefill?: ExperiencePrefill } | undefined;
 
+/** The <MatchScoreBadge> tap target — the two travel styles overlaid.
+ * `vectorA` (the viewer's) is read from `useCurrentUser` in the screen, so
+ * only the *other* vector travels. Shown as a `presentation: 'modal'`
+ * screen — same sheet + swipe as "Log experience". */
+export type MatchDetailParams = { title: string; matchPercent: number; vector: TravelStyleVector };
+
 export type LogbookStackParamList = {
   LogbookHome: undefined;
   TripDetail: { tripId: string };
@@ -30,6 +36,7 @@ export type LogbookStackParamList = {
   CreateExperience: CreateExperienceParams;
   ExperienceDetail: { experienceId: string };
   EditExperience: { experienceId: string };
+  MatchDetail: MatchDetailParams;
 };
 
 export type DiscoveryStackParamList = {
@@ -39,6 +46,7 @@ export type DiscoveryStackParamList = {
   EditExperience: { experienceId: string };
   Saved: undefined;
   CreateExperience: CreateExperienceParams;
+  MatchDetail: MatchDetailParams;
 };
 
 export type SocialStackParamList = {
@@ -49,6 +57,7 @@ export type SocialStackParamList = {
   Notifications: undefined;
   ExperienceDetail: { experienceId: string };
   CreateExperience: CreateExperienceParams;
+  MatchDetail: MatchDetailParams;
 };
 
 export type PlannerStackParamList = {
@@ -61,6 +70,7 @@ export type PlannerStackParamList = {
   // Registered so "Log this" from AddPlacesToPlan stays inside the Planner
   // stack instead of bubbling to another tab (reuses the Logbook screen).
   CreateExperience: CreateExperienceParams;
+  MatchDetail: MatchDetailParams;
 };
 
 export type AccountStackParamList = {

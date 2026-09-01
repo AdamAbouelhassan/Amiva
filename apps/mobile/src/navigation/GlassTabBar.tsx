@@ -20,7 +20,7 @@ import { GlassView } from 'expo-glass-effect';
 import { GlassSurface, LIQUID_GLASS } from '../components/GlassSurface';
 import { NavIcon, NavIconName } from '../components/icons/NavIcon';
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { useTheme } from '../theme';
+import { motion, useTheme } from '../theme';
 
 // Short bar, big icons (Facebook-style).
 const BAR_H = 42;
@@ -28,8 +28,8 @@ const TAB_H = 56;
 const BUBBLE_H = 38;
 const ICON = 30;
 const PAD_X = 6;
-// Matches components/SegmentedControl.tsx so the two indicators feel identical.
-const SPRING = { damping: 18, stiffness: 210, mass: 0.7 } as const;
+// `motion.slide` — the exact spring the SegmentedControl pill uses.
+const SPRING = motion.slide;
 
 export function GlassTabBar({ state, descriptors, navigation, insets }: BottomTabBarProps) {
   const t = useTheme();

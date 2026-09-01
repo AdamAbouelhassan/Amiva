@@ -28,7 +28,7 @@ brand design system. What changed that you must not fight:
   from `../theme`. Tokens live in `theme/{tokens,themes}.ts`; **full light +
   dark**. Never hardcode a hex in a component.
 - **`<TravelStyleRadar>`** (was `RadarChart`) and **`<MatchScoreBadge>`**
-  (was `MatchBadge`, opens `<MatchDetailSheet>` on tap) are the two shared
+  (was `MatchBadge`, navigates to `MatchDetail` on tap) are the two shared
   signature components — reuse, don't reimplement. Radar axis *display*
   order is `RADAR_AXIS_ORDER` (theme), deliberately ≠ the canonical
   `TRAVEL_STYLE_CATEGORIES` in core (which stays locked to cosine-vector
@@ -103,6 +103,9 @@ one fresh Logbook trip mirroring the planned trip. `trips` /
 `plannedTrips` / `plannedTripItems` Firestore data was wiped on the
 restructure. `firestore.indexes.json`: `trips` + `plannedTrips` list
 queries now order by `createdAt` (was `startDate`, now nullable).
+`PlannedTripRepository.listForUser` re-sorts client-side by **`startDate`
+ascending** (soonest planned trip on top in the Planner) — the query order
+is just for the fetch.
 
 **Saved items + "Log this" (2026-08-31):** `SavedScreen` (Discovery stack,
 "Saved" header button on `DiscoverHome`) is **one merged newest-first list**
@@ -135,13 +138,105 @@ onRefresh }` into `ScreenContainer` (scroll screens — it renders the
 `RefreshControl`) or a `FlatList`'s `refreshControl`. Every content/list/
 detail screen has it; create/edit forms don't.
 
+**Snappy-input rules (2026-09-01):** inputs must feel instant; loading is
+background; the *visual* response happens on the UI thread, decoupled from
+any React re-render.
+- **Shared motion configs live in `theme/motion.ts`** (`motion.slide` for
+  sliding indicators, `motion.press` + `motion.pressScale` for tap
+  feedback, `motion.fadeIn`/`fadeOut`). The `SegmentedControl` pill and the
+  `GlassTabBar` bubble both use `motion.slide` so they feel identical.
+- **Tap feedback**: `IconButton` (Save/Log/Share/Remove) and
+  `CategoryIconFilter` chips scale down on `onPressIn` and spring back with
+  the `motion.press` overshoot (the "pop") — Reanimated shared value, UI
+  thread, no dependence on a re-render.
+- **Toggles flip synchronously**: `useOptimisticToggle` (in `hooks/useSaves.ts`,
+  the shared primitive behind `useSaveToggle` / `useSavedPlaceToggle`) holds
+  a `useState` override that `toggle()` sets *in the same tick* — the
+  bookmark icon changes before `onMutate` / the network. The RQ cache is
+  still updated optimistically for cross-component consistency; the override
+  is dropped once the mutation settles. **Don't** pass `loading` to a
+  toggle's `IconButton` — a spinner would hide the flip.
+- **In-page tabs** (`SegmentedControl` + `TabPanes` — Discovery / Logbook /
+  FriendDetail): `SegmentedControl value` follows the raw state (pill
+  springs on tap); `TabPanes activeKey` gets **`useDeferredValue(tab)`** so
+  the pane swap can't block the tap. The cross-dissolve is UI-thread so it
+  stays smooth regardless. Discovery also **`useMemo`s the `panes` array**
+  (deps `[navigation]`) so a tab change doesn't re-render the other panes.
+- **Filter-driven queries** (`useRecommendations`): the chips render off
+  `category`, the query runs off **`useDeferredValue(category)`** — so
+  selecting one commits the chip highlight in a cheap render and the
+  QueryObserver/network work happens after. **`useDeferredValue` MUST take a
+  primitive**, never the `useMemo`'d `filter` object — React can "forget" a
+  memo, then `filter !== deferredFilter` forever → *Maximum update depth
+  exceeded* (this bit us 2026-09-01). Free-text is **debounced 400ms**
+  before the query. `loading = isFetching || category !== deferredCategory`.
+  **No `keepPreviousData`**: a filter change clears the list to
+  `<SkeletonSections>` (composed `components/Skeleton.tsx` — the shared
+  pulsing placeholder, also used by `AppImage`) and the fresh list **fades
+  in** via **`components/FadeIn.tsx`** (plain `useAnimatedStyle` opacity on
+  mount — *not* Reanimated's `entering={FadeIn}`, which fought the scroll
+  handler; keyed remount, Reduce-Motion-gated). A *same-key* background
+  refetch keeps the list (`data` survives ⇒ no skeleton).
+- **List item cards** rendered in filter/search screens are `React.memo`
+  (`PlaceRecommendationCard`) with module-level `renderItem`s, and rows are
+  memoised sub-components (`SectionRow`), so screen re-renders don't
+  re-render the lists. The recs FlatLists (outer + each `SectionRow`'s
+  horizontal one, + `AddPlacesToPlanScreen`) are capped —
+  `initialNumToRender` 2–3, `maxToRenderPerBatch` 2–3, `windowSize` 5 — so
+  clearing a category filter (→ all 8 sections) doesn't mount ~80 cards at
+  once. `MatchScoreBadge`'s count-up throttles its state writes to ~25/s
+  for the same reason. (No `removeClippedSubviews` — it eats taps on nested
+  Pressables.)
+
+**Card actions on the image (2026-09-01):** photo corners hold the actions,
+body is just the text (so the experience name gets the full width).
+**match `MatchScoreBadge` → top-right, Save → top-left, Log → bottom-left**
+(+ Share bottom-right on `FeedItemCard`) — applied to `FeedItemCard`,
+`PlaceRecommendationCard`, and `ExperienceDetailScreen`'s photo carousel.
+Save/Log only for `!isOwner`. `IconButton variant="overlay"` (white glyph
+on `colors.overlay` scrim disc, `colors.onScrim` token); the match badge
+keeps its own ramp fill.
+
+**`TravelStyleRadar` — `animate` prop (2026-09-01):** the morphing primary
+polygon runs in a `<MorphingPolygon>` sub-component and only when
+`animate` (default) **and** motion isn't reduced. **Static comparison
+views pass `animate={false}`** (`CompatPane`, `MatchDetailScreen`) → a plain
+`<Polygon points={pointsFor(...)}>` using the exact render-time
+`center`/`maxRadius`, so it can't drift off-centre from the grid / compare
+outline (the animation worklet's geometry lagged a dynamic `size` change).
+Keep `animate` on where the vector changes live (`EditTravelStyle`,
+onboarding). `CompatPane` also gates the radar render on `viewportH > 0`
+so it mounts once at the final size.
+
+**`MatchScoreBadge` → `MatchDetailScreen` (2026-09-01):** the badge tap is
+a **`navigation.navigate('MatchDetail', …)`** to a `presentation: 'modal'`
+screen (`modules/social/screens/MatchDetailScreen.tsx`, registered in the
+Logbook / Discovery / Social / Planner stacks — same 4 as `CreateExperience`)
+— so it slides + swipes **identically** to the "Log experience" modal.
+Params: `{ title, matchPercent, vector }` (the *other* vector only —
+`vectorA` is read from `useCurrentUser` in the screen; the badge still
+needs both `vectorA` & `vectorB` props to be a tappable gate).
+`MatchScoreBadge` now calls `useNavigation()` unconditionally, so it must
+only be rendered inside a navigator. Earlier `<Modal presentationStyle=
+"pageSheet">` and hand-rolled `PanResponder` versions are gone — don't
+revive them.
+
+**`components/PressableScale.tsx` (2026-09-01):** a `Pressable` that
+dips+scales on hold (UI thread, `motion.press`, Reduce-Motion safe,
+`unstable_pressDelay={70}` so a nested control claims the tap first). Wrap
+whole cards/rows that have no other press feedback — `PlaceRecommendationCard`,
+`SavedScreen` place rows, `PlannedTripDetailScreen` itinerary rows (all
+"tap → open in Maps").
+
 **Planner rework (2026-08-31):** the plan detail screen is **itinerary
 only** — the old "Add from your saves / saved places" lists are gone.
 Itinerary items are added from **`AddPlacesToPlanScreen`** (a nearby-Google-
 Places search scoped to the trip's location, reusing the
-`getPlaceRecommendations` callable; `PlaceRecommendationCard` takes
-`onAdd`/`added` for "Add to plan" mode). `plannedTripItems` gained
-denormalised `city/country/photoRef/lat/lng`. **Planning → Upcoming** is
+`getPlaceRecommendations` callable; `PlaceRecommendationCard` takes `onAdd`
+for "Add to plan" mode). It **filters out** places already on the
+itinerary + a local `justAdded` set (just-tapped, before the items query
+refetches) + cross-section dupes, so the same place can never be added
+twice. `plannedTripItems` gained denormalised `city/country/photoRef/lat/lng`. **Planning → Upcoming** is
 derived (`lib/plannedTripStatus.ts` — `displayPlannedTripStatus`, 14-day
 window) with a manual toggle; only the *stored* `status` field is written.
 **Completion** (`CompletePlannedTripScreen`) collects **photos only**;

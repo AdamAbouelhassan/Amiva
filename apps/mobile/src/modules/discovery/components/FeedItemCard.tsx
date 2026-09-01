@@ -40,50 +40,51 @@ export function FeedItemCard({ experienceId, isFriend, matchScore, onPress }: Fe
   return (
     <Card padded={false} elevation="raised" style={{ overflow: 'hidden' }}>
       <Pressable onPress={onPress}>
-        <AppImage uri={experience.photoUrls[0]} style={{ width: '100%', height: experience.photoUrls[0] ? 190 : 96 }} />
-        <View style={{ padding: spacing.md, gap: spacing.xs }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm }}>
-            <ProfileIdentity
-              name={`${ownerQuery.data?.name ?? '…'}${isFriend ? '  ·  Friend' : ''}`}
-              username={ownerQuery.data?.username}
-              photoUrl={ownerQuery.data?.profilePhotoUrl}
-            />
-            {matchScore !== undefined && (
+        {/* Match % top-right, Save top-left, Log bottom-left, Share
+            bottom-right — the body is just identity + title + place. */}
+        <View>
+          <AppImage
+            uri={experience.photoUrls[0]}
+            style={{ width: '100%', height: experience.photoUrls[0] ? 190 : 96 }}
+          />
+
+          {matchScore !== undefined ? (
+            <View style={{ position: 'absolute', top: spacing.xs, right: spacing.xs }}>
               <MatchScoreBadge
                 matchPercent={toMatchPercent(matchScore)}
                 vectorA={profile?.travelStyle}
                 vectorB={experience.categoryScores}
                 detailTitle={ownerQuery.data?.name ?? 'This experience'}
               />
-            )}
-          </View>
+            </View>
+          ) : null}
 
-          <Text style={t.type.subtitle} numberOfLines={1}>
-            {experience.title}
-          </Text>
-          <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
-            {experience.city}, {experience.country}
-          </Text>
+          {!isOwner ? (
+            <>
+              <View style={{ position: 'absolute', top: spacing.xs, left: spacing.xs }}>
+                <IconButton
+                  variant="overlay"
+                  name={save.saved ? 'bookmark' : 'bookmark-outline'}
+                  active={save.saved}
+                  onPress={save.toggle}
+                  accessibilityLabel={save.saved ? 'Saved' : 'Save'}
+                />
+              </View>
+              <View style={{ position: 'absolute', bottom: spacing.xs, left: spacing.xs }}>
+                <IconButton
+                  variant="overlay"
+                  name="add-circle-outline"
+                  onPress={() => logNav.fromExperience(experience)}
+                  loading={logNav.preparing}
+                  accessibilityLabel="Log this in your logbook"
+                />
+              </View>
+            </>
+          ) : null}
 
-          {/* Save is the only engagement action (spec §5.1 — no likes/comments). */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xxs }}>
-            {!isOwner && (
-              <IconButton
-                name={save.saved ? 'bookmark' : 'bookmark-outline'}
-                active={save.saved}
-                onPress={save.toggle}
-                accessibilityLabel={save.saved ? 'Saved' : 'Save'}
-              />
-            )}
-            {!isOwner && (
-              <IconButton
-                name="add-circle-outline"
-                onPress={() => logNav.fromExperience(experience)}
-                loading={logNav.preparing}
-                accessibilityLabel="Log this in your logbook"
-              />
-            )}
+          <View style={{ position: 'absolute', bottom: spacing.xs, right: spacing.xs }}>
             <IconButton
+              variant="overlay"
               name="share-social-outline"
               onPress={() =>
                 Share.share({ message: `${experience.title} — ${experience.city}, ${experience.country} on Amiva` })
@@ -91,6 +92,20 @@ export function FeedItemCard({ experienceId, isFriend, matchScore, onPress }: Fe
               accessibilityLabel="Share"
             />
           </View>
+        </View>
+
+        <View style={{ padding: spacing.md, gap: spacing.xxs }}>
+          <ProfileIdentity
+            name={`${ownerQuery.data?.name ?? '…'}${isFriend ? '  ·  Friend' : ''}`}
+            username={ownerQuery.data?.username}
+            photoUrl={ownerQuery.data?.profilePhotoUrl}
+          />
+          <Text style={[t.type.subtitle, { marginTop: spacing.xxs }]} numberOfLines={1}>
+            {experience.title}
+          </Text>
+          <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
+            {experience.city}, {experience.country}
+          </Text>
         </View>
       </Pressable>
     </Card>

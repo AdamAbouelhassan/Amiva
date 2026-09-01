@@ -3,6 +3,7 @@ import { PlannerStackParamList } from '../../navigation/types';
 import { useStackScreenOptions } from '../../navigation/screenOptions';
 // Reused from Logbook — "Log this" from AddPlacesToPlan opens it in-stack.
 import { CreateExperienceScreen } from '../logbook/screens/CreateExperienceScreen';
+import { MatchDetailScreen } from '../social/screens/MatchDetailScreen';
 import { AddPlacesToPlanScreen } from './screens/AddPlacesToPlanScreen';
 import { CompletePlannedTripScreen } from './screens/CompletePlannedTripScreen';
 import { CreatePlannedTripScreen } from './screens/CreatePlannedTripScreen';
@@ -37,6 +38,11 @@ export function PlannerNavigator() {
         name="CreateExperience"
         component={CreateExperienceScreen}
         options={{ title: 'Log experience', presentation: 'modal' }}
+      />
+      <Stack.Screen
+        name="MatchDetail"
+        component={MatchDetailScreen}
+        options={{ title: 'Compatibility', presentation: 'modal' }}
       />
     </Stack.Navigator>
   );

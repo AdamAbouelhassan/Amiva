@@ -9,6 +9,7 @@ export type { Theme, ThemeMode } from './ThemeProvider';
 
 export { spacing, radius, shadow } from './spacing';
 export type { SpacingToken, RadiusToken } from './spacing';
+export { motion } from './motion';
 
 export { CATEGORY_LABELS, RADAR_AXIS_ORDER, categoryColor } from './categoryColors';
 export type { ThemeColors } from './themes';

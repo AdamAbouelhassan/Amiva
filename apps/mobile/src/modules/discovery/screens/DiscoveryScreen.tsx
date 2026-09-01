@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SegmentedControl } from '../../../components/SegmentedControl';
@@ -24,6 +24,19 @@ interface DiscoveryScreenProps {
 export function DiscoveryScreen({ navigation }: DiscoveryScreenProps) {
   const t = useTheme();
   const [tab, setTab] = useState<Tab>('local');
+  // The segmented control follows `tab` immediately (the pill springs on
+  // tap); the heavier pane swap runs off the deferred value so it never
+  // blocks the tap. Panes are memoised so a tab change doesn't re-render
+  // the other two.
+  const deferredTab = useDeferredValue(tab);
+  const panes = useMemo(
+    () => [
+      { key: 'local', node: <RecommendationsScreen /> },
+      { key: 'trending', node: <TrendingScreen navigation={navigation} /> },
+      { key: 'friends', node: <FriendsScreen navigation={navigation} /> },
+    ],
+    [navigation],
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.colors.background }} edges={['top', 'left', 'right']}>
@@ -45,14 +58,7 @@ export function DiscoveryScreen({ navigation }: DiscoveryScreenProps) {
         />
       </View>
 
-      <TabPanes
-        activeKey={tab}
-        panes={[
-          { key: 'local', node: <RecommendationsScreen /> },
-          { key: 'trending', node: <TrendingScreen navigation={navigation} /> },
-          { key: 'friends', node: <FriendsScreen navigation={navigation} /> },
-        ]}
-      />
+      <TabPanes activeKey={deferredTab} panes={panes} />
     </SafeAreaView>
   );
 }

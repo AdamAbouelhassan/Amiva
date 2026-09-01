@@ -3,7 +3,7 @@
  * timeline of trips *and* experiences (functional_specification.md §3.1,
  * §3.5).
  */
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { BrandEmptyState } from '../../../components/BrandEmptyState';
 import { Button } from '../../../components/Button';
@@ -47,6 +47,9 @@ export function LogbookHomeScreen({ navigation }: LogbookHomeScreenProps) {
   const refresh = useRefresh();
   const tabInset = useTabBarInset();
   const [tab, setTab] = useState<Tab>('trips');
+  // Segmented control reacts instantly; the pane swap is deferred so it
+  // never blocks the tap (the cross-dissolve itself runs on the UI thread).
+  const deferredTab = useDeferredValue(tab);
 
   const makeRC = () => (
     <RefreshControl
@@ -123,7 +126,7 @@ export function LogbookHomeScreen({ navigation }: LogbookHomeScreenProps) {
       </View>
 
       <TabPanes
-        activeKey={tab}
+        activeKey={deferredTab}
         panes={[
           {
             key: 'trips',
