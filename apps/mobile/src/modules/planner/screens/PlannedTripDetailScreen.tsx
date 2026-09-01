@@ -202,7 +202,7 @@ export function PlannedTripDetailScreen({ route, navigation }: PlannedTripDetail
                     backgroundColor: t.colors.surface,
                     borderWidth: 1,
                     borderColor: t.colors.border,
-                    borderRad6jinnomk[kl;mnbvnhujgcyfdxts6r5ecgvhjkhnubgi8yvf7tcd6rxs5etgrthyfdrsghfdsef6rrgthguy9f87t6rd57es4frtguyfut8dr7sefrtgyhujikolpi0u90y8t6hoit80igho]ouyhi76hgt69ghi6ighi6gohnuytr8567ghfjiuyius: radius.card,
+                    borderRadius: radius.card,
                     padding: spacing.sm,
                   }}
                 >
