@@ -1,0 +1,85 @@
+{
+  "source": "Google Places API (New) — Table A",
+  "source_url": "https://developers.google.com/maps/documentation/places/web-service/place-types",
+  "retrieved": "2026-09-02",
+  "note": "These are the 19 top-level groupings Google uses to organize Table A place types in its documentation. They are not a field returned by the API itself — only individual types (see google_places_types.json) are returned as primaryType/types values.",
+  "count": 19,
+  "categories": [
+    {
+      "id": "automotive",
+      "label": "Automotive"
+    },
+    {
+      "id": "business",
+      "label": "Business"
+    },
+    {
+      "id": "culture",
+      "label": "Culture"
+    },
+    {
+      "id": "education",
+      "label": "Education"
+    },
+    {
+      "id": "entertainment_and_recreation",
+      "label": "Entertainment and Recreation"
+    },
+    {
+      "id": "facilities",
+      "label": "Facilities"
+    },
+    {
+      "id": "finance",
+      "label": "Finance"
+    },
+    {
+      "id": "food_and_drink",
+      "label": "Food and Drink"
+    },
+    {
+      "id": "geographical_areas",
+      "label": "Geographical Areas"
+    },
+    {
+      "id": "government",
+      "label": "Government"
+    },
+    {
+      "id": "health_and_wellness",
+      "label": "Health and Wellness"
+    },
+    {
+      "id": "housing",
+      "label": "Housing"
+    },
+    {
+      "id": "lodging",
+      "label": "Lodging"
+    },
+    {
+      "id": "natural_features",
+      "label": "Natural Features"
+    },
+    {
+      "id": "places_of_worship",
+      "label": "Places of Worship"
+    },
+    {
+      "id": "services",
+      "label": "Services"
+    },
+    {
+      "id": "shopping",
+      "label": "Shopping"
+    },
+    {
+      "id": "sports",
+      "label": "Sports"
+    },
+    {
+      "id": "transportation",
+      "label": "Transportation"
+    }
+  ]
+}
