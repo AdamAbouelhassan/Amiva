@@ -93,15 +93,15 @@ standalone-experience rule, no date-range recategorization
 intentionally diverges from functional_specification.md §3.2 — product
 decision, tracked here like the Discovery §5 divergence. `plannedTrips`
 has the **same field shape** (a planned trip is a future trip) plus its
-Planner extras (`collaboratorIds` / `status` / `itemIds` / `completedAt`);
-they stay **two collections**. Shared UI: `<TripFormFields>` (all 4
+Planner extras (`collaboratorIds` / `status` / `itemIds` / `completedAt` /
+`loggedTripIds`); they stay **two collections**. Shared UI: `<TripFormFields>` (all 4
 create/edit screens), `<DateField>` / `<DateRangeField>` (the **only**
 `@react-native-community/datetimepicker` importers — minimal collapsed
 field that expands the picker on tap; used by every date input in the
-app), `<PhotoGalleryPicker>`. `convertPlannedTripToLogbook` now creates
-one fresh Logbook trip mirroring the planned trip. `trips` /
-`plannedTrips` / `plannedTripItems` Firestore data was wiped on the
-restructure. `firestore.indexes.json`: `trips` + `plannedTrips` list
+app), `<PhotoGalleryPicker>`. `convertPlannedTripToLogbook` creates a fresh
+Logbook trip mirroring the planned trip (per participant — see the
+2026-09-01 shared-trips note). `trips` / `plannedTrips` / `plannedTripItems`
+Firestore data was wiped on the restructure. `firestore.indexes.json`: `trips` + `plannedTrips` list
 queries now order by `createdAt` (was `startDate`, now nullable).
 `PlannedTripRepository.listForUser` re-sorts client-side by **`startDate`
 ascending** (soonest planned trip on top in the Planner) — the query order
@@ -250,6 +250,53 @@ into it, restores `status: 'planning'`. The planner create/edit form hides
 the photo picker (`<TripFormFields photos={false}>`). Diverges from
 functional_specification.md §4.2/§4.3 — documented product decision.
 
+**Shared planned trips + per-participant logs (2026-09-01):** the Planner's
+collaboration UI now lives on **`PlannedTripDetailScreen`** (the orphan
+`social/GroupTripDetailScreen` + `useGroupTrip.ts` + the `GroupTripDetail`
+route were **deleted** — its group-recommendations block folded in here as a
+"Group matches" section). A "Trip party" section lists owner + collaborators;
+**owner-only** add (a friend-picker) via the new **`addTripCollaborator`
+callable** (`functions/src/{triggers,lib}/tripCollaborators.ts` + adapter —
+mirrors `onFriendAdded`; also fires the already-wired `group_trip_joined`
+notification; **needs the `allUsers` invoker binding** — new callable) and
+remove (direct `arrayRemove` write). Owner-only: Edit details / status
+toggle / delete. Collaborator (incl. owner): add/remove itinerary stops.
+Non-participant friend (reached from `FriendDetailScreen` → Planner tab):
+everything read-only.
+**Completion is now per participant.** `plannedTrips.convertedToTripId` is
+**gone**, replaced by `loggedTripIds: { [uid]: tripId }`. After `endDate`
+each participant independently runs `convertPlannedTripToLogbook`
+(**same callable name kept** so its IAM binding is untouched; lib renamed
+`addPlannedTripToLogbook`, now participant-gated + end-date-gated +
+idempotent) → **their own** Logbook trip with **their own** photos; the
+first to log flips `status: 'completed'` + `completedAt`. Each logs their own
+experiences into their own copy ("Log this" on itinerary rows →
+`CreateExperience` with `tripId = loggedTripIds[myUid]`, via
+`useLogExperienceNav.fromPlace(place, { tripId })`). **Revert** is per-user
+(`revertCompletedTrip` → lib `removePlannedTripFromLogbook`): deletes only
+the caller's copy + detaches their experiences; `status` returns to
+`planning` only when the *last* copy is removed. Extends
+functional_specification.md §4.3 (one conversion → one per participant).
+`plannedTrips` / `plannedTripItems` / completion-created `trips/` were wiped
+on this change.
+
+**Friend profile = their own Logbook (2026-09-01):** `getUserProfileContent`
+now returns trips with `photoUrls`/`notes`/`accommodation` and
+`experiences: { experienceId, tripId, date }[]` (was flat `experienceIds`).
+`FriendDetailScreen`'s **Trips** tab = current plans only (`status !==
+'completed'`, soonest first, tap → Planner tab's `PlannedTripDetail`);
+**Logbook** tab = trips + experiences merged newest-first (mirrors the
+owner's own timeline), trip rows → new read-only **`FriendTripDetailScreen`**
+(Social stack, fed entirely from the cached `getUserProfileContent` query —
+never reads the friend's trip doc directly; photos + `FeedItemCard`s, no
+edit affordances).
+
+**Keyboard-safe forms (2026-09-01):** `ScreenContainer` (scroll mode) wraps
+its `ScrollView` in `KeyboardAvoidingView` + `automaticallyAdjustKeyboardInsets`
++ `keyboardDismissMode="interactive"`; `app.config.js` sets
+`android.softwareKeyboardLayoutMode: 'resize'`. Every form screen goes
+through it — no per-screen keyboard handling.
+
 **Tab motion + icon actions (2026-08-31):** the bottom tab bar is a
 **custom `navigation/GlassTabBar.tsx`** (`Tab.Navigator`'s `tabBar` prop,
 not the default bar) — `position:'absolute'`, short (`BAR_H` 48) with big
@@ -270,7 +317,14 @@ hollow (`*-outline`) when inactive / filled when `focused` (Spotify-style).
 **`components/FocusFade.tsx`** (fade+rise on focus — module-level
 components, never inline render props). In-page tabs (Discovery / Logbook
 / FriendDetail) render panes through **`components/TabPanes.tsx`**
-(kept-mounted, cross-dissolve). `SegmentedControl` has a spring-sliding
+(kept-mounted, cross-dissolve). Each `PaneLayer` gets `zIndex: active ? 1 : 0`
+and wraps its children in a **plain `View` with `pointerEvents` in style** —
+the `pointerEvents` prop on Reanimated's `Animated.View` isn't reliably
+applied on the New Architecture, so an invisible inactive pane (e.g.
+`RecommendationsScreen`'s absolute filter header) was eating taps meant for
+the active pane (Discovery "Friends" tab, fixed 2026-09-01). Pane bodies must
+be **memoised components** (not inline JSX) — inline panes reconcile the
+kept-mounted FlatLists on every parent render and cancel in-flight card taps. `SegmentedControl` has a spring-sliding
 solid pill (`radius.chip - 3`, concentric; API unchanged). Card `Save` /
 `Log this` / `Share` / `Remove` are **`components/IconButton.tsx`**
 (Ionicons via `@expo/vector-icons`, `Ionicons.font` in `App.tsx`
@@ -466,7 +520,8 @@ every test tonight used to authenticate.
     `computeMatchScore`, `computeGroupRecommendation`,
     `convertPlannedTripToLogbook`, `getTrending`, `matchContacts`,
     `onFriendAdded`, `upsertPlace`. (Background triggers don't need
-    invoker.)
+    invoker.) **`addTripCollaborator`** (2026-09-01, new) also needs the
+    binding — set it on first deploy / verify with the curl check.
 - **Firestore security rules can't gate a collection-query the way you'd
   gate a single-doc read.** If a read rule depends on per-document data
   (e.g. `privacySetting`), a `where(...)` query over that collection gets

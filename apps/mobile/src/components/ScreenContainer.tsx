@@ -1,5 +1,6 @@
-import { PropsWithChildren } from 'react';
-import { RefreshControl, ScrollView, View, ViewProps } from 'react-native';
+import { PropsWithChildren, useContext } from 'react';
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, View, ViewProps } from 'react-native';
+import { HeaderHeightContext } from '@react-navigation/elements';
 import { Edge, SafeAreaView } from 'react-native-safe-area-context';
 import { useTabBarInset } from '../hooks/useTabBarInset';
 import { spacing, useTheme } from '../theme';
@@ -32,6 +33,7 @@ export function ScreenContainer({
 }: ScreenContainerProps) {
   const t = useTheme();
   const tabInset = useTabBarInset();
+  const headerHeight = useContext(HeaderHeightContext) ?? 0;
   const edges: Edge[] = safeAreaTop ? ['top', 'left', 'right'] : ['left', 'right'];
 
   const body = children;
@@ -39,27 +41,39 @@ export function ScreenContainer({
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.colors.background }} edges={edges}>
       {scroll ? (
-        <ScrollView
-          style={[{ flex: 1 }, style]}
-          contentContainerStyle={[
-            { padding: spacing.screen, gap: spacing.lg },
-            contentStyle,
-            { paddingBottom: spacing.screen + tabInset },
-          ]}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={
-            onRefresh ? (
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={t.colors.accent}
-                colors={[t.colors.accent]}
-              />
-            ) : undefined
-          }
+        // iOS: `automaticallyAdjustKeyboardInsets` on the ScrollView lifts +
+        // scrolls the focused input above the keyboard (KAV is a passthrough
+        // so the two don't double-compensate). Android: KAV shrinks the
+        // frame (paired with `softwareKeyboardLayoutMode: 'resize'`).
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'android' ? 'height' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'android' ? headerHeight : 0}
         >
-          {body}
-        </ScrollView>
+          <ScrollView
+            style={[{ flex: 1 }, style]}
+            contentContainerStyle={[
+              { padding: spacing.screen, gap: spacing.lg },
+              contentStyle,
+              { paddingBottom: spacing.screen + tabInset },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+            refreshControl={
+              onRefresh ? (
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor={t.colors.accent}
+                  colors={[t.colors.accent]}
+                />
+              ) : undefined
+            }
+          >
+            {body}
+          </ScrollView>
+        </KeyboardAvoidingView>
       ) : (
         <View style={[{ flex: 1 }, style]}>{body}</View>
       )}

@@ -66,7 +66,7 @@ export function useLogExperienceNav() {
     }
   }
 
-  async function fromPlace(place: PlaceLike) {
+  async function fromPlace(place: PlaceLike, opts?: { tripId?: string }) {
     setPreparing(true);
     try {
       let { lat, lng } = place;
@@ -76,6 +76,7 @@ export function useLogExperienceNav() {
         lng = coords?.lng ?? 0;
       }
       navigation.navigate('CreateExperience', {
+        tripId: opts?.tripId,
         prefill: {
           place: {
             placeId: place.placeId,

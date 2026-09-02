@@ -50,7 +50,7 @@ function fromFirestore(id: string, data: DocumentData): PlannedTripDoc {
     itemIds: data.itemIds ?? [],
     createdAt: toDate(data.createdAt),
     completedAt: data.completedAt ? toDate(data.completedAt) : undefined,
-    convertedToTripId: data.convertedToTripId ?? undefined,
+    loggedTripIds: data.loggedTripIds ?? {},
   };
 }
 
@@ -122,6 +122,7 @@ export const PlannedTripRepository = {
       status: 'planning',
       visibility: input.visibility,
       itemIds: [],
+      loggedTripIds: {},
       createdAt: new Date(),
     };
 
@@ -140,6 +141,7 @@ export const PlannedTripRepository = {
       status: trip.status,
       visibility: trip.visibility,
       itemIds: trip.itemIds,
+      loggedTripIds: {},
       createdAt: toTimestamp(trip.createdAt),
     });
     return trip;
@@ -162,11 +164,9 @@ export const PlannedTripRepository = {
     await updateDoc(doc(db, COLLECTION, plannedTripId), patch);
   },
 
-  /** Direct-add, no invite/accept step (functional_specification.md §6.1/§6.3). */
-  async addCollaborator(plannedTripId: string, collaboratorId: string): Promise<void> {
-    await updateDoc(doc(db, COLLECTION, plannedTripId), { collaboratorIds: arrayUnion(collaboratorId) });
-  },
-
+  /** Adding a collaborator goes through the `addTripCollaborator` callable
+   * (it also fires a `group_trip_joined` notification) — not a direct write.
+   * Removal is a plain owner/collaborator write. */
   async removeCollaborator(plannedTripId: string, collaboratorId: string): Promise<void> {
     await updateDoc(doc(db, COLLECTION, plannedTripId), { collaboratorIds: arrayRemove(collaboratorId) });
   },

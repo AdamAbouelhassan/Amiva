@@ -136,11 +136,15 @@ export interface PlannedTripDoc {
   visibility: PrivacySetting;
   itemIds: string[];
   createdAt: Date;
-  /** Set when status first becomes 'completed'. Cleared on revert. */
+  /** Set when the first participant adds the trip to their Logbook. Cleared
+   * only when the last participant's copy is removed. */
   completedAt?: Date;
-  /** The Logbook trip this plan was turned into on completion. Drives
-   * "View in Logbook" and revert. */
-  convertedToTripId?: string;
+  /** Per-participant Logbook copy: `{ [uid]: tripId }`. After the trip each
+   * participant (owner + collaborators) independently adds it to their own
+   * Logbook — their own trip doc, their own photos and entries
+   * (functional_specification.md §4.3, extended). Drives "View in my
+   * Logbook" and per-user revert. */
+  loggedTripIds: Record<string, string>;
 }
 
 export interface PlannedTripItemDoc {

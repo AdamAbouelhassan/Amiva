@@ -1,9 +1,11 @@
-/** The Planner completion flow (functional_specification.md §4.3) — 2026-08
- * rework: takes the photos the user just added, creates one Logbook trip
- * mirroring the plan, and links them. */
+/** The Planner completion flow (functional_specification.md §4.3; 2026-09
+ * shared-trip rework: completion is per participant — each participant
+ * calls this to get their OWN Logbook trip mirroring the plan, with their
+ * OWN photos). Keeps its deployed name so its IAM invoker binding is
+ * untouched. */
 import * as functions from 'firebase-functions/v1';
 import { FirestorePlannedTripConversionStore } from '../adapters/plannedTripAdapter';
-import { convertPlannedTripToLogbook as convertLib } from '../lib/plannedTripConversion';
+import { addPlannedTripToLogbook } from '../lib/plannedTripConversion';
 
 interface ConvertPlannedTripRequest {
   plannedTripId: string;
@@ -15,13 +17,23 @@ export const convertPlannedTripToLogbook = functions.https.onCall(
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'Must be signed in.');
     }
-
-    const store = new FirestorePlannedTripConversionStore();
-    const plannedTrip = await store.getPlannedTrip(data.plannedTripId);
-    if (plannedTrip.ownerId !== context.auth.uid) {
-      throw new functions.https.HttpsError('permission-denied', 'Not the owner of this planned trip.');
+    if (!data?.plannedTripId) {
+      throw new functions.https.HttpsError('invalid-argument', 'plannedTripId is required.');
     }
 
-    return convertLib(store, data.plannedTripId, data.photoUrls ?? []);
+    try {
+      return await addPlannedTripToLogbook(
+        new FirestorePlannedTripConversionStore(),
+        data.plannedTripId,
+        context.auth.uid,
+        data.photoUrls ?? [],
+        new Date(),
+      );
+    } catch (err) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        err instanceof Error ? err.message : 'Could not add trip to your Logbook.',
+      );
+    }
   },
 );

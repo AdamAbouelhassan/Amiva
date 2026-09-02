@@ -1,38 +1,45 @@
 /**
- * Undo an accidental planned-trip completion (2026-08 Planner rework).
- * Deletes the Logbook trip that completion created and restores the plan to
- * a pre-completion state. Any experiences the user logged into that trip
- * after completing are **detached** (tripId → null), never deleted.
+ * Undo adding a shared planned trip to your Logbook (2026-09 shared-trip
+ * rework — was owner-only "revert completion").
+ *
+ * Each participant has their own Logbook copy in
+ * `plannedTrips.loggedTripIds[uid]`; this removes **only the caller's**
+ * copy — deletes that Logbook trip and detaches (never deletes) any
+ * experiences they logged into it. The plan drops back to `planning` only
+ * once the *last* participant's copy is removed.
  */
 export interface RevertPlannedTripRecord {
   plannedTripId: string;
-  ownerId: string;
   status: string;
-  convertedToTripId?: string;
+  loggedTripIds: Record<string, string>;
 }
 
 export interface RevertCompletedTripStore {
   getPlannedTrip(plannedTripId: string): Promise<RevertPlannedTripRecord>;
   detachExperiences(tripId: string): Promise<number>;
   deleteTrip(tripId: string): Promise<void>;
-  restorePlannedTrip(plannedTripId: string): Promise<void>;
+  /** Removes `loggedTripIds[userId]`; when `restoreToPlanning` (no copies
+   * left) also sets `status: 'planning'` and clears `completedAt`. */
+  removeLoggedTrip(plannedTripId: string, userId: string, restoreToPlanning: boolean): Promise<void>;
 }
 
-export async function revertCompletedTrip(
+export async function removePlannedTripFromLogbook(
   store: RevertCompletedTripStore,
   plannedTripId: string,
+  userId: string,
 ): Promise<{ detachedExperiences: number }> {
   const plan = await store.getPlannedTrip(plannedTripId);
-  if (plan.status !== 'completed') {
-    throw new Error('Planned trip is not completed.');
+
+  const tripId = plan.loggedTripIds[userId];
+  if (!tripId) {
+    throw new Error('You have not added this trip to your Logbook.');
   }
 
-  let detachedExperiences = 0;
-  if (plan.convertedToTripId) {
-    detachedExperiences = await store.detachExperiences(plan.convertedToTripId);
-    await store.deleteTrip(plan.convertedToTripId);
-  }
+  const detachedExperiences = await store.detachExperiences(tripId);
+  await store.deleteTrip(tripId);
 
-  await store.restorePlannedTrip(plannedTripId);
+  const remaining = Object.keys(plan.loggedTripIds).filter((uid) => uid !== userId);
+  await store.removeLoggedTrip(plannedTripId, userId, remaining.length === 0);
+
   return { detachedExperiences };
 }

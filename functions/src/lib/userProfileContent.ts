@@ -11,6 +11,12 @@
  *    collaborators also allowed.
  *  - experiences: no per-doc visibility field — firestore.rules gates them
  *    by the *owner's account* `privacySetting`, so we do the same.
+ *
+ * The mobile FriendDetailScreen renders the Logbook tab as a merged
+ * reverse-chronological timeline of `trips` + `experiences` (mirroring the
+ * owner's own Logbook), and opens a read-only trip from `trips` (photos +
+ * its attached experiences), so trips carry their photos/notes and each
+ * experience carries its `tripId`.
  */
 import { isVisibleTo, PrivacySetting } from './visibility';
 
@@ -19,6 +25,9 @@ export interface RawProfileTrip {
   name: string;
   location: string;
   coverPhotoUrl?: string;
+  photoUrls: string[];
+  notes?: string;
+  accommodation?: string;
   startDate: Date;
   endDate: Date;
   visibility: PrivacySetting;
@@ -35,12 +44,18 @@ export interface RawProfilePlannedTrip {
   collaboratorIds: string[];
 }
 
+export interface RawProfileExperience {
+  experienceId: string;
+  tripId: string | null;
+  date: Date;
+}
+
 export interface UserProfileContentStore {
   getFriendIdsOf(userId: string): Promise<string[]>;
   getPrivacySetting(userId: string): Promise<PrivacySetting | undefined>;
   listTripsByOwner(ownerId: string): Promise<RawProfileTrip[]>;
   listPlannedTripsByOwner(ownerId: string): Promise<RawProfilePlannedTrip[]>;
-  listExperienceIdsByOwner(ownerId: string, limit: number): Promise<string[]>;
+  listExperiencesByOwner(ownerId: string, limit: number): Promise<RawProfileExperience[]>;
 }
 
 export interface ProfileTrip {
@@ -48,6 +63,9 @@ export interface ProfileTrip {
   name: string;
   location: string;
   coverPhotoUrl?: string;
+  photoUrls: string[];
+  notes?: string;
+  accommodation?: string;
   startDate: string;
   endDate: string;
 }
@@ -59,11 +77,16 @@ export interface ProfilePlannedTrip {
   endDate: string;
   status: string;
 }
+export interface ProfileExperience {
+  experienceId: string;
+  tripId: string | null;
+  date: string;
+}
 
 export interface UserProfileContent {
   trips: ProfileTrip[];
   plannedTrips: ProfilePlannedTrip[];
-  experienceIds: string[];
+  experiences: ProfileExperience[];
 }
 
 const EXPERIENCE_LIMIT = 50;
@@ -89,6 +112,9 @@ export async function getUserProfileContent(
       name: t.name,
       location: t.location,
       coverPhotoUrl: t.coverPhotoUrl,
+      photoUrls: t.photoUrls,
+      notes: t.notes,
+      accommodation: t.accommodation,
       startDate: t.startDate.toISOString(),
       endDate: t.endDate.toISOString(),
     }));
@@ -108,9 +134,13 @@ export async function getUserProfileContent(
       status: p.status,
     }));
 
-  const experienceIds = accountVisible
-    ? await store.listExperienceIdsByOwner(targetUserId, EXPERIENCE_LIMIT)
+  const experiences: ProfileExperience[] = accountVisible
+    ? (await store.listExperiencesByOwner(targetUserId, EXPERIENCE_LIMIT)).map((e) => ({
+        experienceId: e.experienceId,
+        tripId: e.tripId,
+        date: e.date.toISOString(),
+      }))
     : [];
 
-  return { trips, plannedTrips, experienceIds };
+  return { trips, plannedTrips, experiences };
 }

@@ -1,7 +1,9 @@
 /**
- * Completion prompt (functional_specification.md §4.3, 2026-08 rework):
- * collect photos, then the callable creates a Logbook trip mirroring the
- * plan and links them. Only reachable once the planned end date has passed.
+ * "Add this trip to your Logbook" (functional_specification.md §4.3, 2026-09
+ * shared-trip rework): collect *your* photos, then the callable creates a
+ * Logbook trip mirroring the plan, owned by you. On a shared trip every
+ * participant does this independently — separate trips, separate photos.
+ * Only reachable once the planned end date has passed.
  */
 import { useState } from 'react';
 import { Alert, Text } from 'react-native';
@@ -46,22 +48,22 @@ export function CompletePlannedTripScreen({ route, navigation }: CompletePlanned
 
   return (
     <ScreenContainer>
-      <Text style={t.type.displayMd}>Complete “{trip.name || trip.location}”</Text>
+      <Text style={t.type.displayMd}>Add “{trip.name || trip.location}” to your Logbook</Text>
       <Text style={[t.type.body, { color: t.colors.textSecondary }]}>
-        Add your photos — this trip moves to your Logbook, keeping its dates, notes, and place. You can log
-        the individual experiences into it afterwards.
+        Add your photos — you'll get your own Logbook trip keeping its dates, notes, and place. Log your own
+        experiences into it afterwards.
       </Text>
 
-      <PhotoGalleryPicker uris={uris} onChange={setUris} label="Trip photos" />
+      <PhotoGalleryPicker uris={uris} onChange={setUris} label="Your trip photos" />
 
       <Button
-        label="Complete trip"
+        label="Add to my Logbook"
         variant="warm"
         onPress={submit}
         loading={saving || complete.isPending}
       />
       <Text style={[t.type.caption, { color: t.colors.textSecondary, marginTop: spacing.xs }]}>
-        Completed by mistake? You can revert it from the trip afterwards.
+        Changed your mind? You can remove your copy from the trip afterwards.
       </Text>
     </ScreenContainer>
   );

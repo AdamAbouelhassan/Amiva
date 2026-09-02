@@ -1,5 +1,6 @@
 import { db as defaultDb } from '../adminApp';
 import {
+  RawProfileExperience,
   RawProfilePlannedTrip,
   RawProfileTrip,
   UserProfileContentStore,
@@ -35,6 +36,9 @@ export class FirestoreUserProfileContentStore implements UserProfileContentStore
         name: (d.name as string) ?? 'Trip',
         location: (d.location as string) ?? '',
         coverPhotoUrl: (d.coverPhotoUrl as string) || undefined,
+        photoUrls: (d.photoUrls as string[]) ?? [],
+        notes: (d.notes as string) || undefined,
+        accommodation: (d.accommodation as string) || undefined,
         startDate: toDate(d.startDate, EPOCH),
         endDate: toDate(d.endDate, EPOCH),
         visibility: (d.visibility as PrivacySetting) ?? 'private',
@@ -63,13 +67,20 @@ export class FirestoreUserProfileContentStore implements UserProfileContentStore
     });
   }
 
-  async listExperienceIdsByOwner(ownerId: string, limit: number): Promise<string[]> {
+  async listExperiencesByOwner(ownerId: string, limit: number): Promise<RawProfileExperience[]> {
     const snap = await this.db
       .collection('experiences')
       .where('ownerId', '==', ownerId)
       .orderBy('date', 'desc')
       .limit(limit)
       .get();
-    return snap.docs.map((d) => d.id);
+    return snap.docs.map((doc) => {
+      const d = doc.data();
+      return {
+        experienceId: doc.id,
+        tripId: (d.tripId as string) ?? null,
+        date: toDate(d.date, EPOCH),
+      };
+    });
   }
 }

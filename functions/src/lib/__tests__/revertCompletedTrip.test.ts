@@ -1,5 +1,5 @@
 import {
-  revertCompletedTrip,
+  removePlannedTripFromLogbook,
   RevertCompletedTripStore,
   RevertPlannedTripRecord,
 } from '../revertCompletedTrip';
@@ -7,7 +7,7 @@ import {
 class FakeStore implements RevertCompletedTripStore {
   detached: string[] = [];
   deleted: string[] = [];
-  restored: string[] = [];
+  removed: Array<{ userId: string; restoreToPlanning: boolean }> = [];
   constructor(
     private readonly plan: RevertPlannedTripRecord,
     private readonly attachedExperiences = 0,
@@ -23,34 +23,38 @@ class FakeStore implements RevertCompletedTripStore {
   async deleteTrip(tripId: string) {
     this.deleted.push(tripId);
   }
-  async restorePlannedTrip(plannedTripId: string) {
-    this.restored.push(plannedTripId);
+  async removeLoggedTrip(_plannedTripId: string, userId: string, restoreToPlanning: boolean) {
+    this.removed.push({ userId, restoreToPlanning });
   }
 }
 
-describe('revertCompletedTrip', () => {
-  it('detaches experiences, deletes the Logbook trip, and restores the plan', async () => {
+describe('removePlannedTripFromLogbook', () => {
+  it('removes only the caller’s copy and reverts the plan when it was the last', async () => {
     const store = new FakeStore(
-      { plannedTripId: 'p1', ownerId: 'alex', status: 'completed', convertedToTripId: 't9' },
+      { plannedTripId: 'p1', status: 'completed', loggedTripIds: { alex: 't-alex' } },
       3,
     );
-    const result = await revertCompletedTrip(store, 'p1');
+    const result = await removePlannedTripFromLogbook(store, 'p1', 'alex');
 
-    expect(store.detached).toEqual(['t9']);
-    expect(store.deleted).toEqual(['t9']);
-    expect(store.restored).toEqual(['p1']);
+    expect(store.detached).toEqual(['t-alex']);
+    expect(store.deleted).toEqual(['t-alex']);
+    expect(store.removed).toEqual([{ userId: 'alex', restoreToPlanning: true }]);
     expect(result.detachedExperiences).toBe(3);
   });
 
-  it('still restores the plan when no Logbook trip was linked', async () => {
-    const store = new FakeStore({ plannedTripId: 'p1', ownerId: 'alex', status: 'completed' });
-    await revertCompletedTrip(store, 'p1');
-    expect(store.deleted).toEqual([]);
-    expect(store.restored).toEqual(['p1']);
+  it('keeps the plan completed while other participants still have a copy', async () => {
+    const store = new FakeStore({
+      plannedTripId: 'p1',
+      status: 'completed',
+      loggedTripIds: { alex: 't-alex', sam: 't-sam' },
+    });
+    await removePlannedTripFromLogbook(store, 'p1', 'alex');
+    expect(store.deleted).toEqual(['t-alex']);
+    expect(store.removed).toEqual([{ userId: 'alex', restoreToPlanning: false }]);
   });
 
-  it('rejects a plan that is not completed', async () => {
-    const store = new FakeStore({ plannedTripId: 'p1', ownerId: 'alex', status: 'planning' });
-    await expect(revertCompletedTrip(store, 'p1')).rejects.toThrow(/not completed/);
+  it('rejects when the caller has no copy', async () => {
+    const store = new FakeStore({ plannedTripId: 'p1', status: 'completed', loggedTripIds: { sam: 't-sam' } });
+    await expect(removePlannedTripFromLogbook(store, 'p1', 'alex')).rejects.toThrow();
   });
 });

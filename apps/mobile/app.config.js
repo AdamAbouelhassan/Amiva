@@ -34,6 +34,10 @@ module.exports = {
     },
     android: {
       package: 'com.amiva.app',
+      // Resize the app window when the soft keyboard opens (Expo default is
+      // 'pan') so ScreenContainer's ScrollView can lift the focused input
+      // above the keyboard — see components/ScreenContainer.tsx.
+      softwareKeyboardLayoutMode: 'resize',
       adaptiveIcon: {
         foregroundImage: './assets/brand/amiva-mobile-icon.png',
         backgroundColor: CREAM,

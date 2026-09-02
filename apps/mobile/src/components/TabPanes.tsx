@@ -49,12 +49,17 @@ function PaneLayer({ active, delta, children }: { active: boolean; delta: number
     };
   }, [active, delta, reduceMotion]);
 
+  // The active pane sits above the others (`zIndex`) and is the only one
+  // that takes touches. `pointerEvents` goes on a PLAIN inner View — the
+  // prop on Reanimated's Animated.View isn't reliably applied on the New
+  // Architecture, which left an invisible inactive pane eating taps meant
+  // for the active one (Discovery's "Friends" tab, 2026-09).
   return (
     <Animated.View
-      style={[StyleSheet.absoluteFill, style]}
+      style={[StyleSheet.absoluteFill, { zIndex: active ? 1 : 0 }, style]}
       pointerEvents={active ? 'auto' : 'none'}
     >
-      {children}
+      <View style={{ flex: 1, pointerEvents: active ? 'auto' : 'none' }}>{children}</View>
     </Animated.View>
   );
 }

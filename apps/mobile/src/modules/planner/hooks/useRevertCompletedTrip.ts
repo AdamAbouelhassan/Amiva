@@ -1,5 +1,7 @@
-/** Undo an accidental completion — deletes the Logbook trip completion
- * created, detaches any experiences logged into it, restores the plan. */
+/** Remove your own copy of a shared planned trip from your Logbook —
+ * deletes that Logbook trip, detaches any experiences you logged into it,
+ * and (once the last participant's copy is gone) restores the plan to
+ * "planning". */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../../firebase/client';

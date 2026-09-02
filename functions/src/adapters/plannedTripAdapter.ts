@@ -1,3 +1,4 @@
+import * as admin from 'firebase-admin';
 import { db as defaultDb } from '../adminApp';
 import {
   CreateLogbookTripInput,
@@ -16,6 +17,7 @@ export class FirestorePlannedTripConversionStore implements PlannedTripConversio
     return {
       plannedTripId,
       ownerId: data.ownerId,
+      collaboratorIds: (data.collaboratorIds as string[]) ?? [],
       name: data.name ?? '',
       location: data.location ?? '',
       country: data.country ?? '',
@@ -25,13 +27,14 @@ export class FirestorePlannedTripConversionStore implements PlannedTripConversio
       startDate: toDate(data.startDate, new Date(0)),
       endDate: toDate(data.endDate, new Date(0)),
       visibility: data.visibility ?? 'private',
+      loggedTripIds: (data.loggedTripIds as Record<string, string>) ?? {},
     };
   }
 
-  async createTripForPlannedTrip(ownerId: string, input: CreateLogbookTripInput): Promise<string> {
+  async createTripForUser(userId: string, input: CreateLogbookTripInput): Promise<string> {
     const ref = this.db.collection('trips').doc();
     await ref.set({
-      ownerId,
+      ownerId: userId,
       location: input.location,
       country: input.country,
       city: input.city ?? null,
@@ -48,11 +51,19 @@ export class FirestorePlannedTripConversionStore implements PlannedTripConversio
     return ref.id;
   }
 
-  async markPlannedTripCompleted(plannedTripId: string, tripId: string): Promise<void> {
-    await this.db.collection('plannedTrips').doc(plannedTripId).update({
-      status: 'completed',
-      completedAt: toTimestamp(new Date()),
-      convertedToTripId: tripId,
-    });
+  async recordLoggedTrip(
+    plannedTripId: string,
+    userId: string,
+    tripId: string,
+    markCompleted: boolean,
+  ): Promise<void> {
+    const patch: Record<string, unknown> = {
+      [`loggedTripIds.${userId}`]: tripId,
+    };
+    if (markCompleted) {
+      patch.status = 'completed';
+      patch.completedAt = admin.firestore.FieldValue.serverTimestamp();
+    }
+    await this.db.collection('plannedTrips').doc(plannedTripId).update(patch);
   }
 }

@@ -10,6 +10,7 @@ export { onTravelStyleChanged } from './triggers/onTravelStyleChanged';
 export { computeMatchScore } from './triggers/computeMatchScore';
 export { convertPlannedTripToLogbook } from './triggers/convertPlannedTripToLogbook';
 export { revertCompletedTrip } from './triggers/revertCompletedTrip';
+export { addTripCollaborator } from './triggers/addTripCollaborator';
 export { getTrending } from './triggers/getTrending';
 export { sendNotification } from './triggers/sendNotification';
 

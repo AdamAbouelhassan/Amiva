@@ -1,8 +1,10 @@
 /**
- * Completion flow (functional_specification.md §4.3, 2026-08 rework):
- * hand the callable the photos the user just added; it creates one Logbook
- * trip mirroring the plan and links them. Per-item experience conversion is
- * deferred — the user logs into the new trip afterwards.
+ * "Add this shared trip to my Logbook" (functional_specification.md §4.3,
+ * 2026-09 shared-trip rework): hand the callable the photos the caller just
+ * added; it creates a Logbook trip owned by the caller mirroring the plan
+ * and records it in `plannedTrips.loggedTripIds[uid]`. Each participant does
+ * this independently; per-item experience conversion is deferred — they log
+ * into their own copy afterwards.
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { httpsCallable } from 'firebase/functions';

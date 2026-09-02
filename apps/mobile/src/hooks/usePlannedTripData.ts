@@ -1,7 +1,6 @@
-/** Shared across modules (Planner owns the checklist UX, Social's
- * GroupTripDetail reuses the same data) — promoted per CLAUDE.md's "2+
- * modules" rule rather than one module reaching into another's
- * /hooks. */
+/** Planned-trip reads shared by the Planner screens (detail, complete,
+ * add-places) — one place for the query keys so a collaborator's edit
+ * invalidates everywhere. */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { orNull } from '../lib/queryHelpers';
 import { PlannedTripItemRepository } from '../repositories/plannedTripItemRepository';

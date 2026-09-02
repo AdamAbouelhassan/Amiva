@@ -5,8 +5,8 @@ import { CreateExperienceScreen } from '../logbook/screens/CreateExperienceScree
 import { ExperienceDetailScreen } from '../logbook/screens/ExperienceDetailScreen';
 import { AddFriendScreen } from './screens/AddFriendScreen';
 import { FriendDetailScreen } from './screens/FriendDetailScreen';
+import { FriendTripDetailScreen } from './screens/FriendTripDetailScreen';
 import { FriendsListScreen } from './screens/FriendsListScreen';
-import { GroupTripDetailScreen } from './screens/GroupTripDetailScreen';
 import { MatchDetailScreen } from './screens/MatchDetailScreen';
 import { NotificationsScreen } from './screens/NotificationsScreen';
 
@@ -17,8 +17,8 @@ export function SocialNavigator() {
     <Stack.Navigator screenOptions={useStackScreenOptions()}>
       <Stack.Screen name="FriendsList" component={FriendsListScreen} options={{ headerShown: false }} />
       <Stack.Screen name="FriendDetail" component={FriendDetailScreen} options={{ title: 'Compatibility' }} />
+      <Stack.Screen name="FriendTripDetail" component={FriendTripDetailScreen} options={{ title: 'Trip' }} />
       <Stack.Screen name="AddFriend" component={AddFriendScreen} options={{ title: 'Add friend', presentation: 'modal' }} />
-      <Stack.Screen name="GroupTripDetail" component={GroupTripDetailScreen} options={{ title: 'Group trip' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
       <Stack.Screen name="ExperienceDetail" component={ExperienceDetailScreen} options={{ title: 'Experience' }} />
       <Stack.Screen

@@ -1,5 +1,7 @@
-/** A friend's profile content — trips, planned trips, logged experience
- * ids — all privacy-filtered server-side (functions/src/lib/userProfileContent.ts). */
+/** A friend's profile content — trips, planned trips, and logged
+ * experiences (with their `tripId` + date so the Logbook tab can render a
+ * merged reverse-chronological timeline and open a read-only trip) — all
+ * privacy-filtered server-side (functions/src/lib/userProfileContent.ts). */
 import { useQuery } from '@tanstack/react-query';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../../firebase/client';
@@ -9,6 +11,9 @@ export interface ProfileTrip {
   name: string;
   location: string;
   coverPhotoUrl?: string;
+  photoUrls: string[];
+  notes?: string;
+  accommodation?: string;
   startDate: string;
   endDate: string;
 }
@@ -20,10 +25,15 @@ export interface ProfilePlannedTrip {
   endDate: string;
   status: string;
 }
+export interface ProfileExperience {
+  experienceId: string;
+  tripId: string | null;
+  date: string;
+}
 export interface UserProfileContent {
   trips: ProfileTrip[];
   plannedTrips: ProfilePlannedTrip[];
-  experienceIds: string[];
+  experiences: ProfileExperience[];
 }
 
 const callable = httpsCallable<{ targetUserId: string }, UserProfileContent>(

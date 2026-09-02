@@ -52,8 +52,8 @@ export type DiscoveryStackParamList = {
 export type SocialStackParamList = {
   FriendsList: undefined;
   FriendDetail: { friendId: string };
+  FriendTripDetail: { friendId: string; tripId: string };
   AddFriend: undefined;
-  GroupTripDetail: { plannedTripId: string };
   Notifications: undefined;
   ExperienceDetail: { experienceId: string };
   CreateExperience: CreateExperienceParams;

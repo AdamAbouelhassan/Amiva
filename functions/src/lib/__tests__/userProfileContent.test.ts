@@ -1,5 +1,6 @@
 import {
   getUserProfileContent,
+  RawProfileExperience,
   RawProfilePlannedTrip,
   RawProfileTrip,
   UserProfileContentStore,
@@ -15,7 +16,7 @@ class FakeStore implements UserProfileContentStore {
       privacy?: Record<string, PrivacySetting>;
       trips?: RawProfileTrip[];
       plannedTrips?: RawProfilePlannedTrip[];
-      experienceIds?: string[];
+      experiences?: RawProfileExperience[];
     },
   ) {}
   async getFriendIdsOf(userId: string) {
@@ -30,8 +31,8 @@ class FakeStore implements UserProfileContentStore {
   async listPlannedTripsByOwner() {
     return this.cfg.plannedTrips ?? [];
   }
-  async listExperienceIdsByOwner() {
-    return this.cfg.experienceIds ?? [];
+  async listExperiencesByOwner() {
+    return this.cfg.experiences ?? [];
   }
 }
 
@@ -39,9 +40,16 @@ const trip = (id: string, visibility: PrivacySetting): RawProfileTrip => ({
   tripId: id,
   name: id,
   location: 'Tokyo',
+  photoUrls: [],
   startDate: D('2026-01-01'),
   endDate: D('2026-01-05'),
   visibility,
+});
+
+const exp = (id: string, tripId: string | null = null): RawProfileExperience => ({
+  experienceId: id,
+  tripId,
+  date: D('2026-01-02'),
 });
 
 describe('getUserProfileContent', () => {
@@ -49,13 +57,13 @@ describe('getUserProfileContent', () => {
     const store = new FakeStore({
       privacy: { target: 'private' },
       trips: [trip('t-pub', 'public'), trip('t-priv', 'private')],
-      experienceIds: ['e1', 'e2'],
+      experiences: [exp('e1'), exp('e2')],
     });
     const out = await getUserProfileContent(store, 'viewer', 'target');
     // per-trip visibility still applies — a 'public' trip on a private
     // account is still public
     expect(out.trips.map((t) => t.tripId)).toEqual(['t-pub']);
-    expect(out.experienceIds).toEqual([]); // account not visible → no experiences
+    expect(out.experiences).toEqual([]); // account not visible → no experiences
   });
 
   it('shows friends-only trips + experiences to a friend', async () => {
@@ -63,11 +71,12 @@ describe('getUserProfileContent', () => {
       friendsOf: { viewer: ['target'] },
       privacy: { target: 'friends' },
       trips: [trip('t-friends', 'friends'), trip('t-priv', 'private'), trip('t-pub', 'public')],
-      experienceIds: ['e1', 'e2'],
+      experiences: [exp('e1', 't-friends'), exp('e2')],
     });
     const out = await getUserProfileContent(store, 'viewer', 'target');
     expect(out.trips.map((t) => t.tripId).sort()).toEqual(['t-friends', 't-pub']);
-    expect(out.experienceIds).toEqual(['e1', 'e2']);
+    expect(out.experiences.map((e) => e.experienceId)).toEqual(['e1', 'e2']);
+    expect(out.experiences[0]!.tripId).toBe('t-friends');
   });
 
   it('lets a planned-trip collaborator see a private plan', async () => {
@@ -94,10 +103,10 @@ describe('getUserProfileContent', () => {
     const store = new FakeStore({
       privacy: { me: 'private' },
       trips: [trip('t-priv', 'private')],
-      experienceIds: ['e1'],
+      experiences: [exp('e1')],
     });
     const out = await getUserProfileContent(store, 'me', 'me');
     expect(out.trips.map((t) => t.tripId)).toEqual(['t-priv']);
-    expect(out.experienceIds).toEqual(['e1']);
+    expect(out.experiences.map((e) => e.experienceId)).toEqual(['e1']);
   });
 });
