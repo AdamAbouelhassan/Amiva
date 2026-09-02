@@ -80,3 +80,36 @@ export function zeroTravelStyleVector(): TravelStyleVector {
   }
   return result;
 }
+
+/**
+ * Safely coerces an arbitrary Firestore field value into a full, valid
+ * TravelStyleVector — every one of the 19 CATEGORY_IDS present, each a
+ * clamped number, nothing else.
+ *
+ * Why this exists (taxonomy migration, 2026-09-02): the migration doc's
+ * "no data migration, pre-launch, no real user data" assumption turned
+ * out not to hold — `amivadev` already has real test accounts with
+ * `travelStyle`/`categoryScores` written in the *old* 8-category shape
+ * (`{ adventure, luxury, culture, foodie, relaxation, socialNightlife,
+ * nature, budgetBackpacker }`). Reading one of those documents through
+ * code that indexes by the new CATEGORY_IDS (e.g.
+ * `vector[category].toFixed(0)` in TravelStyleSliders) hits `undefined`
+ * for every one of the 18 categories that aren't `culture` and throws.
+ *
+ * This is the single choke point every Firestore read that produces a
+ * TravelStyleVector should go through (repository/adapter layer, not
+ * scattered at render sites) — an old-shaped document coerces to mostly
+ * zeros (its 7 non-`culture` old keys have no principled mapping onto the
+ * new 19 categories; there's no honest way to carry them forward, so they
+ * drop) rather than crashing. `undefined`/`null`/a non-object also coerce
+ * to the zero vector, same as a genuinely missing field.
+ */
+export function coerceTravelStyleVector(raw: unknown): TravelStyleVector {
+  const source = (raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}) as Record<string, unknown>;
+  const result = {} as TravelStyleVector;
+  for (const category of CATEGORY_IDS) {
+    const value = source[category];
+    result[category] = typeof value === 'number' ? clampCategoryValue(value) : CATEGORY_MIN;
+  }
+  return result;
+}

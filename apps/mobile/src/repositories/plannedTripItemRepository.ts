@@ -15,7 +15,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
-import { TravelStyleVector } from '@amiva/core';
+import { coerceTravelStyleVector, TravelStyleVector } from '@amiva/core';
 import { db } from '../firebase/client';
 import { PlannedTripItemDoc } from './types';
 import { PlannedTripRepository } from './plannedTripRepository';
@@ -29,7 +29,11 @@ function fromFirestore(id: string, data: DocumentData): PlannedTripItemDoc {
     source: data.source,
     placeId: data.placeId,
     title: data.title,
-    categoryScores: data.categoryScores ?? undefined,
+    // A trip item added before the taxonomy migration (2026-09-02) may
+    // have captured an old-shaped categoryScores at add-time — coerce if
+    // present, but keep "no score captured at all" (undefined) distinct
+    // from "coerces to zero" (present but old-shaped/empty).
+    categoryScores: data.categoryScores ? coerceTravelStyleVector(data.categoryScores) : undefined,
     city: data.city ?? undefined,
     country: data.country ?? undefined,
     photoRef: data.photoRef ?? undefined,

@@ -27,6 +27,7 @@ import {
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
+import { coerceTravelStyleVector } from '@amiva/core';
 import { db } from '../firebase/client';
 import { toDate, toTimestamp } from '../firebase/timestamps';
 import { PrivacySetting, UserDoc } from './types';
@@ -46,8 +47,12 @@ function fromFirestore(id: string, data: DocumentData): UserDoc {
     phoneNumberHash: data.phoneNumberHash ?? undefined,
     profilePhotoUrl: data.profilePhotoUrl,
     privacySetting: data.privacySetting,
-    travelStyle: data.travelStyle,
-    travelStyleBaseline: data.travelStyleBaseline,
+    // coerceTravelStyleVector: a pre-taxonomy-migration (2026-09-02)
+    // document still has the old 8-category shape on disk — this reads as
+    // (mostly) zero rather than crashing every screen that indexes by the
+    // new 19 CATEGORY_IDS. See types.ts's coerceTravelStyleVector for why.
+    travelStyle: coerceTravelStyleVector(data.travelStyle),
+    travelStyleBaseline: coerceTravelStyleVector(data.travelStyleBaseline),
     travelStyleLastUpdated: toDate(data.travelStyleLastUpdated),
     createdAt: toDate(data.createdAt),
     recentSearches: data.recentSearches ?? [],

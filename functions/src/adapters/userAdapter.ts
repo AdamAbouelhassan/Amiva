@@ -1,4 +1,4 @@
-import { TravelStyleVector } from '@amiva/core';
+import { coerceTravelStyleVector, TravelStyleVector } from '@amiva/core';
 import { db as defaultDb } from '../adminApp';
 import { UserStore, UserStyleRecord, VisibilityStore } from '../lib/ports';
 import { toDate, toTimestamp } from './firestoreUtil';
@@ -15,8 +15,12 @@ export class FirestoreUserStore implements UserStore, VisibilityStore {
     if (!snap.exists) throw new Error(`FirestoreUserStore: user ${userId} not found`);
     const data = snap.data()!;
     return {
-      travelStyle: data.travelStyle as TravelStyleVector,
-      travelStyleBaseline: data.travelStyleBaseline as TravelStyleVector,
+      // coerceTravelStyleVector: a pre-taxonomy-migration (2026-09-02)
+      // document still has the old 8-category shape on disk — reads as
+      // (mostly) zero server-side too, rather than propagating NaN
+      // through the decay/cosine-similarity math. See types.ts.
+      travelStyle: coerceTravelStyleVector(data.travelStyle),
+      travelStyleBaseline: coerceTravelStyleVector(data.travelStyleBaseline),
       travelStyleLastUpdated: toDate(data.travelStyleLastUpdated, new Date(0)),
     };
   }

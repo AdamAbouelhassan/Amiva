@@ -1,7 +1,7 @@
 /** See lib/manualStyleEdit.ts for why this callable exists even though
  * it isn't named in technical_specification.md §5's table. */
 import * as functions from 'firebase-functions/v1';
-import { TravelStyleVector } from '@amiva/core';
+import { coerceTravelStyleVector, TravelStyleVector } from '@amiva/core';
 import { FirestoreUserStore } from '../adapters/userAdapter';
 import { updateTravelStyleManual as updateManualLib } from '../lib/manualStyleEdit';
 
@@ -14,7 +14,10 @@ export const updateTravelStyleManual = functions.https.onCall(
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'Must be signed in.');
     }
-    await updateManualLib(new FirestoreUserStore(), context.auth.uid, data.travelStyle, new Date());
+    // Defensive, not just for old Firestore data this time — a stale
+    // client build (cached old JS bundle) could still submit an
+    // old-shaped payload here; never trust client input at face value.
+    await updateManualLib(new FirestoreUserStore(), context.auth.uid, coerceTravelStyleVector(data.travelStyle), new Date());
     return { success: true };
   },
 );

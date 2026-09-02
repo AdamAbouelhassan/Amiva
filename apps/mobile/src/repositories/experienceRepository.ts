@@ -17,7 +17,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
-import { MAX_EXPERIENCE_PHOTOS, TravelStyleVector } from '@amiva/core';
+import { coerceTravelStyleVector, MAX_EXPERIENCE_PHOTOS, TravelStyleVector } from '@amiva/core';
 import { db } from '../firebase/client';
 import { toDate, toTimestamp } from '../firebase/timestamps';
 import { ExperienceDoc, PlaceDoc } from './types';
@@ -38,7 +38,7 @@ function fromFirestore(id: string, data: DocumentData): ExperienceDoc {
     notes: data.notes ?? '',
     rating: data.rating,
     photoUrls: data.photoUrls ?? [],
-    categoryScores: data.categoryScores as TravelStyleVector,
+    categoryScores: coerceTravelStyleVector(data.categoryScores),
     date: toDate(data.date),
     dateSource: data.dateSource,
     postType: data.postType,

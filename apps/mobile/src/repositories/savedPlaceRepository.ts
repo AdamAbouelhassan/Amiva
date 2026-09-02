@@ -5,7 +5,7 @@
  * `{userId}_{experienceId}`: idempotent save/unsave without a query.
  */
 import { DocumentData, collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
-import { TravelStyleVector } from '@amiva/core';
+import { coerceTravelStyleVector, TravelStyleVector } from '@amiva/core';
 import { db } from '../firebase/client';
 import { toDate, toTimestamp } from '../firebase/timestamps';
 import { SavedPlaceDoc } from './types';
@@ -26,7 +26,7 @@ function fromFirestore(data: DocumentData): SavedPlaceDoc {
     lat: typeof data.lat === 'number' ? data.lat : undefined,
     lng: typeof data.lng === 'number' ? data.lng : undefined,
     photoRef: data.photoRef ?? undefined,
-    categoryScores: data.categoryScores as TravelStyleVector,
+    categoryScores: coerceTravelStyleVector(data.categoryScores),
     savedAt: toDate(data.savedAt),
   };
 }

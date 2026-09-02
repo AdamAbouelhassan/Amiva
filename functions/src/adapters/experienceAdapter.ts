@@ -1,4 +1,4 @@
-import { TravelStyleVector } from '@amiva/core';
+import { coerceTravelStyleVector } from '@amiva/core';
 import { db as defaultDb } from '../adminApp';
 import { FeedCandidate, FeedStore } from '../lib/feed';
 import { ExperienceRecord, ExperienceStore } from '../lib/ports';
@@ -32,7 +32,7 @@ export class FirestoreExperienceStore implements ExperienceStore, TrendingStore,
       ownerId: data.ownerId,
       tripId: data.tripId,
       placeId: data.placeId,
-      categoryScores: data.categoryScores as TravelStyleVector,
+      categoryScores: coerceTravelStyleVector(data.categoryScores),
       photoUrls: data.photoUrls ?? [],
       date: toDate(data.date, new Date(0)),
       rating: data.rating,
@@ -78,7 +78,7 @@ export class FirestoreExperienceStore implements ExperienceStore, TrendingStore,
       title: data.title,
       city: data.city,
       country: data.country,
-      categoryScores: data.categoryScores as TravelStyleVector,
+      categoryScores: coerceTravelStyleVector(data.categoryScores),
       rating: data.rating,
       createdAt: toDate(data.createdAt, new Date(0)),
     };
@@ -92,7 +92,7 @@ export class FirestoreExperienceStore implements ExperienceStore, TrendingStore,
       title: data.title,
       city: data.city,
       country: data.country,
-      categoryScores: data.categoryScores as TravelStyleVector,
+      categoryScores: coerceTravelStyleVector(data.categoryScores),
       createdAt: toDate(data.createdAt, new Date(0)),
     };
   }
