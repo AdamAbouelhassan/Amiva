@@ -11,6 +11,7 @@ import { useLogExperienceNav } from '../../../hooks/useLogExperienceNav';
 import { useSavedPlaceToggle } from '../../../hooks/useSaves';
 import { openInGoogleMaps } from '../../../lib/mapsUrl';
 import { placePhotoUrl } from '../../../lib/placePhoto';
+import { priceLevelLabelFromEnum } from '../../../lib/priceLevel';
 import { spacing, useTheme } from '../../../theme';
 import { PlaceRecommendationResult } from '../hooks/useRecommendations';
 
@@ -40,6 +41,7 @@ export const PlaceRecommendationCard = memo(function PlaceRecommendationCard({
   const logNav = useLogExperienceNav();
 
   const photoUrl = place.photoReferences[0] ? placePhotoUrl(place.photoReferences[0]) : undefined;
+  const price = priceLevelLabelFromEnum(place.priceLevel);
 
   const save = useSavedPlaceToggle(
     {
@@ -101,10 +103,10 @@ export const PlaceRecommendationCard = memo(function PlaceRecommendationCard({
             ) : (
               <IconButton
                 variant="overlay"
-                name={save.saved ? 'bookmark' : 'bookmark-outline'}
+                name={save.saved ? 'heart' : 'heart-outline'}
                 active={save.saved}
                 onPress={save.toggle}
-                accessibilityLabel={save.saved ? 'Saved' : 'Save'}
+                accessibilityLabel={save.saved ? 'Liked' : 'Like'}
                 size={iconSize}
               />
             )}
@@ -142,16 +144,24 @@ export const PlaceRecommendationCard = memo(function PlaceRecommendationCard({
           </Text>
           {/* Location is omitted — every card on these pages is already
               scoped to a location the user picked. */}
-          {place.rating != null || place.primaryType ? (
+          {place.rating != null || place.primaryType || price ? (
             <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]} numberOfLines={1}>
               {place.rating != null ? (
                 <Text style={{ color: t.colors.warning }}>
                   ★ {place.rating.toFixed(1)}
-                  {place.userRatingsTotal ? ` (${formatCount(place.userRatingsTotal)})` : ''}
-                  {place.primaryType ? '  ·  ' : ''}
+                  {place.userRatingCount ? ` (${formatCount(place.userRatingCount)})` : ''}
+                  {place.primaryType || price ? '  ·  ' : ''}
                 </Text>
               ) : null}
-              {place.primaryType ?? ''}
+
+              {price ? (
+                <>
+                  <Text style={{ color: t.colors.success ?? 'green' }}>{price}</Text>
+                  {place.primaryType ? `  ·  ${place.primaryType}` : ''}
+                </>
+              ) : (
+                place.primaryType ?? null
+              )}
             </Text>
           ) : null}
         </View>

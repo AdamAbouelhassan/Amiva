@@ -24,6 +24,7 @@ import {
   CATEGORY_SEARCH_HINTS,
   defaultMatchScorer,
   estimateCategoryScoresFromPlace,
+  isApprovedPlace,
   MatchScorer,
   topCategories,
   CATEGORY_IDS,
@@ -37,18 +38,25 @@ export interface PlaceSearchResult {
   name: string;
   lat: number;
   lng: number;
+  /** Google Places (New) `primaryType` (raw type id, e.g. `sushi_restaurant`). */
+  primaryType?: string;
   types: string[];
-  priceLevel?: number;
+  /** Google Places (New) `priceLevel` enum string, e.g. `PRICE_LEVEL_MODERATE`. */
+  priceLevel?: string;
   /** Google rating, 1.0–5.0 (absent for unrated places). */
   rating?: number;
   /** How many Google reviews the rating is based on. */
-  userRatingsTotal?: number;
-  /** Google Places photo references — the client turns these into image
-   * URLs via the Places Photo endpoint (see apps/mobile/src/lib/placePhoto.ts). */
+  userRatingCount?: number;
+  /** Google Places (New) photo resource names (`places/ID/photos/ID`) — the
+   * client turns these into image URLs via apps/mobile/src/lib/placePhoto.ts. */
   photoReferences?: string[];
 }
 
 export interface PlacesSearchPort {
+  /** `type` maps to the Places API (New) Text Search `includedType` (a
+   * single string — New Text Search, like the legacy `type` param, takes
+   * one, not a list; a multi-type `includedTypes` only exists on Nearby
+   * Search, which Amiva doesn't use). */
   textSearch(query: string, options: { type?: string }): Promise<PlaceSearchResult[]>;
 }
 
@@ -72,10 +80,12 @@ export interface PlaceRecommendationResult {
   /** Short human category ("Restaurant", "Night club", …), from the
    * place's Google types — the Google-Maps-style subtitle. */
   primaryType?: string;
+  /** Google Places (New) `priceLevel` enum string (display-only here). */
+  priceLevel?: string;
   /** Google rating, 1.0–5.0 (absent for unrated places). */
   rating?: number;
   /** Number of Google reviews behind the rating. */
-  userRatingsTotal?: number;
+  userRatingCount?: number;
 }
 
 export interface LocalSection {
@@ -131,9 +141,10 @@ export async function getPlaceRecommendations(
   const location = filter.city ? `${filter.city}, ${filter.country}` : filter.country;
 
   const toResult = (place: PlaceSearchResult): PlaceRecommendationResult => {
-    // priceLevel is no longer a scoring input — the category taxonomy
-    // migration (2026-09-02) dropped the luxury/budgetBackpacker category
-    // axes it used to nudge; see placeCategoryEstimate.ts's header for why.
+    // priceLevel isn't a categoryScores input — the taxonomy migration
+    // dropped the luxury/budget axes it used to nudge; it now feeds the
+    // separate `priceLevelAffinity` scalar (packages/core/priceAffinity.ts)
+    // and is passed through here for display + downstream ingestion.
     const categoryScores = estimateCategoryScoresFromPlace(place.types);
     return {
       placeId: place.placeId,
@@ -147,14 +158,26 @@ export async function getPlaceRecommendations(
       categoryScores,
       matchScore: matchScorer.score(viewerVector, categoryScores),
       photoReferences: place.photoReferences ?? [],
-      primaryType: prettyPlaceType(place.types),
+      primaryType: prettyPlaceType(place.primaryType ? [place.primaryType, ...place.types] : place.types),
+      priceLevel: place.priceLevel,
       rating: place.rating,
-      userRatingsTotal: place.userRatingsTotal,
+      userRatingCount: place.userRatingCount,
     };
   };
 
+  // Layer 2 gate — the authoritative allowlist / places-of-worship check.
+  // A non-approved place never reaches the client as a recommendation,
+  // just as it's never persisted to `places/{id}` (see placeGate.ts).
   const rank = (raw: PlaceSearchResult[], take: number): PlaceRecommendationResult[] =>
     raw
+      .filter(
+        (p) =>
+          isApprovedPlace({
+            primaryType: p.primaryType,
+            types: p.types,
+            userRatingCount: p.userRatingCount,
+          }).approved,
+      )
       .map(toResult)
       .sort((a, b) => b.matchScore - a.matchScore)
       .slice(0, take);

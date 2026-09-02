@@ -9,11 +9,11 @@ interface FeedLikeItem extends SectionableItem {
 }
 
 describe('sectionByTopCategories', () => {
-  // Viewer's top 3 (by score): culture (9), food_and_drink (8), entertainment_and_recreation (7).
+  // Viewer's top 3 (by score): culture (5), food_and_drink (4), entertainment_and_recreation (3).
   const viewer = vector({
-    culture: 9,
-    food_and_drink: 8,
-    entertainment_and_recreation: 7,
+    culture: 5,
+    food_and_drink: 4,
+    entertainment_and_recreation: 3,
     health_and_wellness: 2,
     natural_features: 1,
   });
@@ -29,8 +29,8 @@ describe('sectionByTopCategories', () => {
   });
 
   it('places an item in a section only if it clears the category threshold', () => {
-    const museum = item({ categoryScores: vector({ culture: 8 }) });
-    const cafe = item({ categoryScores: vector({ food_and_drink: 5 }) }); // below default threshold (6)
+    const museum = item({ categoryScores: vector({ culture: 5 }) });
+    const cafe = item({ categoryScores: vector({ food_and_drink: 2 }) }); // below default threshold (3)
 
     const sections = sectionByTopCategories([museum, cafe], viewer, { sort: friendSort });
     const cultureSection = sections.find((s) => s.category === 'culture')!;

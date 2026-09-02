@@ -1,4 +1,9 @@
-import { coerceTravelStyleVector, TravelStyleVector } from '@amiva/core';
+import {
+  clampPriceAffinity,
+  coerceTravelStyleVector,
+  PRICE_AFFINITY_NEUTRAL,
+  TravelStyleVector,
+} from '@amiva/core';
 import { db as defaultDb } from '../adminApp';
 import { UserStore, UserStyleRecord, VisibilityStore } from '../lib/ports';
 import { toDate, toTimestamp } from './firestoreUtil';
@@ -22,14 +27,29 @@ export class FirestoreUserStore implements UserStore, VisibilityStore {
       travelStyle: coerceTravelStyleVector(data.travelStyle),
       travelStyleBaseline: coerceTravelStyleVector(data.travelStyleBaseline),
       travelStyleLastUpdated: toDate(data.travelStyleLastUpdated, new Date(0)),
+      priceLevelAffinity:
+        typeof data.priceLevelAffinity === 'number'
+          ? clampPriceAffinity(data.priceLevelAffinity)
+          : PRICE_AFFINITY_NEUTRAL,
     };
   }
 
-  async saveAutomaticStyleUpdate(userId: string, travelStyle: TravelStyleVector): Promise<void> {
-    await this.col().doc(userId).update({ travelStyle });
+  async saveAutomaticStyleUpdate(
+    userId: string,
+    update: { travelStyle: TravelStyleVector; priceLevelAffinity?: number },
+  ): Promise<void> {
+    const patch: Record<string, unknown> = { travelStyle: update.travelStyle };
+    if (typeof update.priceLevelAffinity === 'number') {
+      patch.priceLevelAffinity = update.priceLevelAffinity;
+    }
+    await this.col().doc(userId).update(patch);
   }
 
   async saveManualStyleEdit(userId: string, record: UserStyleRecord): Promise<void> {
+    // A manual edit is style-only — there's no manual `priceLevelAffinity`
+    // control (taxonomy-reduction pass, 2026-09-02), so it isn't reset here.
+    // But it *does* share `travelStyleLastUpdated` as its decay anchor, so a
+    // manual style edit still restarts the price-affinity decay clock.
     await this.col().doc(userId).update({
       travelStyle: record.travelStyle,
       travelStyleBaseline: record.travelStyleBaseline,

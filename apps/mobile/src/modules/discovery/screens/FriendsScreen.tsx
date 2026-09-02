@@ -42,7 +42,7 @@ export function FriendsScreen({ navigation }: FriendsScreenProps) {
           !isLoading && !error ? (
             <BrandEmptyState
               title="No friend activity yet"
-              body="When your friends log experiences, plan trips, or save places, it shows up here."
+              body="When your friends log experiences, plan trips, or like places, it shows up here."
             />
           ) : null
         }

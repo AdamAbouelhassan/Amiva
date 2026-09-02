@@ -2,42 +2,38 @@
  * Core domain types for the Amiva travel style model.
  *
  * Taxonomy migration (2026-09-02, see
- * docs/claude_code_prompt_taxonomy_migration.md): the category set is now
- * Google Places' own 19 top-level categories (data/googlePlacesCategories.json)
- * instead of 8 hand-picked ones. `CATEGORY_IDS` is still a hand-typed literal
- * tuple — TypeScript can't derive a string-literal union from an imported
- * JSON file's contents (`resolveJsonModule` widens JSON string fields to
- * `string`), so a closed key set has to be declared in source somewhere.
- * This is that one place; `__tests__/categoryIds.test.ts` asserts it stays
- * byte-for-byte in sync with googlePlacesCategories.json's `id` values (in
- * order) as the actual source of truth for spelling/casing, so this array
- * is never hand-retyped from memory again after this migration.
+ * docs/claude_code_prompt_taxonomy_migration.md): the category set moved
+ * from 8 hand-picked categories to Google Places' 19 top-level groupings.
+ * Taxonomy-reduction follow-up (2026-09-02): trimmed to **9** — the 10
+ * categories a traveller structurally never logs as an *experience*
+ * (Automotive, Business, Education, Facilities, Finance, Geographical
+ * Areas, Government, Housing, Services, Transportation) were removed
+ * outright rather than left to float near zero.
+ *
+ * `CATEGORY_IDS` is still a hand-typed literal tuple — TypeScript can't
+ * derive a string-literal union from an imported JSON file's contents
+ * (`resolveJsonModule` widens JSON string fields to `string`), so a closed
+ * key set has to be declared in source somewhere. This is that one place;
+ * `__tests__/categoryIds.test.ts` asserts it stays byte-for-byte in sync
+ * with googlePlacesCategories.json's `id` values (in order) as the actual
+ * source of truth for spelling/casing.
  */
 
-/** The 19 fixed MVP travel style categories (Google Places' own top-level
- * groupings), in a stable, canonical order matching
- * data/googlePlacesCategories.json. Order matters: it defines vector-index
- * alignment for cosine similarity. Not user-extensible for MVP. */
+/** The 9 fixed MVP travel style categories (Google Places' own top-level
+ * groupings, reduced to the ones that can hold experience content), in a
+ * stable, canonical order matching data/googlePlacesCategories.json. Order
+ * matters: it defines vector-index alignment for cosine similarity. Not
+ * user-extensible for MVP. */
 export const CATEGORY_IDS = [
-  'automotive',
-  'business',
   'culture',
-  'education',
   'entertainment_and_recreation',
-  'facilities',
-  'finance',
   'food_and_drink',
-  'geographical_areas',
-  'government',
   'health_and_wellness',
-  'housing',
   'lodging',
   'natural_features',
   'places_of_worship',
-  'services',
   'shopping',
   'sports',
-  'transportation',
 ] as const;
 
 export type CategoryId = (typeof CATEGORY_IDS)[number];
@@ -50,12 +46,15 @@ export type CategoryId = (typeof CATEGORY_IDS)[number];
  * list is exactly the kind of drift this migration avoids. */
 export type TravelStyleVector = Record<CategoryId, number>;
 
-/** Inclusive bounds for an individual category score. Assumption: the spec
- * says "0-10" for the scale but doesn't explicitly state whether decay-
- * adjusted values must stay clamped in range; we clamp defensively so the
- * vector always stays valid input for sliders/radar charts/cosine math. */
+/** Inclusive bounds for an individual category score. The public scale is
+ * **0–5** (2026-09-03 — was 0–10; a single scale for both the category
+ * sliders and the star rating reads cleaner). Decay-adjusted values are
+ * clamped here so the vector always stays valid input for sliders / radar
+ * charts / cosine math. Changing this rescales everything that references
+ * it — weights in placeCategoryEstimate.ts, MAX_STEP, thresholds — keep
+ * those proportional. */
 export const CATEGORY_MIN = 0;
-export const CATEGORY_MAX = 10;
+export const CATEGORY_MAX = 5;
 
 export function clampCategoryValue(value: number): number {
   if (Number.isNaN(value)) return CATEGORY_MIN;

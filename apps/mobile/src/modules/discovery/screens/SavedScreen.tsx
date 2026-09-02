@@ -1,9 +1,10 @@
 /**
- * Everything the user has saved — logged Amiva experiences (`saves`) and
+ * Everything the user has liked — logged Amiva experiences (`saves`) and
  * raw Google Places from the Local tab (`savedPlaces`), in one merged
- * newest-first list. Save is the only engagement action
- * (functional_specification.md §5.1); this is where you review it, remove
- * it, or turn it into a logged experience.
+ * newest-first list. "Like" is the single engagement action
+ * (functional_specification.md §5.1's "save", relabelled 2026-09-03 — same
+ * mechanic, heart icon); this is where you review it, remove it, or turn it
+ * into a logged experience. Collections stay `saves` / `savedPlaces`.
  */
 import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { AppImage } from '../../../components/AppImage';
@@ -38,9 +39,9 @@ export function SavedScreen({ navigation }: SavedScreenProps) {
   return (
     <ScreenContainer scroll={false}>
       <View style={{ padding: spacing.screen, paddingBottom: spacing.xs }}>
-        <Text style={t.type.displayMd}>Saved</Text>
+        <Text style={t.type.displayMd}>Liked</Text>
         <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
-          Experiences and places you've kept — log your own visit, or use them to plan a trip.
+          Experiences and places you've liked — log your own visit, or use them to plan a trip.
         </Text>
       </View>
 
@@ -60,8 +61,8 @@ export function SavedScreen({ navigation }: SavedScreenProps) {
         ListEmptyComponent={
           !isLoading ? (
             <BrandEmptyState
-              title="Nothing saved yet"
-              body="Tap Save on any experience or place in Discovery to keep it here."
+              title="Nothing liked yet"
+              body="Tap the heart on any experience or place in Discovery to keep it here."
             />
           ) : null
         }

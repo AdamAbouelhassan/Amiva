@@ -24,7 +24,14 @@ export type CreateExperienceParams = { tripId?: string; prefill?: ExperiencePref
  * `vectorA` (the viewer's) is read from `useCurrentUser` in the screen, so
  * only the *other* vector travels. Shown as a `presentation: 'modal'`
  * screen — same sheet + swipe as "Log experience". */
-export type MatchDetailParams = { title: string; matchPercent: number; vector: TravelStyleVector };
+export type MatchDetailParams = {
+  title: string;
+  matchPercent: number;
+  vector: TravelStyleVector;
+  /** The other entity's 0–4 priceLevelAffinity — drives the optional
+   * "Budget fit" line (viewer's own value read from useCurrentUser). */
+  priceAffinityB?: number;
+};
 
 export type LogbookStackParamList = {
   LogbookHome: undefined;

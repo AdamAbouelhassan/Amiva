@@ -2,114 +2,9 @@
   "source": "Google Places API (New) — Table A (place types usable as primaryType / types / includedType values)",
   "source_url": "https://developers.google.com/maps/documentation/places/web-service/place-types",
   "retrieved": "2026-09-02",
-  "note": "label is a generated human-readable form of the type string (not necessarily identical to Google's primaryTypeDisplayName, which is locale-dependent and returned per-request). Google periodically adds new types — re-check the source URL periodically for additions/removals.",
-  "count": 477,
+  "note": "label is a generated human-readable form of the type string (not necessarily identical to Google's primaryTypeDisplayName, which is locale-dependent and returned per-request). Google periodically adds new types — re-check the source URL periodically for additions/removals. Amiva taxonomy-reduction pass (2026-09-02): filtered to the 9 approved travel-experience categories and had over-broad medical/utility/generic types pruned within Health & Wellness, Shopping, Sports and Entertainment. This is no longer a verbatim Google snapshot — see docs/claude_code_prompt_taxonomy_migration.md and its follow-up.",
+  "count": 308,
   "types": [
-    {
-      "type": "car_dealer",
-      "category": "automotive",
-      "label": "Car Dealer"
-    },
-    {
-      "type": "car_rental",
-      "category": "automotive",
-      "label": "Car Rental"
-    },
-    {
-      "type": "car_repair",
-      "category": "automotive",
-      "label": "Car Repair"
-    },
-    {
-      "type": "car_wash",
-      "category": "automotive",
-      "label": "Car Wash"
-    },
-    {
-      "type": "ebike_charging_station",
-      "category": "automotive",
-      "label": "E-Bike Charging Station"
-    },
-    {
-      "type": "electric_vehicle_charging_station",
-      "category": "automotive",
-      "label": "Electric Vehicle Charging Station"
-    },
-    {
-      "type": "gas_station",
-      "category": "automotive",
-      "label": "Gas Station"
-    },
-    {
-      "type": "parking",
-      "category": "automotive",
-      "label": "Parking"
-    },
-    {
-      "type": "parking_garage",
-      "category": "automotive",
-      "label": "Parking Garage"
-    },
-    {
-      "type": "parking_lot",
-      "category": "automotive",
-      "label": "Parking Lot"
-    },
-    {
-      "type": "rest_stop",
-      "category": "automotive",
-      "label": "Rest Stop"
-    },
-    {
-      "type": "tire_shop",
-      "category": "automotive",
-      "label": "Tire Shop"
-    },
-    {
-      "type": "truck_dealer",
-      "category": "automotive",
-      "label": "Truck Dealer"
-    },
-    {
-      "type": "business_center",
-      "category": "business",
-      "label": "Business Center"
-    },
-    {
-      "type": "corporate_office",
-      "category": "business",
-      "label": "Corporate Office"
-    },
-    {
-      "type": "coworking_space",
-      "category": "business",
-      "label": "Coworking Space"
-    },
-    {
-      "type": "farm",
-      "category": "business",
-      "label": "Farm"
-    },
-    {
-      "type": "manufacturer",
-      "category": "business",
-      "label": "Manufacturer"
-    },
-    {
-      "type": "ranch",
-      "category": "business",
-      "label": "Ranch"
-    },
-    {
-      "type": "supplier",
-      "category": "business",
-      "label": "Supplier"
-    },
-    {
-      "type": "television_studio",
-      "category": "business",
-      "label": "Television Studio"
-    },
     {
       "type": "art_gallery",
       "category": "culture",
@@ -176,51 +71,6 @@
       "label": "Sculpture"
     },
     {
-      "type": "academic_department",
-      "category": "education",
-      "label": "Academic Department"
-    },
-    {
-      "type": "educational_institution",
-      "category": "education",
-      "label": "Educational Institution"
-    },
-    {
-      "type": "library",
-      "category": "education",
-      "label": "Library"
-    },
-    {
-      "type": "preschool",
-      "category": "education",
-      "label": "Preschool"
-    },
-    {
-      "type": "primary_school",
-      "category": "education",
-      "label": "Primary School"
-    },
-    {
-      "type": "research_institute",
-      "category": "education",
-      "label": "Research Institute"
-    },
-    {
-      "type": "school",
-      "category": "education",
-      "label": "School"
-    },
-    {
-      "type": "secondary_school",
-      "category": "education",
-      "label": "Secondary School"
-    },
-    {
-      "type": "university",
-      "category": "education",
-      "label": "University"
-    },
-    {
       "type": "adventure_sports_center",
       "category": "entertainment_and_recreation",
       "label": "Adventure Sports Center"
@@ -244,11 +94,6 @@
       "type": "aquarium",
       "category": "entertainment_and_recreation",
       "label": "Aquarium"
-    },
-    {
-      "type": "banquet_hall",
-      "category": "entertainment_and_recreation",
-      "label": "Banquet Hall"
     },
     {
       "type": "barbecue_area",
@@ -286,19 +131,9 @@
       "label": "Comedy Club"
     },
     {
-      "type": "community_center",
-      "category": "entertainment_and_recreation",
-      "label": "Community Center"
-    },
-    {
       "type": "concert_hall",
       "category": "entertainment_and_recreation",
       "label": "Concert Hall"
-    },
-    {
-      "type": "convention_center",
-      "category": "entertainment_and_recreation",
-      "label": "Convention Center"
     },
     {
       "type": "cultural_center",
@@ -356,11 +191,6 @@
       "label": "Indoor Playground"
     },
     {
-      "type": "internet_cafe",
-      "category": "entertainment_and_recreation",
-      "label": "Internet Cafe"
-    },
-    {
       "type": "karaoke",
       "category": "entertainment_and_recreation",
       "label": "Karaoke"
@@ -379,11 +209,6 @@
       "type": "miniature_golf_course",
       "category": "entertainment_and_recreation",
       "label": "Miniature Golf Course"
-    },
-    {
-      "type": "movie_rental",
-      "category": "entertainment_and_recreation",
-      "label": "Movie Rental"
     },
     {
       "type": "movie_theater",
@@ -486,11 +311,6 @@
       "label": "Water Park"
     },
     {
-      "type": "wedding_venue",
-      "category": "entertainment_and_recreation",
-      "label": "Wedding Venue"
-    },
-    {
       "type": "wildlife_park",
       "category": "entertainment_and_recreation",
       "label": "Wildlife Park"
@@ -504,36 +324,6 @@
       "type": "zoo",
       "category": "entertainment_and_recreation",
       "label": "Zoo"
-    },
-    {
-      "type": "public_bath",
-      "category": "facilities",
-      "label": "Public Bath"
-    },
-    {
-      "type": "public_bathroom",
-      "category": "facilities",
-      "label": "Public Bathroom"
-    },
-    {
-      "type": "stable",
-      "category": "facilities",
-      "label": "Stable"
-    },
-    {
-      "type": "accounting",
-      "category": "finance",
-      "label": "Accounting"
-    },
-    {
-      "type": "atm",
-      "category": "finance",
-      "label": "ATM"
-    },
-    {
-      "type": "bank",
-      "category": "finance",
-      "label": "Bank"
     },
     {
       "type": "acai_shop",
@@ -1361,116 +1151,6 @@
       "label": "Yakitori Restaurant"
     },
     {
-      "type": "administrative_area_level_1",
-      "category": "geographical_areas",
-      "label": "Administrative Area Level 1"
-    },
-    {
-      "type": "administrative_area_level_2",
-      "category": "geographical_areas",
-      "label": "Administrative Area Level 2"
-    },
-    {
-      "type": "country",
-      "category": "geographical_areas",
-      "label": "Country"
-    },
-    {
-      "type": "locality",
-      "category": "geographical_areas",
-      "label": "Locality"
-    },
-    {
-      "type": "postal_code",
-      "category": "geographical_areas",
-      "label": "Postal Code"
-    },
-    {
-      "type": "school_district",
-      "category": "geographical_areas",
-      "label": "School District"
-    },
-    {
-      "type": "city_hall",
-      "category": "government",
-      "label": "City Hall"
-    },
-    {
-      "type": "courthouse",
-      "category": "government",
-      "label": "Courthouse"
-    },
-    {
-      "type": "embassy",
-      "category": "government",
-      "label": "Embassy"
-    },
-    {
-      "type": "fire_station",
-      "category": "government",
-      "label": "Fire Station"
-    },
-    {
-      "type": "government_office",
-      "category": "government",
-      "label": "Government Office"
-    },
-    {
-      "type": "local_government_office",
-      "category": "government",
-      "label": "Local Government Office"
-    },
-    {
-      "type": "neighborhood_police_station",
-      "category": "government",
-      "label": "Neighborhood Police Station"
-    },
-    {
-      "type": "police",
-      "category": "government",
-      "label": "Police"
-    },
-    {
-      "type": "post_office",
-      "category": "government",
-      "label": "Post Office"
-    },
-    {
-      "type": "chiropractor",
-      "category": "health_and_wellness",
-      "label": "Chiropractor"
-    },
-    {
-      "type": "dental_clinic",
-      "category": "health_and_wellness",
-      "label": "Dental Clinic"
-    },
-    {
-      "type": "dentist",
-      "category": "health_and_wellness",
-      "label": "Dentist"
-    },
-    {
-      "type": "doctor",
-      "category": "health_and_wellness",
-      "label": "Doctor"
-    },
-    {
-      "type": "drugstore",
-      "category": "health_and_wellness",
-      "label": "Drugstore"
-    },
-    {
-      "type": "general_hospital",
-      "category": "health_and_wellness",
-      "label": "General Hospital"
-    },
-    {
-      "type": "hospital",
-      "category": "health_and_wellness",
-      "label": "Hospital"
-    },
-    {
       "type": "massage",
       "category": "health_and_wellness",
       "label": "Massage"
@@ -1479,31 +1159,6 @@
       "type": "massage_spa",
       "category": "health_and_wellness",
       "label": "Massage Spa"
-    },
-    {
-      "type": "medical_center",
-      "category": "health_and_wellness",
-      "label": "Medical Center"
-    },
-    {
-      "type": "medical_clinic",
-      "category": "health_and_wellness",
-      "label": "Medical Clinic"
-    },
-    {
-      "type": "medical_lab",
-      "category": "health_and_wellness",
-      "label": "Medical Lab"
-    },
-    {
-      "type": "pharmacy",
-      "category": "health_and_wellness",
-      "label": "Pharmacy"
-    },
-    {
-      "type": "physiotherapist",
-      "category": "health_and_wellness",
-      "label": "Physiotherapist"
     },
     {
       "type": "sauna",
@@ -1534,26 +1189,6 @@
       "type": "yoga_studio",
       "category": "health_and_wellness",
       "label": "Yoga Studio"
-    },
-    {
-      "type": "apartment_building",
-      "category": "housing",
-      "label": "Apartment Building"
-    },
-    {
-      "type": "apartment_complex",
-      "category": "housing",
-      "label": "Apartment Complex"
-    },
-    {
-      "type": "condominium_complex",
-      "category": "housing",
-      "label": "Condominium Complex"
-    },
-    {
-      "type": "housing_complex",
-      "category": "housing",
-      "label": "Housing Complex"
     },
     {
       "type": "bed_and_breakfast",
@@ -1716,264 +1351,9 @@
       "label": "Synagogue"
     },
     {
-      "type": "aircraft_rental_service",
-      "category": "services",
-      "label": "Aircraft Rental Service"
-    },
-    {
-      "type": "association_or_organization",
-      "category": "services",
-      "label": "Association Or Organization"
-    },
-    {
-      "type": "astrologer",
-      "category": "services",
-      "label": "Astrologer"
-    },
-    {
-      "type": "barber_shop",
-      "category": "services",
-      "label": "Barber Shop"
-    },
-    {
-      "type": "beautician",
-      "category": "services",
-      "label": "Beautician"
-    },
-    {
-      "type": "beauty_salon",
-      "category": "services",
-      "label": "Beauty Salon"
-    },
-    {
-      "type": "body_art_service",
-      "category": "services",
-      "label": "Body Art Service"
-    },
-    {
-      "type": "catering_service",
-      "category": "services",
-      "label": "Catering Service"
-    },
-    {
-      "type": "cemetery",
-      "category": "services",
-      "label": "Cemetery"
-    },
-    {
-      "type": "chauffeur_service",
-      "category": "services",
-      "label": "Chauffeur Service"
-    },
-    {
-      "type": "child_care_agency",
-      "category": "services",
-      "label": "Child Care Agency"
-    },
-    {
-      "type": "consultant",
-      "category": "services",
-      "label": "Consultant"
-    },
-    {
-      "type": "courier_service",
-      "category": "services",
-      "label": "Courier Service"
-    },
-    {
-      "type": "electrician",
-      "category": "services",
-      "label": "Electrician"
-    },
-    {
-      "type": "employment_agency",
-      "category": "services",
-      "label": "Employment Agency"
-    },
-    {
-      "type": "florist",
-      "category": "services",
-      "label": "Florist"
-    },
-    {
-      "type": "food_delivery",
-      "category": "services",
-      "label": "Food Delivery"
-    },
-    {
-      "type": "foot_care",
-      "category": "services",
-      "label": "Foot Care"
-    },
-    {
-      "type": "funeral_home",
-      "category": "services",
-      "label": "Funeral Home"
-    },
-    {
-      "type": "hair_care",
-      "category": "services",
-      "label": "Hair Care"
-    },
-    {
-      "type": "hair_salon",
-      "category": "services",
-      "label": "Hair Salon"
-    },
-    {
-      "type": "insurance_agency",
-      "category": "services",
-      "label": "Insurance Agency"
-    },
-    {
-      "type": "laundry",
-      "category": "services",
-      "label": "Laundry"
-    },
-    {
-      "type": "lawyer",
-      "category": "services",
-      "label": "Lawyer"
-    },
-    {
-      "type": "locksmith",
-      "category": "services",
-      "label": "Locksmith"
-    },
-    {
-      "type": "makeup_artist",
-      "category": "services",
-      "label": "Makeup Artist"
-    },
-    {
-      "type": "marketing_consultant",
-      "category": "services",
-      "label": "Marketing Consultant"
-    },
-    {
-      "type": "moving_company",
-      "category": "services",
-      "label": "Moving Company"
-    },
-    {
-      "type": "nail_salon",
-      "category": "services",
-      "label": "Nail Salon"
-    },
-    {
-      "type": "non_profit_organization",
-      "category": "services",
-      "label": "Non Profit Organization"
-    },
-    {
-      "type": "painter",
-      "category": "services",
-      "label": "Painter"
-    },
-    {
-      "type": "pet_boarding_service",
-      "category": "services",
-      "label": "Pet Boarding Service"
-    },
-    {
-      "type": "pet_care",
-      "category": "services",
-      "label": "Pet Care"
-    },
-    {
-      "type": "plumber",
-      "category": "services",
-      "label": "Plumber"
-    },
-    {
-      "type": "psychic",
-      "category": "services",
-      "label": "Psychic"
-    },
-    {
-      "type": "real_estate_agency",
-      "category": "services",
-      "label": "Real Estate Agency"
-    },
-    {
-      "type": "roofing_contractor",
-      "category": "services",
-      "label": "Roofing Contractor"
-    },
-    {
-      "type": "service",
-      "category": "services",
-      "label": "Service"
-    },
-    {
-      "type": "shipping_service",
-      "category": "services",
-      "label": "Shipping Service"
-    },
-    {
-      "type": "storage",
-      "category": "services",
-      "label": "Storage"
-    },
-    {
-      "type": "summer_camp_organizer",
-      "category": "services",
-      "label": "Summer Camp Organizer"
-    },
-    {
-      "type": "tailor",
-      "category": "services",
-      "label": "Tailor"
-    },
-    {
-      "type": "telecommunications_service_provider",
-      "category": "services",
-      "label": "Telecommunications Service Provider"
-    },
-    {
-      "type": "tour_agency",
-      "category": "services",
-      "label": "Tour Agency"
-    },
-    {
-      "type": "tourist_information_center",
-      "category": "services",
-      "label": "Tourist Information Center"
-    },
-    {
-      "type": "travel_agency",
-      "category": "services",
-      "label": "Travel Agency"
-    },
-    {
-      "type": "veterinary_care",
-      "category": "services",
-      "label": "Veterinary Care"
-    },
-    {
-      "type": "asian_grocery_store",
-      "category": "shopping",
-      "label": "Asian Grocery Store"
-    },
-    {
-      "type": "auto_parts_store",
-      "category": "shopping",
-      "label": "Auto Parts Store"
-    },
-    {
-      "type": "bicycle_store",
-      "category": "shopping",
-      "label": "Bicycle Store"
-    },
-    {
       "type": "book_store",
       "category": "shopping",
       "label": "Book Store"
-    },
-    {
-      "type": "building_materials_store",
-      "category": "shopping",
-      "label": "Building Materials Store"
     },
     {
       "type": "butcher_shop",
@@ -1981,19 +1361,9 @@
       "label": "Butcher Shop"
     },
     {
-      "type": "cell_phone_store",
-      "category": "shopping",
-      "label": "Cell Phone Store"
-    },
-    {
       "type": "clothing_store",
       "category": "shopping",
       "label": "Clothing Store"
-    },
-    {
-      "type": "convenience_store",
-      "category": "shopping",
-      "label": "Convenience Store"
     },
     {
       "type": "cosmetics_store",
@@ -2006,21 +1376,6 @@
       "label": "Department Store"
     },
     {
-      "type": "discount_store",
-      "category": "shopping",
-      "label": "Discount Store"
-    },
-    {
-      "type": "discount_supermarket",
-      "category": "shopping",
-      "label": "Discount Supermarket"
-    },
-    {
-      "type": "electronics_store",
-      "category": "shopping",
-      "label": "Electronics Store"
-    },
-    {
       "type": "farmers_market",
       "category": "shopping",
       "label": "Farmers Market"
@@ -2031,39 +1386,9 @@
       "label": "Flea Market"
     },
     {
-      "type": "food_store",
-      "category": "shopping",
-      "label": "Food Store"
-    },
-    {
-      "type": "furniture_store",
-      "category": "shopping",
-      "label": "Furniture Store"
-    },
-    {
-      "type": "garden_center",
-      "category": "shopping",
-      "label": "Garden Center"
-    },
-    {
-      "type": "general_store",
-      "category": "shopping",
-      "label": "General Store"
-    },
-    {
       "type": "gift_shop",
       "category": "shopping",
       "label": "Gift Shop"
-    },
-    {
-      "type": "grocery_store",
-      "category": "shopping",
-      "label": "Grocery Store"
-    },
-    {
-      "type": "hardware_store",
-      "category": "shopping",
-      "label": "Hardware Store"
     },
     {
       "type": "health_food_store",
@@ -2074,16 +1399,6 @@
       "type": "home_goods_store",
       "category": "shopping",
       "label": "Home Goods Store"
-    },
-    {
-      "type": "home_improvement_store",
-      "category": "shopping",
-      "label": "Home Improvement Store"
-    },
-    {
-      "type": "hypermarket",
-      "category": "shopping",
-      "label": "Hypermarket"
     },
     {
       "type": "jewelry_store",
@@ -2101,16 +1416,6 @@
       "label": "Market"
     },
     {
-      "type": "pet_store",
-      "category": "shopping",
-      "label": "Pet Store"
-    },
-    {
-      "type": "shoe_store",
-      "category": "shopping",
-      "label": "Shoe Store"
-    },
-    {
       "type": "shopping_mall",
       "category": "shopping",
       "label": "Shopping Mall"
@@ -2126,16 +1431,6 @@
       "label": "Sportswear Store"
     },
     {
-      "type": "store",
-      "category": "shopping",
-      "label": "Store"
-    },
-    {
-      "type": "supermarket",
-      "category": "shopping",
-      "label": "Supermarket"
-    },
-    {
       "type": "tea_store",
       "category": "shopping",
       "label": "Tea Store"
@@ -2149,16 +1444,6 @@
       "type": "toy_store",
       "category": "shopping",
       "label": "Toy Store"
-    },
-    {
-      "type": "warehouse_store",
-      "category": "shopping",
-      "label": "Warehouse Store"
-    },
-    {
-      "type": "wholesaler",
-      "category": "shopping",
-      "label": "Wholesaler"
     },
     {
       "type": "womens_clothing_store",
@@ -2191,19 +1476,9 @@
       "label": "Fishing Pond"
     },
     {
-      "type": "fitness_center",
-      "category": "sports",
-      "label": "Fitness Center"
-    },
-    {
       "type": "golf_course",
       "category": "sports",
       "label": "Golf Course"
-    },
-    {
-      "type": "gym",
-      "category": "sports",
-      "label": "Gym"
     },
     {
       "type": "ice_skating_rink",
@@ -2269,126 +1544,6 @@
       "type": "tennis_court",
       "category": "sports",
       "label": "Tennis Court"
-    },
-    {
-      "type": "airport",
-      "category": "transportation",
-      "label": "Airport"
-    },
-    {
-      "type": "airstrip",
-      "category": "transportation",
-      "label": "Airstrip"
-    },
-    {
-      "type": "bike_sharing_station",
-      "category": "transportation",
-      "label": "Bike Sharing Station"
-    },
-    {
-      "type": "bridge",
-      "category": "transportation",
-      "label": "Bridge"
-    },
-    {
-      "type": "bus_station",
-      "category": "transportation",
-      "label": "Bus Station"
-    },
-    {
-      "type": "bus_stop",
-      "category": "transportation",
-      "label": "Bus Stop"
-    },
-    {
-      "type": "ferry_service",
-      "category": "transportation",
-      "label": "Ferry Service"
-    },
-    {
-      "type": "ferry_terminal",
-      "category": "transportation",
-      "label": "Ferry Terminal"
-    },
-    {
-      "type": "heliport",
-      "category": "transportation",
-      "label": "Heliport"
-    },
-    {
-      "type": "international_airport",
-      "category": "transportation",
-      "label": "International Airport"
-    },
-    {
-      "type": "light_rail_station",
-      "category": "transportation",
-      "label": "Light Rail Station"
-    },
-    {
-      "type": "park_and_ride",
-      "category": "transportation",
-      "label": "Park And Ride"
-    },
-    {
-      "type": "subway_station",
-      "category": "transportation",
-      "label": "Subway Station"
-    },
-    {
-      "type": "taxi_service",
-      "category": "transportation",
-      "label": "Taxi Service"
-    },
-    {
-      "type": "taxi_stand",
-      "category": "transportation",
-      "label": "Taxi Stand"
-    },
-    {
-      "type": "toll_station",
-      "category": "transportation",
-      "label": "Toll Station"
-    },
-    {
-      "type": "train_station",
-      "category": "transportation",
-      "label": "Train Station"
-    },
-    {
-      "type": "train_ticket_office",
-      "category": "transportation",
-      "label": "Train Ticket Office"
-    },
-    {
-      "type": "tram_stop",
-      "category": "transportation",
-      "label": "Tram Stop"
-    },
-    {
-      "type": "transit_depot",
-      "category": "transportation",
-      "label": "Transit Depot"
-    },
-    {
-      "type": "transit_station",
-      "category": "transportation",
-      "label": "Transit Station"
-    },
-    {
-      "type": "transit_stop",
-      "category": "transportation",
-      "label": "Transit Stop"
-    },
-    {
-      "type": "transportation_service",
-      "category": "transportation",
-      "label": "Transportation Service"
-    },
-    {
-      "type": "truck_stop",
-      "category": "transportation",
-      "label": "Truck Stop"
     }
   ]
 }

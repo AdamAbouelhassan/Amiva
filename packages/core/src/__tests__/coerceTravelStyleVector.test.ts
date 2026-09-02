@@ -4,13 +4,13 @@ import { vector } from './testUtils';
 
 describe('coerceTravelStyleVector', () => {
   it('passes a already-valid vector through unchanged (aside from clamping)', () => {
-    const input = vector({ culture: 7, food_and_drink: 3 });
+    const input = vector({ culture: 4, food_and_drink: 3 });
     expect(coerceTravelStyleVector(input)).toEqual(input);
   });
 
   it('fills in every category, defaulting anything missing to 0', () => {
-    const result = coerceTravelStyleVector({ culture: 7 });
-    expect(result.culture).toBe(7);
+    const result = coerceTravelStyleVector({ culture: 4 });
+    expect(result.culture).toBe(4);
     for (const category of CATEGORY_IDS) {
       if (category !== 'culture') expect(result[category]).toBe(0);
     }
@@ -21,7 +21,7 @@ describe('coerceTravelStyleVector', () => {
     const oldShaped = {
       adventure: 7,
       luxury: 8,
-      culture: 9,
+      culture: 4,
       foodie: 7,
       relaxation: 7,
       socialNightlife: 5,
@@ -30,7 +30,7 @@ describe('coerceTravelStyleVector', () => {
     };
     const result = coerceTravelStyleVector(oldShaped);
     // "culture" coincidentally survives as a real new-taxonomy key too.
-    expect(result.culture).toBe(9);
+    expect(result.culture).toBe(4);
     // None of the other old keys exist in CategoryId, so they all drop —
     // every new-taxonomy category reads as 0.
     for (const category of CATEGORY_IDS) {
@@ -55,7 +55,7 @@ describe('coerceTravelStyleVector', () => {
 
   it('clamps an out-of-range numeric value the same way clampCategoryValue does', () => {
     const result = coerceTravelStyleVector({ culture: 999, food_and_drink: -5 });
-    expect(result.culture).toBe(10);
+    expect(result.culture).toBe(5);
     expect(result.food_and_drink).toBe(0);
   });
 

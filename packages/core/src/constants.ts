@@ -28,8 +28,9 @@ export const DECAY_LAMBDA = 0.05;
 
 /** Per-category cap on a single automatic adjustment's delta, so no one
  * post/save event can cause a large swing (functional_specification.md
- * §2.4). Expressed in the same 0–10 units as a category score. */
-export const MAX_STEP = 0.5;
+ * §2.4). Expressed in the same 0–5 units as a category score (2026-09-03:
+ * halved from 0.5 alongside the 0–10 → 0–5 rescale). */
+export const MAX_STEP = 0.25;
 
 /** Match-score threshold (post-cosine-similarity, in [0,1]) above which a
  * post/experience is considered "high match" for feed tiering
@@ -57,12 +58,11 @@ export const MAX_EXPERIENCE_PHOTOS = 5;
  * for profile badges (functional_specification.md §2.6). */
 export const FEED_SECTION_COUNT = 3;
 
-/** Minimum categoryScores[category] (0-10) for an item to belong to that
+/** Minimum categoryScores[category] (0–5) for an item to belong to that
  * category's Feed/Trending section (feedSections.ts). An item can clear
  * the threshold for more than one category and appear in multiple
- * sections — functional_specification.md §2.5's own example (a food tour
- * scoring high on both Luxury and Foodie) is exactly this case. */
-export const CATEGORY_SECTION_THRESHOLD = 6;
+ * sections. (2026-09-03: halved from 6 alongside the 0–10 → 0–5 rescale.) */
+export const CATEGORY_SECTION_THRESHOLD = 3;
 
 /** How strongly a *logged* experience's star rating modulates the decay
  * nudge to the logger's own travelStyle (taxonomy migration, 2026-09-02 —
@@ -95,6 +95,67 @@ export function getStarRatingMultiplier(
 ): number {
   const clamped = Math.min(5, Math.max(1, Math.round(rating))) as 1 | 2 | 3 | 4 | 5;
   return table[clamped];
+}
+
+/** A place whose `primaryType` is one of the 6 places-of-worship types
+ * only counts as a loggable/discoverable experience if it *also* carries a
+ * landmark signal OR has at least this many Google reviews (taxonomy-
+ * reduction pass, 2026-09-02 — see placeGate.ts). Google's landmark-type
+ * tagging is inconsistent, so this popularity fallback catches a genuinely
+ * famous site that Google didn't tag `tourist_attraction`.
+ *
+ * PLACEHOLDER — this is an untuned guess. Real calibration needs the
+ * review-count distribution of known-famous vs. ordinary places of
+ * worship; the follow-up plan is to log (not gate on) the counts for a
+ * while first. Overridable via remoteConfig.ts like the others. */
+export const PLACE_OF_WORSHIP_MIN_RATING_COUNT = 500;
+
+/** Landmark `types` that qualify a place of worship for inclusion (any one
+ * is sufficient). First pass — spot-check against real query results
+ * before trusting it (taxonomy-reduction pass "Ask me before"). */
+export const PLACE_OF_WORSHIP_TYPES = [
+  'church',
+  'buddhist_temple',
+  'hindu_temple',
+  'mosque',
+  'shinto_shrine',
+  'synagogue',
+] as const;
+
+export const LANDMARK_SIGNAL_TYPES = [
+  'tourist_attraction',
+  'historical_landmark',
+  'cultural_landmark',
+  'historical_place',
+] as const;
+
+/** Google Places (New) `priceLevel` enum → a 0–4 numeric scale, the input
+ * to the `priceLevelAffinity` scalar (priceAffinity.ts). Taxonomy-
+ * reduction pass, 2026-09-02: restores a sense of *how upscale* an
+ * experience is, independent of *what kind* — something the 8-category
+ * model had (Luxury / Budget axes) and the pure venue-type taxonomy lost.
+ * `PRICE_LEVEL_UNSPECIFIED` / the field being absent (parks, most nature,
+ * much of Culture never return one) = **no signal** — callers skip the
+ * nudge entirely rather than inventing a default. */
+export const PRICE_LEVEL_VALUES: Record<string, number> = {
+  PRICE_LEVEL_FREE: 0,
+  PRICE_LEVEL_INEXPENSIVE: 1,
+  PRICE_LEVEL_MODERATE: 2,
+  PRICE_LEVEL_EXPENSIVE: 3,
+  PRICE_LEVEL_VERY_EXPENSIVE: 4,
+};
+
+export const PRICE_AFFINITY_MIN = 0;
+export const PRICE_AFFINITY_MAX = 4;
+
+/** The neutral starting value for a new user's `priceLevelAffinity` — no
+ * manual control exists, so "midpoint, no preference yet" until logged
+ * experiences nudge it. */
+export const PRICE_AFFINITY_NEUTRAL = 2;
+
+export function clampPriceAffinity(value: number): number {
+  if (Number.isNaN(value)) return PRICE_AFFINITY_NEUTRAL;
+  return Math.min(PRICE_AFFINITY_MAX, Math.max(PRICE_AFFINITY_MIN, value));
 }
 
 export interface DecayConfig {

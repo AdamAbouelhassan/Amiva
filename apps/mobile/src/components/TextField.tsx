@@ -8,7 +8,7 @@ interface TextFieldProps extends TextInputProps {
   error?: string;
 }
 
-export function TextField({ label, error, style, onFocus, onBlur, ...rest }: TextFieldProps) {
+export function TextField({ label, error, style, onFocus, onBlur, multiline, ...rest }: TextFieldProps) {
   const t = useTheme();
   const [focused, setFocused] = useState(false);
 
@@ -18,12 +18,25 @@ export function TextField({ label, error, style, onFocus, onBlur, ...rest }: Tex
     <View style={styles.container}>
       {label ? <Text style={[t.type.label, { color: t.colors.textSecondary }]}>{label}</Text> : null}
       <TextInput
+        multiline={multiline}
+        // Only the font family + size from the type scale — NOT its
+        // `lineHeight`. A `lineHeight` on a <TextInput> makes RN mis-place
+        // the text vertically (it sinks toward the bottom and the descenders
+        // clip while typing); the input's own line box centres correctly
+        // without it.
         style={[
           styles.input,
-          t.type.body,
-          { backgroundColor: t.colors.surface, borderColor },
+          {
+            fontFamily: t.type.body.fontFamily,
+            fontSize: t.type.body.fontSize,
+            color: t.colors.textPrimary,
+            backgroundColor: t.colors.surface,
+            borderColor,
+          },
+          multiline ? styles.multiline : styles.singleLine,
           style,
         ]}
+        textAlignVertical={multiline ? 'top' : 'center'}
         placeholderTextColor={t.colors.textSecondary}
         onFocus={(e) => {
           setFocused(true);
@@ -46,7 +59,14 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderRadius: radius.chip,
     paddingHorizontal: spacing.md,
+  },
+  singleLine: {
     paddingVertical: spacing.sm,
     minHeight: 48,
+  },
+  multiline: {
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+    minHeight: 96,
   },
 });

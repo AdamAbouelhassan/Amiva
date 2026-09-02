@@ -25,6 +25,11 @@ export interface UserDoc {
   travelStyle: TravelStyleVector;
   travelStyleBaseline: TravelStyleVector;
   travelStyleLastUpdated: Date;
+  /** 0–4 "how upscale" scalar (taxonomy-reduction pass, 2026-09-02) —
+   * server-computed like `travelStyle`, no manual control. Nudged from
+   * logged/saved experiences' place price levels; kept out of match
+   * scoring. Neutral midpoint (2) at account creation. */
+  priceLevelAffinity: number;
   createdAt: Date;
   recentSearches: string[];
 }
@@ -36,12 +41,19 @@ export interface PlaceDoc {
   city: string;
   lat: number;
   lng: number;
-  /** Taxonomy migration (2026-09-02): was a single `googlePlaceType?:
-   * string` (only Google's *first* returned type) — widened to the full
-   * array so estimateCategoryScoresFromPlace has every type to blend, not
-   * just one. Drives a logged experience's categoryScores server-side
-   * (onExperienceCreated). */
+  /** Google Places (New) `primaryType` (raw type id). */
+  googlePlaceType?: string;
+  /** The full `types` array — every type feeds estimateCategoryScoresFromPlace,
+   * and the ingestion gate (isApprovedPlace) checks it. Drives a logged
+   * experience's categoryScores server-side (onExperienceCreated). */
   googlePlaceTypes: string[];
+  /** Google Places (New) enrichment (taxonomy-reduction pass, 2026-09-02):
+   * `priceLevel` feeds the `priceLevelAffinity` scalar; `rating` /
+   * `userRatingCount` are stored for a deferred feed-ranking tiebreaker
+   * (and `userRatingCount` is the places-of-worship gate fallback). */
+  priceLevel?: string;
+  rating?: number;
+  userRatingCount?: number;
   createdAt: Date;
 }
 
@@ -83,7 +95,12 @@ export interface ExperienceDoc {
   notes: string;
   rating: number;
   photoUrls: string[];
+  /** Server-derived from the linked place's Google types (onExperienceCreated).
+   * The client writes a zero vector at create time; the trigger corrects it. */
   categoryScores: TravelStyleVector;
+  /** Server-derived 0–4 from the place's Google priceLevel; absent when the
+   * place has none (taxonomy-reduction pass, 2026-09-02). */
+  priceLevelAffinity?: number;
   date: Date;
   dateSource: 'exif' | 'manual';
   postType: 'experience' | 'city' | 'trip';

@@ -1,5 +1,6 @@
 import { DecayConfig } from '../constants';
 import { applyManualStyleEdit, computeStyleAdjustment } from '../travelStyleDecay';
+import { CATEGORY_IDS } from '../types';
 import { vector } from './testUtils';
 
 // A config with no cap and no decay, isolating the weight/decay math being
@@ -109,7 +110,7 @@ describe('computeStyleAdjustment — per-step cap', () => {
 
   it('clamps a large negative raw delta to -MAX_STEP', () => {
     const cappedConfig: DecayConfig = { wLogged: 3, wSaved: 1, decayLambda: 0, maxStep: 0.5 };
-    const currentVector = vector({ entertainment_and_recreation: 10 });
+    const currentVector = vector({ entertainment_and_recreation: 5 });
     const experienceVector = vector({ entertainment_and_recreation: 0 });
     const now = new Date('2026-01-01T00:00:00Z');
 
@@ -123,33 +124,17 @@ describe('computeStyleAdjustment — per-step cap', () => {
     });
 
     expect(result.delta.entertainment_and_recreation).toBe(-0.5);
-    expect(result.travelStyle.entertainment_and_recreation).toBe(9.5);
+    expect(result.travelStyle.entertainment_and_recreation).toBe(4.5);
   });
 
   it('never causes a single event to swing a category by more than MAX_STEP even across every category', () => {
     const cappedConfig: DecayConfig = { wLogged: 3, wSaved: 1, decayLambda: 0, maxStep: 0.5 };
     const currentVector = vector();
-    const experienceVector = vector({
-      automotive: 10,
-      business: 10,
-      culture: 10,
-      education: 10,
-      entertainment_and_recreation: 10,
-      facilities: 10,
-      finance: 10,
-      food_and_drink: 10,
-      geographical_areas: 10,
-      government: 10,
-      health_and_wellness: 10,
-      housing: 10,
-      lodging: 10,
-      natural_features: 10,
-      places_of_worship: 10,
-      services: 10,
-      shopping: 10,
-      sports: 10,
-      transportation: 10,
-    });
+    const experienceVector = vector(
+      Object.fromEntries(CATEGORY_IDS.map((c) => [c, 10])) as Partial<
+        Record<(typeof CATEGORY_IDS)[number], number>
+      >,
+    );
     const now = new Date('2026-01-01T00:00:00Z');
 
     const result = computeStyleAdjustment({
@@ -169,7 +154,7 @@ describe('computeStyleAdjustment — per-step cap', () => {
 
 describe('applyManualStyleEdit — baseline reset', () => {
   it('sets travelStyle and travelStyleBaseline to the manually-entered vector, and resets travelStyleLastUpdated', () => {
-    const manualVector = vector({ entertainment_and_recreation: 7, food_and_drink: 6 });
+    const manualVector = vector({ entertainment_and_recreation: 4, food_and_drink: 3 });
     const now = new Date('2026-06-01T00:00:00Z');
 
     const result = applyManualStyleEdit(manualVector, now);

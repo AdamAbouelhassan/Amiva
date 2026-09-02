@@ -1,9 +1,16 @@
 /**
  * A location picker with Google-Places-style autocomplete, restricted to
- * places (country / province / city), not businesses. Used by the "For
- * You" search. Returns a `{ label, country, city? }` — `city` also carries
- * a province/region when that's what was picked, which is exactly what the
- * recommendations query wants ("<subject> in <city>, <country>").
+ * places (country / province / city), not businesses. Used by the Discovery
+ * "Local" search and the trip forms. Returns a `{ label, country, city? }` —
+ * `city` also carries a province/region when that's what was picked, which
+ * is exactly what the recommendations query wants ("<subject> in <city>,
+ * <country>").
+ *
+ * On Google Places API (New) — `v1/places:autocomplete` +
+ * `v1/places/{id}` with an `X-Goog-FieldMask`, matching PlacesAutocomplete
+ * (the legacy `maps/api/place/*` endpoints 403 now that only "Places API
+ * (New)" is enabled on the project). Region-scoped via
+ * `includedPrimaryTypes: ['(regions)']`.
  */
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, Pressable, Text, View } from 'react-native';
@@ -34,14 +41,19 @@ interface Prediction {
 }
 
 const DEBOUNCE_MS = 300;
+const AUTOCOMPLETE_URL = 'https://places.googleapis.com/v1/places:autocomplete';
+const DETAILS_FIELD_MASK = 'addressComponents';
 
-function component(
-  components: Array<{ long_name: string; types: string[] }>,
-  ...types: string[]
-): string {
+interface NewAddressComponent {
+  longText?: string;
+  shortText?: string;
+  types?: string[];
+}
+
+function component(components: NewAddressComponent[], ...types: string[]): string {
   for (const type of types) {
-    const hit = components.find((c) => c.types.includes(type));
-    if (hit) return hit.long_name;
+    const hit = components.find((c) => c.types?.includes(type));
+    if (hit?.longText) return hit.longText;
   }
   return '';
 }
@@ -68,12 +80,27 @@ export function LocationSearchField({ value, onChange, loading, label }: Locatio
     if (debounce.current) clearTimeout(debounce.current);
     debounce.current = setTimeout(async () => {
       try {
-        const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
-          query,
-        )}&types=(regions)&key=${env.googlePlacesApiKey}`;
-        const res = await fetch(url);
+        const res = await fetch(AUTOCOMPLETE_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': env.googlePlacesApiKey,
+          },
+          body: JSON.stringify({ input: query, includedPrimaryTypes: ['(regions)'] }),
+        });
         const json = await res.json();
-        setPredictions((json.predictions ?? []).slice(0, 5));
+        const suggestions: Array<{
+          placePrediction?: { placeId: string; text?: { text?: string } };
+        }> = json.suggestions ?? [];
+        setPredictions(
+          suggestions
+            .filter((s) => s.placePrediction?.placeId)
+            .slice(0, 5)
+            .map((s) => ({
+              place_id: s.placePrediction!.placeId,
+              description: s.placePrediction!.text?.text ?? '',
+            })),
+        );
       } catch {
         setPredictions([]);
       }
@@ -90,10 +117,14 @@ export function LocationSearchField({ value, onChange, loading, label }: Locatio
     setQuery(prediction.description);
     setResolving(true);
     try {
-      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=address_component&key=${env.googlePlacesApiKey}`;
-      const res = await fetch(url);
+      const res = await fetch(`https://places.googleapis.com/v1/places/${prediction.place_id}`, {
+        headers: {
+          'X-Goog-Api-Key': env.googlePlacesApiKey,
+          'X-Goog-FieldMask': DETAILS_FIELD_MASK,
+        },
+      });
       const json = await res.json();
-      const comps: Array<{ long_name: string; types: string[] }> = json.result?.address_components ?? [];
+      const comps: NewAddressComponent[] = json.addressComponents ?? [];
       const country = component(comps, 'country');
       const city = component(
         comps,

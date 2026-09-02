@@ -14,7 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
-import { TravelStyleVector, zeroTravelStyleVector } from '@amiva/core';
+import { CATEGORY_MAX, PRICE_AFFINITY_NEUTRAL, TravelStyleVector, zeroTravelStyleVector } from '@amiva/core';
 import { useReducedMotion } from '../../../hooks/useReducedMotion';
 import { Avatar } from '../../../components/Avatar';
 import { Button } from '../../../components/Button';
@@ -32,7 +32,7 @@ import { spacing, useTheme } from '../../../theme';
 function initialTravelStyle(): TravelStyleVector {
   const zero = zeroTravelStyleVector();
   const mid = {} as TravelStyleVector;
-  for (const key of Object.keys(zero) as (keyof TravelStyleVector)[]) mid[key] = 5;
+  for (const key of Object.keys(zero) as (keyof TravelStyleVector)[]) mid[key] = CATEGORY_MAX / 2;
   return mid;
 }
 
@@ -97,6 +97,7 @@ export function OnboardingScreen() {
         travelStyle,
         travelStyleBaseline: travelStyle,
         travelStyleLastUpdated: new Date(),
+        priceLevelAffinity: PRICE_AFFINITY_NEUTRAL,
         createdAt: new Date(),
         recentSearches: [],
       });
@@ -120,7 +121,7 @@ export function OnboardingScreen() {
             entering={reduced ? undefined : FadeInDown.delay(300)}
             style={[t.type.body, { color: t.colors.textSecondary, textAlign: 'center' }]}
           >
-            Your shape shifts over time as you log and save experiences — you can always retune it.
+            Your shape shifts over time as you log and like experiences — you can always retune it.
           </Animated.Text>
           <Button label="Continue" onPress={() => setStep('profile')} style={{ alignSelf: 'stretch' }} />
         </View>

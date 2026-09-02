@@ -9,6 +9,7 @@ import {
   DEFAULT_DECAY_CONFIG,
   GROUP_VARIANCE_THRESHOLD,
   HIGH_MATCH_THRESHOLD,
+  PLACE_OF_WORSHIP_MIN_RATING_COUNT,
   STAR_RATING_MULTIPLIER,
 } from '@amiva/core';
 
@@ -29,6 +30,10 @@ export interface ScoringConfigDoc {
    * being tuned need to be set; the rest fall back to the core default
    * (taxonomy migration, 2026-09-02). */
   starRatingMultiplier: Partial<Record<1 | 2 | 3 | 4 | 5, number>>;
+  /** Min Google review count for a place of worship with no landmark type
+   * to still qualify (taxonomy-reduction pass, 2026-09-02 — untuned
+   * placeholder, tune against real data). */
+  placeOfWorshipMinRatingCount: number;
 }
 
 export interface ResolvedScoringConfig {
@@ -36,6 +41,7 @@ export interface ResolvedScoringConfig {
   highMatchThreshold: number;
   groupVarianceThreshold: number;
   starRatingMultiplier: Record<1 | 2 | 3 | 4 | 5, number>;
+  placeOfWorshipMinRatingCount: number;
 }
 
 export async function resolveScoringConfig(store: ConfigStore): Promise<ResolvedScoringConfig> {
@@ -50,5 +56,7 @@ export async function resolveScoringConfig(store: ConfigStore): Promise<Resolved
     highMatchThreshold: override.highMatchThreshold ?? HIGH_MATCH_THRESHOLD,
     groupVarianceThreshold: override.groupVarianceThreshold ?? GROUP_VARIANCE_THRESHOLD,
     starRatingMultiplier: { ...STAR_RATING_MULTIPLIER, ...override.starRatingMultiplier },
+    placeOfWorshipMinRatingCount:
+      override.placeOfWorshipMinRatingCount ?? PLACE_OF_WORSHIP_MIN_RATING_COUNT,
   };
 }

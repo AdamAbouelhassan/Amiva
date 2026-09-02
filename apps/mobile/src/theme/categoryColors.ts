@@ -6,25 +6,15 @@ import { CATEGORY_IDS, CategoryId } from '@amiva/core';
  * place these display strings are defined (CLAUDE.md #6, DRY on
  * constants) without silently drifting from the taxonomy's own naming. */
 export const CATEGORY_LABELS: Record<CategoryId, string> = {
-  automotive: 'Automotive',
-  business: 'Business',
   culture: 'Culture',
-  education: 'Education',
   entertainment_and_recreation: 'Entertainment and Recreation',
-  facilities: 'Facilities',
-  finance: 'Finance',
   food_and_drink: 'Food and Drink',
-  geographical_areas: 'Geographical Areas',
-  government: 'Government',
   health_and_wellness: 'Health and Wellness',
-  housing: 'Housing',
   lodging: 'Lodging',
   natural_features: 'Natural Features',
   places_of_worship: 'Places of Worship',
-  services: 'Services',
   shopping: 'Shopping',
   sports: 'Sports',
-  transportation: 'Transportation',
 };
 
 /**

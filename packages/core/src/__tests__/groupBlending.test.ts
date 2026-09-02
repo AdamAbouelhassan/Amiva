@@ -44,7 +44,7 @@ describe('computeGroupRecommendation', () => {
     const candidate = vector({ lodging: 10, health_and_wellness: 9 });
     const collaborators = [
       { collaboratorId: 'alex', travelStyle: vector({ lodging: 10, health_and_wellness: 9 }) }, // near-perfect match
-      { collaboratorId: 'sam', travelStyle: vector({ transportation: 10, entertainment_and_recreation: 9 }) }, // poor match
+      { collaboratorId: 'sam', travelStyle: vector({ sports: 10, entertainment_and_recreation: 9 }) }, // poor match
     ];
 
     const result = computeGroupRecommendation(collaborators, candidate, { varianceThreshold: 0.02 });
@@ -62,7 +62,7 @@ describe('computeGroupRecommendation', () => {
     const candidate = vector({ lodging: 10 });
     const collaborators = [
       { collaboratorId: 'a', travelStyle: vector({ lodging: 10 }) },
-      { collaboratorId: 'b', travelStyle: vector({ transportation: 10 }) },
+      { collaboratorId: 'b', travelStyle: vector({ sports: 10 }) },
     ];
     const result = computeGroupRecommendation(collaborators, candidate, { varianceThreshold: 0.01 });
     expect(result.type).toBe('segmented');

@@ -16,6 +16,8 @@ export const onSaveCreated = functions.firestore.document('saves/{saveId}').onCr
   await applyExperienceStyleEvent(new FirestoreUserStore(), {
     userId: data.userId,
     experienceVector: experience.categoryScores,
+    // A save has no star rating — the price nudge still runs at flat W_SAVED.
+    experiencePriceAffinity: experience.priceLevelAffinity,
     isLogged: false,
     eventDate: now,
     decayConfig: config.decay,

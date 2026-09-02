@@ -46,7 +46,7 @@ export function PlannerOverviewScreen({ navigation }: PlannerOverviewScreenProps
           !isLoading ? (
             <BrandEmptyState
               title="Nothing on the horizon"
-              body="Plan a trip to collect saved places into an itinerary and check group compatibility."
+              body="Plan a trip to collect liked places into an itinerary and check group compatibility."
               action={{ label: 'Plan a trip', onPress: () => navigation.navigate('CreatePlannedTrip') }}
             />
           ) : null

@@ -25,6 +25,11 @@ import { PlaceRepository } from './placeRepository';
 
 const COLLECTION = 'experiences';
 
+/** Thrown by `create` when the picked place fails the ingestion gate —
+ * catch it in the UI to show a friendly "can't log this kind of place". */
+export const PLACE_REJECTED_MESSAGE =
+  "This kind of place can't be logged as an experience on Amiva.";
+
 function fromFirestore(id: string, data: DocumentData): ExperienceDoc {
   return {
     experienceId: id,
@@ -39,6 +44,8 @@ function fromFirestore(id: string, data: DocumentData): ExperienceDoc {
     rating: data.rating,
     photoUrls: data.photoUrls ?? [],
     categoryScores: coerceTravelStyleVector(data.categoryScores),
+    priceLevelAffinity:
+      typeof data.priceLevelAffinity === 'number' ? data.priceLevelAffinity : undefined,
     date: toDate(data.date),
     dateSource: data.dateSource,
     postType: data.postType,
@@ -125,7 +132,13 @@ export const ExperienceRepository = {
       throw new Error(`An experience can have at most ${MAX_EXPERIENCE_PHOTOS} photos.`);
     }
 
-    await PlaceRepository.upsertFromGooglePlace(input.place);
+    // The place must pass the ingestion gate (real travel-experience venue;
+    // a landmark, for a place of worship) — otherwise there's nothing to
+    // link the experience to (taxonomy-reduction pass, 2026-09-02).
+    const upsert = await PlaceRepository.upsertFromGooglePlace(input.place);
+    if (upsert.rejected) {
+      throw new Error(PLACE_REJECTED_MESSAGE);
+    }
 
     const tripId = input.tripId;
 

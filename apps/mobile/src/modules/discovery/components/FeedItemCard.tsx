@@ -8,6 +8,7 @@ import { MatchScoreBadge } from '../../../components/MatchScoreBadge';
 import { ProfileIdentity } from '../../../components/ProfileIdentity';
 import { orNull } from '../../../lib/queryHelpers';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
+import { priceLevelLabel } from '../../../lib/priceLevel';
 import { useLogExperienceNav } from '../../../hooks/useLogExperienceNav';
 import { useSaveToggle } from '../../../hooks/useSaves';
 import { useExperience } from '../../logbook/hooks/useExperiences';
@@ -54,6 +55,7 @@ export function FeedItemCard({ experienceId, isFriend, matchScore, onPress }: Fe
                 matchPercent={toMatchPercent(matchScore)}
                 vectorA={profile?.travelStyle}
                 vectorB={experience.categoryScores}
+                priceAffinityB={experience.priceLevelAffinity}
                 detailTitle={ownerQuery.data?.name ?? 'This experience'}
               />
             </View>
@@ -64,10 +66,10 @@ export function FeedItemCard({ experienceId, isFriend, matchScore, onPress }: Fe
               <View style={{ position: 'absolute', top: spacing.xs, left: spacing.xs }}>
                 <IconButton
                   variant="overlay"
-                  name={save.saved ? 'bookmark' : 'bookmark-outline'}
+                  name={save.saved ? 'heart' : 'heart-outline'}
                   active={save.saved}
                   onPress={save.toggle}
-                  accessibilityLabel={save.saved ? 'Saved' : 'Save'}
+                  accessibilityLabel={save.saved ? 'Liked' : 'Like'}
                 />
               </View>
               <View style={{ position: 'absolute', bottom: spacing.xs, left: spacing.xs }}>
@@ -100,9 +102,16 @@ export function FeedItemCard({ experienceId, isFriend, matchScore, onPress }: Fe
             username={ownerQuery.data?.username}
             photoUrl={ownerQuery.data?.profilePhotoUrl}
           />
-          <Text style={[t.type.subtitle, { marginTop: spacing.xxs }]} numberOfLines={1}>
-            {experience.title}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xxs }}>
+            <Text style={[t.type.subtitle, { flexShrink: 1 }]} numberOfLines={1}>
+              {experience.title}
+            </Text>
+            {priceLevelLabel(experience.priceLevelAffinity) ? (
+              <Text style={[t.type.caption, { color: t.colors.accent, fontFamily: t.type.subtitle.fontFamily }]}>
+                {priceLevelLabel(experience.priceLevelAffinity)}
+              </Text>
+            ) : null}
+          </View>
           <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
             {experience.city}, {experience.country}
           </Text>

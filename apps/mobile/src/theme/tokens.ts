@@ -40,25 +40,15 @@ export const palette = {
  * clutter problem. Don't treat these hex values as a design decision.
  */
 export const categoryHues = {
-  automotive: '#CF5959', // hue 0
-  business: '#CF7E59', // hue 19
-  culture: '#CFA459', // hue 38
-  education: '#CFC959', // hue 57
-  entertainment_and_recreation: '#AFCF59', // hue 76
-  facilities: '#8ACF59', // hue 95
-  finance: '#65CF59', // hue 114
-  food_and_drink: '#59CF73', // hue 133
-  geographical_areas: '#59CF98', // hue 152
-  government: '#59CFBD', // hue 171
-  health_and_wellness: '#59BDCF', // hue 189
-  housing: '#5998CF', // hue 208
-  lodging: '#5973CF', // hue 227
-  natural_features: '#6559CF', // hue 246
+  culture: '#CF8F59', // hue 25
+  entertainment_and_recreation: '#CFC959', // hue 57
+  food_and_drink: '#8ACF59', // hue 95
+  health_and_wellness: '#59CF98', // hue 152
+  lodging: '#59BDCF', // hue 189
+  natural_features: '#5973CF', // hue 227
   places_of_worship: '#8A59CF', // hue 265
-  services: '#AF59CF', // hue 284
   shopping: '#CF59C9', // hue 303
-  sports: '#CF59A4', // hue 322
-  transportation: '#CF597E', // hue 341
+  sports: '#CF5980', // hue 340
 } as const;
 
 /**
@@ -69,48 +59,28 @@ export const categoryHues = {
  * pre-migration hand-picked set was.
  */
 export const categoryHuesText = {
-  automotive: '#7E3030',
-  business: '#7E4830',
-  culture: '#7E6130',
-  education: '#7E7A30',
-  entertainment_and_recreation: '#697E30',
-  facilities: '#507E30',
-  finance: '#377E30',
-  food_and_drink: '#307E41',
-  geographical_areas: '#307E59',
-  government: '#307E72',
-  health_and_wellness: '#30727E',
-  housing: '#30597E',
-  lodging: '#30417E',
-  natural_features: '#37307E',
+  culture: '#7E5530',
+  entertainment_and_recreation: '#7E7A30',
+  food_and_drink: '#507E30',
+  health_and_wellness: '#307E59',
+  lodging: '#30727E',
+  natural_features: '#30417E',
   places_of_worship: '#50307E',
-  services: '#69307E',
   shopping: '#7E307A',
-  sports: '#7E3061',
-  transportation: '#7E3048',
+  sports: '#7E304C',
 } as const;
 
 /** Same set, lifted lightness/chroma so fills stay visible on
  * `surfaceDark` — also doubles as dark-mode TEXT colour (see
  * `categoryTextColor` in themes.ts). Same placeholder-palette caveat. */
 export const categoryHuesDark = {
-  automotive: '#DE7C7C',
-  business: '#DE9B7C',
-  culture: '#DEBA7C',
-  education: '#DED97C',
-  entertainment_and_recreation: '#C4DE7C',
-  facilities: '#A5DE7C',
-  finance: '#86DE7C',
-  food_and_drink: '#7CDE92',
-  geographical_areas: '#7CDEB1',
-  government: '#7CDED0',
-  health_and_wellness: '#7CD0DE',
-  housing: '#7CB1DE',
-  lodging: '#7C92DE',
-  natural_features: '#867CDE',
+  culture: '#DEAE7C',
+  entertainment_and_recreation: '#DED97C',
+  food_and_drink: '#A5DE7C',
+  health_and_wellness: '#7CDEB1',
+  lodging: '#7CD0DE',
+  natural_features: '#7C92DE',
   places_of_worship: '#A57CDE',
-  services: '#C47CDE',
   shopping: '#DE7CD9',
-  sports: '#DE7CBA',
-  transportation: '#DE7C9B',
+  sports: '#DE7C9F',
 } as const;

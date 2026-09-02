@@ -27,7 +27,7 @@ interface LogbookHomeScreenProps {
   };
 }
 
-type Tab = 'trips' | 'countries' | 'timeline';
+type Tab = 'timeline' | 'countries';
 
 type TimelineItem =
   | { kind: 'trip'; id: string; date: Date; trip: TripDoc }
@@ -46,7 +46,7 @@ export function LogbookHomeScreen({ navigation }: LogbookHomeScreenProps) {
   const { data: trips = [], isLoading: tripsLoading } = useTrips(profile?.uid);
   const refresh = useRefresh();
   const tabInset = useTabBarInset();
-  const [tab, setTab] = useState<Tab>('trips');
+  const [tab, setTab] = useState<Tab>('timeline');
   // Segmented control reacts instantly; the pane swap is deferred so it
   // never blocks the tap (the cross-dissolve itself runs on the UI thread).
   const deferredTab = useDeferredValue(tab);
@@ -120,7 +120,7 @@ export function LogbookHomeScreen({ navigation }: LogbookHomeScreenProps) {
           options={[
             { value: 'timeline', label: 'Timeline' },
             { value: 'countries', label: 'By country' },
-            ]}
+          ]}
         />
       </View>
 
@@ -128,26 +128,36 @@ export function LogbookHomeScreen({ navigation }: LogbookHomeScreenProps) {
         activeKey={deferredTab}
         panes={[
           {
-            key: 'trips',
+            key: 'timeline',
             node: (
               <FlatList
                 style={{ flex: 1 }}
                 contentContainerStyle={{ ...listPad, gap: spacing.sm }}
-                data={trips}
-                keyExtractor={(item) => item.tripId}
+                data={timeline}
+                keyExtractor={(item) => `${item.kind}:${item.id}`}
                 refreshControl={makeRC()}
                 ListEmptyComponent={
                   !loading ? (
                     <BrandEmptyState
-                      title="No trips yet"
-                      body="Create a trip to collect experiences, photos, and notes in one place."
-                      action={{ label: 'Log a trip', onPress: () => navigation.navigate('CreateTrip') }}
+                      title="Nothing logged yet"
+                      body="Your timeline fills in as you log trips and experiences."
+                      action={{
+                        label: 'Log an experience',
+                        onPress: () => navigation.navigate('CreateExperience', undefined),
+                      }}
                     />
                   ) : null
                 }
-                renderItem={({ item }) => (
-                  <TripRow trip={item} onPress={() => navigation.navigate('TripDetail', { tripId: item.tripId })} />
-                )}
+                renderItem={({ item }) =>
+                  item.kind === 'trip' ? (
+                    <TripRow trip={item.trip} onPress={() => navigation.navigate('TripDetail', { tripId: item.trip.tripId })} />
+                  ) : (
+                    <ExperienceRow
+                      experience={item.exp}
+                      onPress={() => navigation.navigate('ExperienceDetail', { experienceId: item.exp.experienceId })}
+                    />
+                  )
+                }
               />
             ),
           },
@@ -186,33 +196,6 @@ export function LogbookHomeScreen({ navigation }: LogbookHomeScreenProps) {
                     </Text>
                   </Pressable>
                 )}
-              />
-            ),
-          },
-          {
-            key: 'timeline',
-            node: (
-              <FlatList
-                style={{ flex: 1 }}
-                contentContainerStyle={{ ...listPad, gap: spacing.sm }}
-                data={timeline}
-                keyExtractor={(item) => `${item.kind}:${item.id}`}
-                refreshControl={makeRC()}
-                ListEmptyComponent={
-                  !loading ? (
-                    <BrandEmptyState title="Nothing logged yet" body="Your timeline fills in as you log trips and experiences." />
-                  ) : null
-                }
-                renderItem={({ item }) =>
-                  item.kind === 'trip' ? (
-                    <TripRow trip={item.trip} onPress={() => navigation.navigate('TripDetail', { tripId: item.trip.tripId })} />
-                  ) : (
-                    <ExperienceRow
-                      experience={item.exp}
-                      onPress={() => navigation.navigate('ExperienceDetail', { experienceId: item.exp.experienceId })}
-                    />
-                  )
-                }
               />
             ),
           },

@@ -20,15 +20,19 @@ function fromFirestore(id: string, data: DocumentData): PlaceDoc {
     city: data.city,
     lat: data.lat,
     lng: data.lng,
+    googlePlaceType: data.googlePlaceType ?? undefined,
     googlePlaceTypes: data.googlePlaceTypes ?? [],
+    priceLevel: data.priceLevel ?? undefined,
+    rating: typeof data.rating === 'number' ? data.rating : undefined,
+    userRatingCount: typeof data.userRatingCount === 'number' ? data.userRatingCount : undefined,
     createdAt: toDate(data.createdAt),
   };
 }
 
-const upsertPlaceCallable = httpsCallable<Omit<PlaceDoc, 'createdAt'>, { success: true }>(
-  functions,
-  'upsertPlace',
-);
+const upsertPlaceCallable = httpsCallable<
+  Omit<PlaceDoc, 'createdAt'>,
+  { success: true } | { rejected: true; reason?: string }
+>(functions, 'upsertPlace');
 
 export const PlaceRepository = {
   async getById(placeId: string): Promise<PlaceDoc | undefined> {
@@ -36,10 +40,17 @@ export const PlaceRepository = {
     return snap.exists() ? fromFirestore(snap.id, snap.data()) : undefined;
   },
 
-  /** Called after the user picks a result from Google Places autocomplete
-   * — registers/normalizes the place in Amiva if it's the first time it's
-   * been referenced. Idempotent. */
-  async upsertFromGooglePlace(place: Omit<PlaceDoc, 'createdAt'>): Promise<void> {
-    await upsertPlaceCallable(place);
+  /** Called after the user picks a result from Google Places autocomplete —
+   * registers/normalizes the place in Amiva if it's the first time it's
+   * been referenced. Idempotent. Returns `{ rejected: true }` when the
+   * place fails the ingestion gate (non-experience type, or a non-landmark
+   * place of worship — taxonomy-reduction pass, 2026-09-02); the caller
+   * blocks the log. */
+  async upsertFromGooglePlace(
+    place: Omit<PlaceDoc, 'createdAt'>,
+  ): Promise<{ rejected: boolean; reason?: string }> {
+    const res = await upsertPlaceCallable(place);
+    const data = res.data as { rejected?: true; reason?: string };
+    return { rejected: !!data.rejected, reason: data.reason };
   },
 };

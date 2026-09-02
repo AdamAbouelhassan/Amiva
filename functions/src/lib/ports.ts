@@ -16,14 +16,24 @@ export interface UserStyleRecord {
   travelStyle: TravelStyleVector;
   travelStyleBaseline: TravelStyleVector;
   travelStyleLastUpdated: Date;
+  /** 0–4 "how upscale" scalar (taxonomy-reduction pass, 2026-09-02),
+   * nudged in parallel with `travelStyle` off the same baseline anchor.
+   * Optional here (a doc / fixture without it falls back to
+   * PRICE_AFFINITY_NEUTRAL at the one read site). */
+  priceLevelAffinity?: number;
 }
 
 export interface UserStore {
   getUserStyle(userId: string): Promise<UserStyleRecord>;
-  /** Automatic adjustment only ever changes `travelStyle` — baseline and
-   * lastUpdated are untouched by anything but a manual edit
-   * (functional_specification.md §2.4). */
-  saveAutomaticStyleUpdate(userId: string, travelStyle: TravelStyleVector): Promise<void>;
+  /** Automatic adjustment only ever changes `travelStyle` /
+   * `priceLevelAffinity` — baseline and lastUpdated are untouched by
+   * anything but a manual edit (functional_specification.md §2.4).
+   * `priceLevelAffinity` is omitted when the triggering experience had no
+   * price signal (don't nudge toward 0). */
+  saveAutomaticStyleUpdate(
+    userId: string,
+    update: { travelStyle: TravelStyleVector; priceLevelAffinity?: number },
+  ): Promise<void>;
   /** A manual edit resets all three fields together. */
   saveManualStyleEdit(userId: string, record: UserStyleRecord): Promise<void>;
 }
@@ -34,6 +44,9 @@ export interface ExperienceRecord {
   tripId?: string;
   placeId: string;
   categoryScores: TravelStyleVector;
+  /** 0–4, or undefined when the place had no usable Google priceLevel
+   * (taxonomy-reduction pass, 2026-09-02). */
+  priceLevelAffinity?: number;
   photoUrls: string[];
   date: Date;
   rating: number;
@@ -43,13 +56,17 @@ export interface ExperienceStore {
   getExperience(experienceId: string): Promise<ExperienceRecord>;
 }
 
-/** Backs deriving an experience's categoryScores from its linked Place
- * (taxonomy migration, 2026-09-02 — see lib/experienceCategoryDerivation.ts). */
+export interface PlaceRecord {
+  /** Stored Google types — empty if the place doc doesn't exist / has none. */
+  types: string[];
+  /** Google Places (New) `priceLevel` enum string, if the place has one. */
+  priceLevel?: string;
+}
+
+/** Backs deriving an experience's categoryScores + priceLevelAffinity from
+ * its linked Place (see lib/experienceCategoryDerivation.ts). */
 export interface PlaceStore {
-  /** The stored Google types for a place — empty array if the place doc
-   * doesn't exist or has none on file, so callers degrade to the zero
-   * vector rather than throwing. */
-  getPlaceTypes(placeId: string): Promise<string[]>;
+  getPlace(placeId: string): Promise<PlaceRecord>;
 }
 
 export interface TripRecord {

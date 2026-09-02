@@ -8,11 +8,11 @@ describe('updateTravelStyleManual', () => {
     });
     const now = new Date('2026-06-01');
 
-    await updateTravelStyleManual(store, 'alex', vector({ entertainment_and_recreation: 7, food_and_drink: 5 }), now);
+    await updateTravelStyleManual(store, 'alex', vector({ entertainment_and_recreation: 4, food_and_drink: 3 }), now);
 
     const after = await store.getUserStyle('alex');
-    expect(after.travelStyle).toEqual(vector({ entertainment_and_recreation: 7, food_and_drink: 5 }));
-    expect(after.travelStyleBaseline).toEqual(vector({ entertainment_and_recreation: 7, food_and_drink: 5 }));
+    expect(after.travelStyle).toEqual(vector({ entertainment_and_recreation: 4, food_and_drink: 3 }));
+    expect(after.travelStyleBaseline).toEqual(vector({ entertainment_and_recreation: 4, food_and_drink: 3 }));
     expect(after.travelStyleLastUpdated).toBe(now);
   });
 });

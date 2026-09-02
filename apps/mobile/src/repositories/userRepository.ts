@@ -27,7 +27,7 @@ import {
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
-import { coerceTravelStyleVector } from '@amiva/core';
+import { clampPriceAffinity, coerceTravelStyleVector, PRICE_AFFINITY_NEUTRAL } from '@amiva/core';
 import { db } from '../firebase/client';
 import { toDate, toTimestamp } from '../firebase/timestamps';
 import { PrivacySetting, UserDoc } from './types';
@@ -54,6 +54,10 @@ function fromFirestore(id: string, data: DocumentData): UserDoc {
     travelStyle: coerceTravelStyleVector(data.travelStyle),
     travelStyleBaseline: coerceTravelStyleVector(data.travelStyleBaseline),
     travelStyleLastUpdated: toDate(data.travelStyleLastUpdated),
+    priceLevelAffinity:
+      typeof data.priceLevelAffinity === 'number'
+        ? clampPriceAffinity(data.priceLevelAffinity)
+        : PRICE_AFFINITY_NEUTRAL,
     createdAt: toDate(data.createdAt),
     recentSearches: data.recentSearches ?? [],
   };
@@ -87,6 +91,9 @@ export const UserRepository = {
       travelStyle: user.travelStyle,
       travelStyleBaseline: user.travelStyle,
       travelStyleLastUpdated: toTimestamp(user.travelStyleLastUpdated),
+      // No manual control — starts at the neutral midpoint and is nudged
+      // automatically by logged/saved experiences (taxonomy-reduction pass).
+      priceLevelAffinity: PRICE_AFFINITY_NEUTRAL,
       createdAt: toTimestamp(user.createdAt),
       recentSearches: [],
     });

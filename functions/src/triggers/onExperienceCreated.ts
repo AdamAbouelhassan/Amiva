@@ -23,7 +23,7 @@ import { FirestoreConfigStore } from '../adapters/configAdapter';
 import { FirestorePlaceStore } from '../adapters/placeAdapter';
 import { FirestoreTripStore } from '../adapters/tripAdapter';
 import { FirestoreUserStore } from '../adapters/userAdapter';
-import { deriveExperienceCategoryScores } from '../lib/experienceCategoryDerivation';
+import { deriveExperienceScoring } from '../lib/experienceCategoryDerivation';
 import { applyExperienceStyleEvent } from '../lib/travelStyleUpdate';
 import { maybeSetTripCoverPhoto } from '../lib/tripCoverPhoto';
 import { resolveScoringConfig } from '../lib/remoteConfig';
@@ -36,12 +36,18 @@ export const onExperienceCreated = functions.firestore
 
     const config = await resolveScoringConfig(new FirestoreConfigStore());
 
-    const categoryScores = await deriveExperienceCategoryScores(new FirestorePlaceStore(), data.placeId);
-    await snap.ref.update({ categoryScores });
+    const { categoryScores, priceLevelAffinity } = await deriveExperienceScoring(
+      new FirestorePlaceStore(),
+      data.placeId,
+    );
+    await snap.ref.update(
+      priceLevelAffinity === undefined ? { categoryScores } : { categoryScores, priceLevelAffinity },
+    );
 
     await applyExperienceStyleEvent(new FirestoreUserStore(), {
       userId: data.ownerId,
       experienceVector: categoryScores,
+      experiencePriceAffinity: priceLevelAffinity,
       isLogged: true,
       eventDate: now,
       decayConfig: config.decay,

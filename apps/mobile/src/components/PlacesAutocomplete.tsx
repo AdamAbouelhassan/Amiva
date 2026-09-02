@@ -1,8 +1,14 @@
 /**
- * Google Places autocomplete for experience location entry
- * (functional_specification.md §3.3; technical_specification.md §1).
- * Country and city are auto-derived from the selected place's address
- * components, per spec.
+ * Google Places (New) autocomplete for experience location entry
+ * (functional_specification.md §3.3). Country and city are auto-derived
+ * from the selected place's address components.
+ *
+ * Migrated from the legacy Places API (taxonomy-reduction pass,
+ * 2026-09-02) — `v1/places:autocomplete` + `v1/places/{id}` with an
+ * explicit `X-Goog-FieldMask`. The details call also pulls `primaryType`,
+ * the full `types` array (the ingestion gate needs it), `priceLevel`,
+ * `rating` and `userRatingCount` — all on the field-mask tier the gate
+ * already pays for. "Places API (New)" must be enabled on the GCP project.
  */
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -17,12 +23,21 @@ export interface SelectedPlace {
   city: string;
   lat: number;
   lng: number;
-  /** Taxonomy migration (2026-09-02): the full Google `types` array (was
-   * only `types?.[0]`) — an experience's categoryScores is now derived
-   * server-side from every type on the place, not just the first. */
+  /** Google Places (New) `primaryType` (raw type id, e.g. `sushi_restaurant`) —
+   * named to match `PlaceDoc.googlePlaceType`. */
+  googlePlaceType?: string;
+  /** The full `types` array — the ingestion gate + category scoring need
+   * every type, not just the primary one. */
   googlePlaceTypes: string[];
-  /** First Google `photo_reference` — used as the default experience photo
-   * when the user doesn't add their own. */
+  /** Google Places (New) `priceLevel` enum string. */
+  priceLevel?: string;
+  /** Google crowd rating 1.0–5.0. */
+  rating?: number;
+  /** Number of Google reviews behind the rating (also the places-of-worship
+   * landmark-gate fallback signal). */
+  userRatingCount?: number;
+  /** First Google photo resource name (`places/ID/photos/ID`) — the default
+   * experience photo when the user doesn't add their own. */
   photoRef?: string;
 }
 
@@ -39,9 +54,18 @@ interface PlacesAutocompleteProps {
 }
 
 const DEBOUNCE_MS = 300;
+const AUTOCOMPLETE_URL = 'https://places.googleapis.com/v1/places:autocomplete';
+const DETAILS_FIELD_MASK =
+  'id,displayName,location,addressComponents,primaryType,types,photos,priceLevel,rating,userRatingCount';
 
-function extractComponent(components: Array<{ long_name: string; types: string[] }>, type: string): string {
-  return components.find((c) => c.types.includes(type))?.long_name ?? '';
+interface NewAddressComponent {
+  longText?: string;
+  shortText?: string;
+  types?: string[];
+}
+
+function extractComponent(components: NewAddressComponent[], type: string): string {
+  return components.find((c) => c.types?.includes(type))?.longText ?? '';
 }
 
 export function PlacesAutocomplete({ onSelect, initialPlace }: PlacesAutocompleteProps) {
@@ -58,10 +82,25 @@ export function PlacesAutocomplete({ onSelect, initialPlace }: PlacesAutocomplet
     }
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${env.googlePlacesApiKey}`;
-      const response = await fetch(url);
+      const response = await fetch(AUTOCOMPLETE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': env.googlePlacesApiKey,
+        },
+        body: JSON.stringify({ input: query }),
+      });
       const json = await response.json();
-      setPredictions(json.predictions ?? []);
+      const suggestions: Array<{ placePrediction?: { placeId: string; text?: { text?: string } } }> =
+        json.suggestions ?? [];
+      setPredictions(
+        suggestions
+          .filter((s) => s.placePrediction?.placeId)
+          .map((s) => ({
+            place_id: s.placePrediction!.placeId,
+            description: s.placePrediction!.text?.text ?? '',
+          })),
+      );
     }, DEBOUNCE_MS);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -69,24 +108,32 @@ export function PlacesAutocomplete({ onSelect, initialPlace }: PlacesAutocomplet
   }, [query, selected]);
 
   async function selectPrediction(prediction: Prediction) {
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=name,geometry,address_component,type,photo&key=${env.googlePlacesApiKey}`;
-    const response = await fetch(url);
-    const json = await response.json();
-    const result = json.result;
-    if (!result) return;
+    const response = await fetch(`https://places.googleapis.com/v1/places/${prediction.place_id}`, {
+      headers: {
+        'X-Goog-Api-Key': env.googlePlacesApiKey,
+        'X-Goog-FieldMask': DETAILS_FIELD_MASK,
+      },
+    });
+    const result = await response.json();
+    if (!result?.id) return;
 
+    const components: NewAddressComponent[] = result.addressComponents ?? [];
     const place: SelectedPlace = {
-      placeId: prediction.place_id,
-      name: result.name,
-      country: extractComponent(result.address_components ?? [], 'country'),
+      placeId: result.id,
+      name: result.displayName?.text ?? prediction.description,
+      country: extractComponent(components, 'country'),
       city:
-        extractComponent(result.address_components ?? [], 'locality') ||
-        extractComponent(result.address_components ?? [], 'postal_town') ||
-        extractComponent(result.address_components ?? [], 'administrative_area_level_1'),
-      lat: result.geometry?.location?.lat,
-      lng: result.geometry?.location?.lng,
+        extractComponent(components, 'locality') ||
+        extractComponent(components, 'postal_town') ||
+        extractComponent(components, 'administrative_area_level_1'),
+      lat: result.location?.latitude,
+      lng: result.location?.longitude,
+      googlePlaceType: result.primaryType,
       googlePlaceTypes: result.types ?? [],
-      photoRef: result.photos?.[0]?.photo_reference,
+      priceLevel: result.priceLevel,
+      rating: typeof result.rating === 'number' ? result.rating : undefined,
+      userRatingCount: typeof result.userRatingCount === 'number' ? result.userRatingCount : undefined,
+      photoRef: result.photos?.[0]?.name,
     };
 
     setSelected(place);

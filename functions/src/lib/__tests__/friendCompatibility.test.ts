@@ -62,7 +62,7 @@ describe('recomputeCompatibilityForAllFriends', () => {
         travelStyleLastUpdated: new Date(),
       },
       sam: {
-        travelStyle: vector({ entertainment_and_recreation: 0, transportation: 10 }),
+        travelStyle: vector({ entertainment_and_recreation: 0, sports: 10 }),
         travelStyleBaseline: vector(),
         travelStyleLastUpdated: new Date(),
       },

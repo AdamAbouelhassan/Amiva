@@ -4,23 +4,33 @@
  * into this one lib function so the decay math (packages/core) is only
  * ever invoked from one place server-side (CLAUDE.md #8).
  *
- * Star-rating-modulated nudge (taxonomy migration, 2026-09-02 —
- * docs/claude_code_prompt_taxonomy_migration.md): a *logged* experience's
- * star rating scales how hard it pulls the logger's own travelStyle — a
- * 1-star experience they hated shouldn't move their style at all; a
- * 5-star one pulls slightly harder than the flat W_LOGGED weight this
- * replaces. This lives here (not in packages/core's computeStyleAdjustment)
- * because it only ever applies to the logged path — a save has no star
- * rating, so `onSaveCreated` keeps calling this with no `starRating` at
- * all, and gets the exact same flat `W_SAVED` behavior as before.
+ * Star-rating-modulated nudge (taxonomy migration, 2026-09-02): a *logged*
+ * experience's star rating scales how hard it pulls the logger's own
+ * travelStyle — 1 star doesn't move it, 5 stars pull slightly harder than
+ * the flat W_LOGGED weight. Logged path only (a save has no star rating).
+ *
+ * priceLevelAffinity nudge (taxonomy-reduction pass, 2026-09-02): the same
+ * decay / weight / star-multiplier math is applied *in parallel* to the
+ * user's scalar `priceLevelAffinity`, anchored to the same
+ * `travelStyleLastUpdated` baseline — but kept out of `matchScorer.ts`.
+ * Skipped entirely when the experience has no price signal.
  */
-import { computeStyleAdjustment, getStarRatingMultiplier, TravelStyleVector } from '@amiva/core';
-import { DecayConfig } from '@amiva/core';
+import {
+  computePriceAffinityAdjustment,
+  computeStyleAdjustment,
+  DecayConfig,
+  getStarRatingMultiplier,
+  PRICE_AFFINITY_NEUTRAL,
+  TravelStyleVector,
+} from '@amiva/core';
 import { UserStore } from './ports';
 
 export interface ApplyExperienceStyleEventInput {
   userId: string;
   experienceVector: TravelStyleVector;
+  /** The experience's 0–4 price value, or undefined when the place had no
+   * Google priceLevel — omit to skip the price nudge (never nudge to 0). */
+  experiencePriceAffinity?: number;
   isLogged: boolean;
   eventDate: Date;
   decayConfig: DecayConfig;
@@ -54,6 +64,19 @@ export async function applyExperienceStyleEvent(
     weightOverride,
   });
 
-  await store.saveAutomaticStyleUpdate(input.userId, travelStyle);
+  let priceLevelAffinity: number | undefined;
+  if (typeof input.experiencePriceAffinity === 'number') {
+    priceLevelAffinity = computePriceAffinityAdjustment({
+      current: current.priceLevelAffinity ?? PRICE_AFFINITY_NEUTRAL,
+      travelStyleLastUpdated: current.travelStyleLastUpdated,
+      experienceValue: input.experiencePriceAffinity,
+      isLogged: input.isLogged,
+      eventDate: input.eventDate,
+      config: input.decayConfig,
+      weightOverride,
+    }).priceLevelAffinity;
+  }
+
+  await store.saveAutomaticStyleUpdate(input.userId, { travelStyle, priceLevelAffinity });
   return travelStyle;
 }

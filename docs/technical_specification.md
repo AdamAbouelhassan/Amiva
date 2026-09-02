@@ -109,16 +109,25 @@ Keyed by **Google Places `place_id`** — a normalized internal entity so posts 
 
 ```typescript
 interface Place {
-  placeId: string;        // Google Places place_id (doc ID)
+  placeId: string;          // Google Places place_id (doc ID)
   name: string;
   country: string;
   city: string;
   lat: number;
   lng: number;
-  googlePlaceType?: string;
-  createdAt: Timestamp;   // first time this place was referenced in Amiva
+  googlePlaceType?: string;   // Places API (New) primaryType (raw type id)
+  googlePlaceTypes: string[]; // full `types` array — feeds category scoring + the ingestion gate
+  priceLevel?: string;       // Places API (New) PRICE_LEVEL_* enum → the priceLevelAffinity scalar
+  rating?: number;           // Google crowd rating 1.0–5.0 (stored; feed-ranking use deferred)
+  userRatingCount?: number;  // review count (also the places-of-worship landmark-gate fallback)
+  createdAt: Timestamp;      // first time this place was referenced in Amiva
 }
 ```
+
+> **Taxonomy-reduction pass (2026-09-02):** a place is only written here if
+> it passes `isApprovedPlace` (@amiva/core) — an approved travel-experience
+> type, and for a place of worship, a landmark signal. Non-approved places
+> are hard-rejected (never persisted, never surfaced). See CLAUDE.md.
 
 **Relationship direction:** `Post → Place` via `placeId` reference field (many-to-one). Reverse queries (`Place → Posts`) are done via a Firestore query on `posts` filtered by `placeId` — no need to store a posts array on the Place doc (avoids unbounded array growth).
 

@@ -33,6 +33,8 @@ export class FirestoreExperienceStore implements ExperienceStore, TrendingStore,
       tripId: data.tripId,
       placeId: data.placeId,
       categoryScores: coerceTravelStyleVector(data.categoryScores),
+      priceLevelAffinity:
+        typeof data.priceLevelAffinity === 'number' ? data.priceLevelAffinity : undefined,
       photoUrls: data.photoUrls ?? [],
       date: toDate(data.date, new Date(0)),
       rating: data.rating,

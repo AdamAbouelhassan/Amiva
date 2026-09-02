@@ -14,11 +14,11 @@ describe('estimateCategoryScoresFromPlace', () => {
   });
 
   it('default rule: an unlisted type scores full weight on its own Table A category', () => {
-    // "university" is in education, has no override entry.
-    expect(CATEGORY_WEIGHT_OVERRIDES.university).toBeUndefined();
-    const result = estimateCategoryScoresFromPlace(['university']);
-    expect(result.education).toBe(10);
-    expect(result.culture).toBe(0);
+    // "art_gallery" is in culture, has no override entry.
+    expect(CATEGORY_WEIGHT_OVERRIDES.art_gallery).toBeUndefined();
+    const result = estimateCategoryScoresFromPlace(['art_gallery']);
+    expect(result.culture).toBe(CATEGORY_MAX);
+    expect(result.food_and_drink).toBe(0);
   });
 
   it('override rule: a listed type uses its curated split instead of the default', () => {
@@ -28,10 +28,10 @@ describe('estimateCategoryScoresFromPlace', () => {
   });
 
   it('averages weights across multiple recognized types on the same place', () => {
-    // museum (default: culture=10) + university (default: education=10)
-    const result = estimateCategoryScoresFromPlace(['museum', 'university']);
-    expect(result.culture).toBeCloseTo(5);
-    expect(result.education).toBeCloseTo(5);
+    // art_gallery (default: culture=MAX) + restaurant (default: food_and_drink=MAX)
+    const result = estimateCategoryScoresFromPlace(['art_gallery', 'restaurant']);
+    expect(result.culture).toBeCloseTo(CATEGORY_MAX / 2);
+    expect(result.food_and_drink).toBeCloseTo(CATEGORY_MAX / 2);
   });
 
   it('ignores unrecognized types instead of diluting the average toward zero', () => {
@@ -41,7 +41,7 @@ describe('estimateCategoryScoresFromPlace', () => {
   });
 
   it('always returns a vector clamped within [CATEGORY_MIN, CATEGORY_MAX]', () => {
-    const result = estimateCategoryScoresFromPlace(['museum', 'university', 'restaurant', 'spa']);
+    const result = estimateCategoryScoresFromPlace(['art_gallery', 'restaurant', 'spa', 'church']);
     for (const category of CATEGORY_IDS) {
       expect(result[category]).toBeGreaterThanOrEqual(CATEGORY_MIN);
       expect(result[category]).toBeLessThanOrEqual(CATEGORY_MAX);
@@ -74,7 +74,7 @@ describe('CATEGORY_WEIGHT_OVERRIDES', () => {
 });
 
 describe('googlePlaceTaxonomy', () => {
-  it('resolves every one of the ~477 known types to a real CategoryId', () => {
+  it('resolves every approved type (post-reduction) to one of the 9 CategoryIds', () => {
     for (const type of ALL_TYPES) {
       const category = getCategoryForType(type);
       expect(category).toBeDefined();

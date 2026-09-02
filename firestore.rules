@@ -68,7 +68,8 @@ service cloud.firestore {
       allow update: if isOwner(uid) &&
         unchanged('travelStyle') &&
         unchanged('travelStyleBaseline') &&
-        unchanged('travelStyleLastUpdated');
+        unchanged('travelStyleLastUpdated') &&
+        unchanged('priceLevelAffinity');
 
       allow delete: if isOwner(uid);
 
@@ -130,7 +131,9 @@ service cloud.firestore {
       // fake value into an *update* the way the brief create-time
       // placeholder window already tolerates (it gets overwritten by the
       // trigger moments later anyway).
-      allow update: if isOwner(resource.data.ownerId) && unchanged('categoryScores');
+      allow update: if isOwner(resource.data.ownerId) &&
+        unchanged('categoryScores') &&
+        unchanged('priceLevelAffinity');
       allow delete: if isOwner(resource.data.ownerId);
     }
 

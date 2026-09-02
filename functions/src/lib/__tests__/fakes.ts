@@ -52,9 +52,18 @@ export class FakeUserStore implements UserStore {
     return record;
   }
 
-  async saveAutomaticStyleUpdate(userId: string, travelStyle: TravelStyleVector): Promise<void> {
+  async saveAutomaticStyleUpdate(
+    userId: string,
+    update: { travelStyle: TravelStyleVector; priceLevelAffinity?: number },
+  ): Promise<void> {
     const existing = await this.getUserStyle(userId);
-    this.users.set(userId, { ...existing, travelStyle });
+    this.users.set(userId, {
+      ...existing,
+      travelStyle: update.travelStyle,
+      ...(update.priceLevelAffinity !== undefined
+        ? { priceLevelAffinity: update.priceLevelAffinity }
+        : {}),
+    });
   }
 
   async saveManualStyleEdit(userId: string, record: UserStyleRecord): Promise<void> {
@@ -113,14 +122,19 @@ export class FakeFriendStore implements FriendStore {
 }
 
 export class FakePlaceStore implements PlaceStore {
-  constructor(private types: Map<string, string[]> = new Map()) {}
+  constructor(private places: Map<string, { types: string[]; priceLevel?: string }> = new Map()) {}
 
-  static seeded(entries: Record<string, string[]>): FakePlaceStore {
-    return new FakePlaceStore(new Map(Object.entries(entries)));
+  /** Accepts either a bare `string[]` of types or a full `{ types, priceLevel }`. */
+  static seeded(entries: Record<string, string[] | { types: string[]; priceLevel?: string }>): FakePlaceStore {
+    const map = new Map<string, { types: string[]; priceLevel?: string }>();
+    for (const [id, v] of Object.entries(entries)) {
+      map.set(id, Array.isArray(v) ? { types: v } : v);
+    }
+    return new FakePlaceStore(map);
   }
 
-  async getPlaceTypes(placeId: string): Promise<string[]> {
-    return this.types.get(placeId) ?? [];
+  async getPlace(placeId: string): Promise<{ types: string[]; priceLevel?: string }> {
+    return this.places.get(placeId) ?? { types: [] };
   }
 }
 

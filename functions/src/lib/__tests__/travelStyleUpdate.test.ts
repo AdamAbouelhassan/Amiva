@@ -1,28 +1,98 @@
-import { DEFAULT_DECAY_CONFIG, STAR_RATING_MULTIPLIER } from '@amiva/core';
+import { DEFAULT_DECAY_CONFIG, PRICE_AFFINITY_NEUTRAL, STAR_RATING_MULTIPLIER } from '@amiva/core';
 import { applyExperienceStyleEvent } from '../travelStyleUpdate';
 import { FakeUserStore, vector } from './fakes';
+
+const now = new Date('2026-01-01T00:00:00Z');
+const seedUser = (extra: { priceLevelAffinity?: number } = {}) =>
+  FakeUserStore.seeded({
+    'user-1': {
+      travelStyle: vector({ entertainment_and_recreation: 5 }),
+      travelStyleBaseline: vector({ entertainment_and_recreation: 5 }),
+      travelStyleLastUpdated: now,
+      priceLevelAffinity: extra.priceLevelAffinity ?? PRICE_AFFINITY_NEUTRAL,
+    },
+  });
+
+describe('applyExperienceStyleEvent — priceLevelAffinity nudge', () => {
+  it('nudges the scalar toward the experience price, star-modulated like the vector', async () => {
+    const store = seedUser({ priceLevelAffinity: 1 });
+    await applyExperienceStyleEvent(store, {
+      userId: 'user-1',
+      experienceVector: vector({ food_and_drink: 8 }),
+      experiencePriceAffinity: 4,
+      isLogged: true,
+      eventDate: now,
+      decayConfig: DEFAULT_DECAY_CONFIG,
+      starRating: 5,
+    });
+    const after = (await store.getUserStyle('user-1')).priceLevelAffinity!;
+    expect(after).toBeGreaterThan(1); // pulled upmarket, capped at MAX_STEP
+    expect(after).toBeLessThanOrEqual(1 + DEFAULT_DECAY_CONFIG.maxStep);
+  });
+
+  it('a 1-star logged experience does not move priceLevelAffinity at all', async () => {
+    const store = seedUser({ priceLevelAffinity: 2 });
+    await applyExperienceStyleEvent(store, {
+      userId: 'user-1',
+      experienceVector: vector({ food_and_drink: 8 }),
+      experiencePriceAffinity: 4,
+      isLogged: true,
+      eventDate: now,
+      decayConfig: DEFAULT_DECAY_CONFIG,
+      starRating: 1,
+    });
+    expect((await store.getUserStyle('user-1')).priceLevelAffinity).toBe(2);
+  });
+
+  it('a save nudges priceLevelAffinity via W_SAVED with no star modulation', async () => {
+    const store = seedUser({ priceLevelAffinity: 0 });
+    await applyExperienceStyleEvent(store, {
+      userId: 'user-1',
+      experienceVector: vector({ food_and_drink: 8 }),
+      experiencePriceAffinity: 4,
+      isLogged: false,
+      eventDate: now,
+      decayConfig: DEFAULT_DECAY_CONFIG,
+    });
+    expect((await store.getUserStyle('user-1')).priceLevelAffinity).toBeGreaterThan(0);
+  });
+
+  it('leaves priceLevelAffinity untouched when the experience has no price signal', async () => {
+    const store = seedUser({ priceLevelAffinity: 3 });
+    await applyExperienceStyleEvent(store, {
+      userId: 'user-1',
+      experienceVector: vector({ natural_features: 9 }),
+      // experiencePriceAffinity omitted
+      isLogged: true,
+      eventDate: now,
+      decayConfig: DEFAULT_DECAY_CONFIG,
+      starRating: 5,
+    });
+    expect((await store.getUserStyle('user-1')).priceLevelAffinity).toBe(3);
+  });
+});
 
 describe('applyExperienceStyleEvent', () => {
   it('nudges the user vector toward the experience vector and persists it', async () => {
     const now = new Date('2026-01-01T00:00:00Z');
     const store = FakeUserStore.seeded({
       'user-1': {
-        travelStyle: vector({ entertainment_and_recreation: 5 }),
-        travelStyleBaseline: vector({ entertainment_and_recreation: 5 }),
+        travelStyle: vector({ entertainment_and_recreation: 2 }),
+        travelStyleBaseline: vector({ entertainment_and_recreation: 2 }),
         travelStyleLastUpdated: now,
       },
     });
 
     const result = await applyExperienceStyleEvent(store, {
       userId: 'user-1',
-      experienceVector: vector({ entertainment_and_recreation: 9 }),
+      experienceVector: vector({ entertainment_and_recreation: 5 }),
       isLogged: true,
       eventDate: now,
       decayConfig: DEFAULT_DECAY_CONFIG,
       starRating: 4, // 4 stars = parity with the old flat W_LOGGED behavior
     });
 
-    expect(result.entertainment_and_recreation).toBeGreaterThan(5);
+    expect(result.entertainment_and_recreation).toBeGreaterThan(2);
     expect((await store.getUserStyle('user-1')).travelStyle.entertainment_and_recreation).toBe(
       result.entertainment_and_recreation,
     );
@@ -52,13 +122,13 @@ describe('applyExperienceStyleEvent', () => {
   });
 
   describe('star-rating-modulated nudge (logged path only)', () => {
-    // No decay noise, and a deliberately small current->experience gap (5
-    // -> 6, not 0 -> 10) so a nudge never saturates CATEGORY_MAX and
+    // No decay noise, wLogged 1 + a modest current->experience gap (1 -> 4)
+    // so even a 5-star nudge (× 1.3) stays under CATEGORY_MAX (5) and
     // clamping can't mask a real difference between star ratings' deltas.
-    const uncappedConfig = { wLogged: 3, wSaved: 1, decayLambda: 0, maxStep: 1000 };
+    const uncappedConfig = { wLogged: 1, wSaved: 1, decayLambda: 0, maxStep: 1000 };
     const now = new Date('2026-01-01T00:00:00Z');
-    const STARTING_VALUE = 5;
-    const EXPERIENCE_VALUE = 6;
+    const STARTING_VALUE = 1;
+    const EXPERIENCE_VALUE = 4;
 
     function nudgeFor(starRating: number) {
       const store = FakeUserStore.seeded({
@@ -118,13 +188,13 @@ describe('applyExperienceStyleEvent', () => {
     });
     const result = await applyExperienceStyleEvent(withoutRating, {
       userId: 'u',
-      experienceVector: vector({ entertainment_and_recreation: 10 }),
+      experienceVector: vector({ entertainment_and_recreation: 5 }),
       isLogged: false,
       eventDate: now,
       decayConfig: { wLogged: 3, wSaved: 1, decayLambda: 0, maxStep: 1000 },
     });
 
     // Flat W_SAVED behavior, exactly as pre-migration.
-    expect(result.entertainment_and_recreation).toBeCloseTo(10);
+    expect(result.entertainment_and_recreation).toBeCloseTo(5);
   });
 });

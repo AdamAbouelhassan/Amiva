@@ -83,14 +83,15 @@ export function ExperienceDetailScreen({ route }: ExperienceDetailScreenProps) {
                 matchPercent={matchScore.data.matchPercent}
                 vectorA={profile?.travelStyle}
                 vectorB={experience.categoryScores}
+                priceAffinityB={experience.priceLevelAffinity}
                 detailTitle={experience.title}
               />
             ) : null}
             <IconButton
-              name={saved ? 'bookmark' : 'bookmark-outline'}
+              name={saved ? 'heart' : 'heart-outline'}
               active={saved}
               onPress={save.toggle}
-              accessibilityLabel={saved ? 'Saved' : 'Save'}
+              accessibilityLabel={saved ? 'Liked' : 'Like'}
             />
           </View>
         )}

@@ -9,3 +9,5 @@ export * from './tripCategorization';
 export * from './profileInsights';
 export * from './googlePlaceTaxonomy';
 export * from './placeCategoryEstimate';
+export * from './placeGate';
+export * from './priceAffinity';

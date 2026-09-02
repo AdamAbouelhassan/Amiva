@@ -20,17 +20,29 @@ import { spacing, useTheme } from '../../../theme';
 export function MatchDetailScreen({ route }: { route: { params: MatchDetailParams } }) {
   const t = useTheme();
   const { profile } = useCurrentUser();
-  const { title, matchPercent, vector } = route.params;
+  const { title, matchPercent, vector, priceAffinityB } = route.params;
   const mine = profile?.travelStyle;
   const { width } = useWindowDimensions();
   const [radarBox, setRadarBox] = useState(0);
 
   const size = Math.max(140, Math.min(width - spacing.screen * 2, radarBox - spacing.md));
 
+  // "Budget fit" — a separate signal from the category match %, never
+  // blended into it (see priceAffinity.ts). Formula/treatment placeholder.
+  const budgetFit =
+    priceAffinityB !== undefined && profile
+      ? Math.round((1 - Math.abs(profile.priceLevelAffinity - priceAffinityB) / 4) * 100)
+      : undefined;
+
   return (
     <ScreenContainer scroll={false}>
       <View style={{ flex: 1, padding: spacing.screen, gap: spacing.md }}>
         <Text style={[t.type.statNumber, { alignSelf: 'center' }]}>{matchPercent}% match</Text>
+        {budgetFit !== undefined ? (
+          <Text style={[t.type.bodySmall, { alignSelf: 'center', color: t.colors.textSecondary }]}>
+            {budgetFit}% budget fit
+          </Text>
+        ) : null}
 
         <View style={{ flexDirection: 'row', gap: spacing.lg, alignSelf: 'center' }}>
           <Legend color={t.colors.accent} label="You" />

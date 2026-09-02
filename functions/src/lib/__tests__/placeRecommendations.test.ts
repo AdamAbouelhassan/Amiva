@@ -117,9 +117,15 @@ describe('getPlaceRecommendations (category rows)', () => {
     expect(rows[0]!.category).toBe('entertainment_and_recreation');
   });
 
-  it('passes the Google rating + review count through', async () => {
+  it('passes the Google rating + review count + priceLevel through', async () => {
     const search = new FakePlacesSearchPort({
-      'cultural sites': [place('museum', ['museum'], { rating: 4.6, userRatingsTotal: 1234 })],
+      'cultural sites': [
+        place('museum', ['museum'], {
+          rating: 4.6,
+          userRatingCount: 1234,
+          priceLevel: 'PRICE_LEVEL_MODERATE',
+        }),
+      ],
     });
     const [row] = await getPlaceRecommendations(
       { placesSearch: search, userStore },
@@ -128,7 +134,40 @@ describe('getPlaceRecommendations (category rows)', () => {
       { rows: 1 },
     );
     expect(row!.items[0]!.rating).toBe(4.6);
-    expect(row!.items[0]!.userRatingsTotal).toBe(1234);
+    expect(row!.items[0]!.userRatingCount).toBe(1234);
+    expect(row!.items[0]!.priceLevel).toBe('PRICE_LEVEL_MODERATE');
+  });
+
+  it('drops a non-approved place (Layer 2 gate) from the results', async () => {
+    const search = new FakePlacesSearchPort({
+      food: [
+        place('resto', ['restaurant']),
+        place('shop', ['car_repair'], { primaryType: 'car_repair' }),
+      ],
+    });
+    const [row] = await getPlaceRecommendations(
+      { placesSearch: search, userStore },
+      'viewer',
+      { country: 'Chile', category: 'food_and_drink' },
+      { perRow: 10 },
+    );
+    expect(row!.items.map((i) => i.placeId)).toEqual(['resto']);
+  });
+
+  it('drops a non-landmark place of worship but keeps a landmarked one', async () => {
+    const search = new FakePlacesSearchPort({
+      'landmark temples': [
+        place('parish', ['church'], { primaryType: 'church', userRatingCount: 8 }),
+        place('cathedral', ['church', 'historical_landmark'], { primaryType: 'church' }),
+      ],
+    });
+    const [row] = await getPlaceRecommendations(
+      { placesSearch: search, userStore },
+      'viewer',
+      { country: 'Chile', category: 'places_of_worship' },
+      { perRow: 10 },
+    );
+    expect(row!.items.map((i) => i.placeId)).toEqual(['cathedral']);
   });
 
   it('ranks within a row by match score and fills country/city + photos from the filter', async () => {

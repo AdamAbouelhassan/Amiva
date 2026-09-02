@@ -17,6 +17,99 @@ Functions) and a real Firebase dev project is live and deployed. The stuff
 below is what a fresh session needs to know that isn't obvious from reading
 code cold — hard-won tonight, don't rediscover it the slow way.
 
+**Travel-style taxonomy (2026-09-02) — two passes, both landed:**
+- **Migration:** the 8 hand-picked categories → Google Places' Table A. See
+  `docs/claude_code_prompt_taxonomy_migration.md`.
+- **Reduction:** trimmed to **9** `CategoryId`s (`culture`,
+  `entertainment_and_recreation`, `food_and_drink`, `health_and_wellness`,
+  `lodging`, `natural_features`, `places_of_worship`, `shopping`, `sports`) —
+  the 10 non-experiential ones (Automotive, Finance, Government, …) were
+  deleted from `packages/core/src/data/googlePlacesCategories.json` +
+  `googlePlacesTypes.json` (also pruned medical/utility/generic types within
+  H&W / Shopping / Sports / Entertainment). `CATEGORY_IDS` (types.ts, hand-
+  typed, `categoryIds.test.ts` enforces sync) is the closed key set;
+  `TravelStyleVector = Record<CategoryId, number>`. `PlaceTypeId` stays
+  `string` — `getCategoryForType()` returns `undefined` for a pruned type.
+- **Ingestion gate — `isApprovedPlace()` (`packages/core/placeGate.ts`):**
+  the authoritative "can this Google place become an Amiva experience?"
+  check. **Layer 2** — applied in `upsertPlace` (returns `{ rejected }`,
+  writes nothing) and `getPlaceRecommendations` (filters the result). A
+  place of worship (`church`/`mosque`/…) also needs a **landmark signal** (a
+  `tourist_attraction`/`historical_landmark`/… type OR `userRatingCount ≥
+  PLACE_OF_WORSHIP_MIN_RATING_COUNT` — untuned placeholder, remoteConfig-
+  overridable). `CreateExperienceScreen` blocks the log + alerts on a
+  rejected place (`PLACE_REJECTED_MESSAGE`). Layer 1 = the single
+  representative `includedType` per category on Text Search — best-effort.
+- **Places API (New):** `PlacesAutocomplete.tsx` (`v1/places:autocomplete` +
+  `v1/places/{id}`), `LocationSearchField.tsx` (same, region-scoped via
+  `includedPrimaryTypes: ['(regions)']` — migrated 2026-09-04, was still on
+  the legacy endpoints and 403ing everywhere except the log-experience
+  screen), `lib/placePhoto.ts` (`v1/{name}/media?maxWidthPx=`),
+  `lib/placeDetails.ts` (`fetchPlaceCoords` → `v1/places/{id}` `location`
+  mask, migrated 2026-09-04), and `functions/placesApiAdapter.ts`
+  (`v1/places:searchText`) all migrated off the legacy API —
+  `X-Goog-FieldMask` header everywhere; **"Places API (New)" must be enabled
+  on `amivadev`, and the legacy "Places API" can stay disabled**.
+  Atmosphere-tier fields deliberately not requested (cost) — comment at the
+  field mask.
+- **`priceLevelAffinity`** (0–4 scalar, "how upscale", **no manual
+  control**): on `users/{uid}` (server-computed, in the rules `unchanged()`
+  guard, neutral midpoint `PRICE_AFFINITY_NEUTRAL=2` at signup) and
+  `experiences/{id}` (server-derived from the place's `priceLevel`).
+  `applyExperienceStyleEvent` nudges it in parallel with `travelStyle` —
+  same decay / `W_LOGGED` / star-multiplier, same `travelStyleLastUpdated`
+  anchor — via `computePriceAffinityAdjustment` (`priceAffinity.ts`). **Kept
+  out of `matchScorer.ts`.** Surfaced: `MatchDetailScreen` "% budget fit"
+  (`1 - |a-b|/4`, optional param `priceAffinityB`), `ProfileScreen` "Typical
+  budget $–$$$$" chip. `places.rating`/`userRatingCount` are stored +
+  `bayesianRating()` exists but the feed-ranking tiebreaker is **deferred**
+  (needs real data).
+- **After any `packages/core/src` change: `npm --prefix packages/core run
+  build`** — the mobile app reads `dist/` and it's gitignored (see the
+  stale-`dist` gotcha below).
+
+**Category scores are 0–5 (2026-09-03, was 0–10).** `CATEGORY_MAX = 5` in
+core drives everything — sliders (`step 0.5`), radar scaling, `MAX_STEP`
+(0.25), `CATEGORY_SECTION_THRESHOLD` (3), and the `CATEGORY_WEIGHT_OVERRIDES`
+weights (all halved; default rule is `{ [cat]: CATEGORY_MAX }`). The star
+rating (1–5) and `priceLevelAffinity` (0–4) are unchanged — they're separate
+scales. Test fixtures use values ≤ 5.
+
+**"Save" is now "Like" (2026-09-03) — UI only.** Heart icon (`heart` /
+`heart-outline`), "Like"/"Liked" labels, the "Liked" screen + Discovery
+body action, "liked an experience" in the activity feed. Same single
+engagement mechanic (functional_specification.md §5.1's "save"); the
+collections stay `saves` / `savedPlaces` and the hook names
+(`useSaveToggle`, `useSavedItems`, …) are unchanged.
+
+**Logbook home has 2 tabs (2026-09-03):** **Timeline** (default — trips +
+experiences merged, newest first) and **By country**. The old "Trips" tab
+was removed (it showed "No trips yet" to anyone who only logged
+experiences); `useTrips` still feeds the timeline rows + the "Trips" stat.
+
+**Experience price badge (2026-09-03, revised 2026-09-04):**
+`priceLevelLabel()` (`lib/priceLevel.ts`) turns a 0–4 affinity into
+`$`–`$$$$` (or "Free"); `priceLevelLabelFromEnum()` does the same from a raw
+Google `priceLevel` enum string (via core's `priceLevelToValue`). Shown on
+**Discovery cards only** — `FeedItemCard` (from `experience.priceLevelAffinity`)
+and `PlaceRecommendationCard` (from `place.priceLevel`, in the `★ … · type`
+subtitle). **Removed** from the user's own logbook (`ExperienceRow`,
+`ExperienceDetailScreen`) and from `ProfileScreen` — per the user, price is a
+discovery signal, not something to see on your own logged entries.
+
+**`TravelStyleRadar` fill (2026-09-03, settled 2026-09-04):** **two overlaid
+diagonal `LinearGradient`s**, one per diagonal, so all four corners pick up
+the hue of the nearby category icon — `radarFillA` `x1=0 y1=1→x2=1 y2=0`
+purple (`places_of_worship`) → yellow (`entertainment_and_recreation`);
+`radarFillB` `x1=1 y1=1→x2=0 y2=0` turquoise (`lodging`) → pink (`sports`).
+Each is a 3-stop gradient whose middle stop drops to `stopOpacity 0.1` (ends
+`0.5`) so a layer only really shows at its own two corners. Rendered as two
+stacked `<Polygon>`s (static) / `<AnimatedPolygon>`s sharing one
+`animatedProps` (morphing), stroke on the top layer. Earlier single-axis
+tries were "choppy" (per-axis-position stops) then "changed colour too
+much" (evenly-spaced 9-hue) then "only 2 corners" (single diagonal). Axis
+markers are the category *icons* (`categoryGlyph()`), not text.
+
 **UI/UX overhaul (2026-08-30):** the whole mobile app was re-skinned onto a
 brand design system. What changed that you must not fight:
 - **Theming is `useTheme()`, not static imports.** `import { colors,
@@ -30,9 +123,9 @@ brand design system. What changed that you must not fight:
 - **`<TravelStyleRadar>`** (was `RadarChart`) and **`<MatchScoreBadge>`**
   (was `MatchBadge`, navigates to `MatchDetail` on tap) are the two shared
   signature components — reuse, don't reimplement. Radar axis *display*
-  order is `RADAR_AXIS_ORDER` (theme), deliberately ≠ the canonical
-  `TRAVEL_STYLE_CATEGORIES` in core (which stays locked to cosine-vector
-  alignment).
+  order is `RADAR_AXIS_ORDER` (theme) — currently just `[...CATEGORY_IDS]`
+  (a 9-spoke radar redesign is a deferred follow-up), which is the canonical
+  cosine-vector order from core.
 - **Reanimated 4** drives the radar morph and the badge count-up. Two
   startup-crash traps, both surfacing as `Exception in HostFunction:
   <unknown>` at `[runtime not ready]`:
@@ -211,6 +304,19 @@ Keep `animate` on where the vector changes live (`EditTravelStyle`,
 onboarding). `CompatPane` also gates the radar render on `viewportH > 0`
 so it mounts once at the final size.
 
+**`TravelStyleRadar` — icon axis markers + category-hue fill (2026-09-03):**
+axes are marked with the **category icon** (`categoryGlyph()` from
+`components/icons/CategoryIcon.tsx` — raw `<Path d>` + optional centre
+circle, rendered inside the radar `<Svg>` via `<G transform="translate…
+scale…">`), not a text label — `CATEGORY_LABELS` stays for the a11y string +
+`TravelStyleValueList`. The polygon fill (`id="radarFill"`) is a **vertical
+`LinearGradient` whose stops are each axis's category hue placed at that
+axis's vertical position** (`fillStops`), so the fill colour follows the
+categories around the ring instead of the old fixed teal→coral diagonal
+(which put orange at the bottom regardless). The old `radarGradient` theme
+token was removed. All 9 categories now have a real glyph (`lodging` = bed,
+`places_of_worship` = domed building, `sports` = pennant were added).
+
 **`MatchScoreBadge` → `MatchDetailScreen` (2026-09-01):** the badge tap is
 a **`navigation.navigate('MatchDetail', …)`** to a `presentation: 'modal'`
 screen (`modules/social/screens/MatchDetailScreen.tsx`, registered in the
@@ -310,6 +416,15 @@ its `ScrollView` in `KeyboardAvoidingView` + `automaticallyAdjustKeyboardInsets`
 + `keyboardDismissMode="interactive"`; `app.config.js` sets
 `android.softwareKeyboardLayoutMode: 'resize'`. Every form screen goes
 through it — no per-screen keyboard handling.
+
+**`TextField` vertical alignment (2026-09-04):** the shared
+`components/TextField.tsx` applies only `fontFamily` + `fontSize` from the
+type scale to its `<TextInput>` — **never `lineHeight`** (a `lineHeight` on
+a `TextInput` makes RN sink the text toward the bottom and clip descenders
+while typing). Single-line uses `textAlignVertical:'center'` + symmetric
+`paddingVertical`; multiline uses `textAlignVertical:'top'` + `minHeight:96`.
+It's the only `TextInput` in the app, so this is the one place to fix input
+metrics.
 
 **Tab motion + icon actions (2026-08-31):** the bottom tab bar is a
 **custom `navigation/GlassTabBar.tsx`** (`Tab.Navigator`'s `tabBar` prop,
@@ -489,6 +604,20 @@ as a legitimate non-OAuth path, so this isn't scope creep) and is what
 every test tonight used to authenticate.
 
 **Gotchas worth knowing before you hit them again:**
+- **The mobile app consumes `@amiva/core` as its COMPILED `dist/` build**
+  (`package.json` `main: dist/index.js`), and `packages/core/dist/` is
+  gitignored. So after any change to `packages/core/src/**` the app runs
+  **stale core code until `dist` is rebuilt** — symptom is a startup crash
+  `[runtime not ready]: TypeError: Cannot convert undefined value to object`
+  (a new/renamed export resolves to `undefined`, e.g. `[...CATEGORY_IDS]` in
+  `theme/categoryColors.ts`). `packages/core` now has a `prepare` script so
+  `npm install` at the root rebuilds it; if you edit core in a session, run
+  `npm --prefix packages/core run build` before testing the app. The build
+  also runs `scripts/copyData.js` because **`tsc` never emits the `src/data/
+  *.json` files** that `googlePlaceTaxonomy.ts` `require()`s at runtime —
+  without the copy, `dist/data/` is missing and Metro can't resolve it.
+  (`functions` is unaffected — its esbuild `--alias` reads `core/src`
+  directly and bundles the JSON inline.)
 - **`@amiva/core` is not an npm dependency of `functions/`, and must stay
   that way.** Firebase's remote Cloud Build reinstalls from
   `package.json` on every deploy and can't resolve a workspace-local

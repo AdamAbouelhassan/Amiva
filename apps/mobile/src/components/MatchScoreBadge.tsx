@@ -27,6 +27,10 @@ interface MatchScoreBadgeProps {
    * just the "is a comparison possible" gate. */
   vectorA?: TravelStyleVector;
   vectorB?: TravelStyleVector;
+  /** The other entity's 0–4 priceLevelAffinity — when supplied, the detail
+   * screen also shows a "Budget fit" line (the viewer's own value is read
+   * there from `useCurrentUser`). */
+  priceAffinityB?: number;
   detailTitle?: string;
   /** Override the default tap (skips the detail screen). */
   onPress?: () => void;
@@ -48,6 +52,7 @@ export function MatchScoreBadge({
   size = 'sm',
   vectorA,
   vectorB,
+  priceAffinityB,
   detailTitle,
   onPress,
 }: MatchScoreBadgeProps) {
@@ -136,6 +141,7 @@ export function MatchScoreBadge({
             title: detailTitle ?? 'Compatibility',
             matchPercent,
             vector: vectorB!,
+            priceAffinityB,
           })
       : undefined);
 

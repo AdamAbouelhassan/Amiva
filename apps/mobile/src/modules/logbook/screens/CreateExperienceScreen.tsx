@@ -19,7 +19,7 @@
  * get before posting.
  */
 import { useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 import { estimateCategoryScoresFromPlace, zeroTravelStyleVector } from '@amiva/core';
 import { Button } from '../../../components/Button';
 import { DateField } from '../../../components/DateField';
@@ -101,6 +101,11 @@ export function CreateExperienceScreen({ route, navigation }: CreateExperienceSc
       });
 
       navigation.goBack();
+    } catch (err) {
+      Alert.alert(
+        'Could not log this experience',
+        err instanceof Error ? err.message : 'Please try again.',
+      );
     } finally {
       setUploading(false);
     }

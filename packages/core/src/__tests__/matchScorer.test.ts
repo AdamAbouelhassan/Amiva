@@ -33,11 +33,11 @@ describe('CosineSimilarityMatchScorer (Strategy implementation)', () => {
     expect(scorer.score(a, a)).toBeCloseTo(1);
   });
 
-  it('scores a high-lodging vector poorly against a high-transportation vector', () => {
+  it('scores a wellness-lodging vector poorly against a sports-nightlife vector', () => {
     const scorer = new CosineSimilarityMatchScorer();
     const lodgingTraveler = vector({ lodging: 10, health_and_wellness: 8 });
-    const backpacker = vector({ transportation: 10, entertainment_and_recreation: 8 });
-    const score = scorer.score(lodgingTraveler, backpacker);
+    const activeTraveler = vector({ sports: 10, entertainment_and_recreation: 8 });
+    const score = scorer.score(lodgingTraveler, activeTraveler);
     expect(score).toBeLessThan(0.3);
   });
 

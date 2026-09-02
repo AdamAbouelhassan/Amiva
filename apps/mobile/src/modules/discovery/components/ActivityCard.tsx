@@ -17,7 +17,7 @@ interface ActivityCardProps {
 
 const VERB: Record<ActivityItem['kind'], string> = {
   experience_logged: 'logged an experience',
-  experience_saved: 'saved an experience',
+  experience_saved: 'liked an experience',
   trip_logged: 'logged a trip',
   planned_trip_completed: 'completed a trip',
   friend_added: 'made a new connection',

@@ -33,13 +33,13 @@ export function TravelStyleSliders({ value, onChange, disabled, only }: TravelSt
               <CategoryIcon category={category} size={18} color={hue} />
               <Text style={[t.type.body, { flex: 1 }]}>{CATEGORY_LABELS[category]}</Text>
               <Text style={[t.type.subtitle, { color: t.categoryText(category) }]}>
-                {value[category].toFixed(0)}
+                {value[category].toFixed(1)}
               </Text>
             </View>
             <Slider
               minimumValue={CATEGORY_MIN}
               maximumValue={CATEGORY_MAX}
-              step={1}
+              step={0.5}
               value={value[category]}
               disabled={disabled}
               minimumTrackTintColor={hue}

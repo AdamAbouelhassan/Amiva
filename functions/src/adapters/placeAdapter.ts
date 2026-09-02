@@ -1,5 +1,5 @@
 import { db as defaultDb } from '../adminApp';
-import { PlaceStore } from '../lib/ports';
+import { PlaceRecord, PlaceStore } from '../lib/ports';
 import { toTimestamp } from './firestoreUtil';
 
 export interface PlaceUpsertInput {
@@ -9,27 +9,25 @@ export interface PlaceUpsertInput {
   city: string;
   lat: number;
   lng: number;
-  /** Taxonomy migration (2026-09-02): was a single `googlePlaceType?:
-   * string` (only Google's *first* returned type, discarding the rest) —
-   * widened to the full array so estimateCategoryScoresFromPlace has every
-   * type to blend, not just one. See PlacesAutocomplete.tsx (client) for
-   * where this gets captured. */
+  /** Google Places (New) `primaryType` (raw type id). */
+  googlePlaceType?: string;
+  /** The full `types` array — every type feeds `estimateCategoryScoresFromPlace`. */
   googlePlaceTypes: string[];
+  /** Google Places (New) enrichment (taxonomy-reduction pass, 2026-09-02). */
+  priceLevel?: string;
+  rating?: number;
+  userRatingCount?: number;
 }
 
 /**
- * Backs an `upsertPlace` callable — required because firestore.rules makes
- * `places` Cloud-Function-write-only (technical_specification.md §6:
- * "writable only by Cloud Functions, to prevent client-side pollution of
- * the normalized place list"), but nothing in the §5 API table creates a
- * Place doc when a user first references a Google Place. This is the
- * minimal missing piece — same category of addition as
- * `updateTravelStyleManual`. Idempotent: a place already on file is left
- * untouched rather than overwritten by a possibly-stale client payload.
+ * Backs the `upsertPlace` callable — `places` is Cloud-Function-write-only
+ * (firestore.rules). Idempotent: a place already on file is left untouched.
+ * The approval gate (`isApprovedPlace`, packages/core) is applied in the
+ * trigger *before* this is called — a rejected place never reaches here.
  *
- * Also backs PlaceStore for onExperienceCreated (taxonomy migration,
- * 2026-09-02) — reading a place's stored types is how a logged
- * experience's categoryScores gets derived server-side.
+ * Also backs `PlaceStore` for `onExperienceCreated` — reading a place's
+ * stored types + priceLevel is how a logged experience's `categoryScores`
+ * and `priceLevelAffinity` are derived server-side.
  */
 export class FirestorePlaceStore implements PlaceStore {
   constructor(private readonly db: FirebaseFirestore.Firestore = defaultDb) {}
@@ -42,13 +40,30 @@ export class FirestorePlaceStore implements PlaceStore {
     const ref = this.col().doc(place.placeId);
     const snap = await ref.get();
     if (snap.exists) return;
-    await ref.set({ ...place, createdAt: toTimestamp(now) });
+    const doc: Record<string, unknown> = {
+      placeId: place.placeId,
+      name: place.name,
+      country: place.country,
+      city: place.city,
+      lat: place.lat,
+      lng: place.lng,
+      googlePlaceTypes: place.googlePlaceTypes,
+      createdAt: toTimestamp(now),
+    };
+    if (place.googlePlaceType) doc.googlePlaceType = place.googlePlaceType;
+    if (place.priceLevel) doc.priceLevel = place.priceLevel;
+    if (typeof place.rating === 'number') doc.rating = place.rating;
+    if (typeof place.userRatingCount === 'number') doc.userRatingCount = place.userRatingCount;
+    await ref.set(doc);
   }
 
-  async getPlaceTypes(placeId: string): Promise<string[]> {
+  async getPlace(placeId: string): Promise<PlaceRecord> {
     const snap = await this.col().doc(placeId).get();
-    if (!snap.exists) return [];
+    if (!snap.exists) return { types: [] };
     const data = snap.data()!;
-    return (data.googlePlaceTypes as string[] | undefined) ?? [];
+    return {
+      types: (data.googlePlaceTypes as string[] | undefined) ?? [],
+      priceLevel: (data.priceLevel as string | undefined) || undefined,
+    };
   }
 }

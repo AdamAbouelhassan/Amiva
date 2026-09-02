@@ -1,4 +1,10 @@
-import { DEFAULT_DECAY_CONFIG, GROUP_VARIANCE_THRESHOLD, HIGH_MATCH_THRESHOLD, STAR_RATING_MULTIPLIER } from '@amiva/core';
+import {
+  DEFAULT_DECAY_CONFIG,
+  GROUP_VARIANCE_THRESHOLD,
+  HIGH_MATCH_THRESHOLD,
+  PLACE_OF_WORSHIP_MIN_RATING_COUNT,
+  STAR_RATING_MULTIPLIER,
+} from '@amiva/core';
 import { ConfigStore, resolveScoringConfig } from '../remoteConfig';
 
 describe('resolveScoringConfig', () => {
@@ -9,6 +15,12 @@ describe('resolveScoringConfig', () => {
     expect(resolved.highMatchThreshold).toBe(HIGH_MATCH_THRESHOLD);
     expect(resolved.groupVarianceThreshold).toBe(GROUP_VARIANCE_THRESHOLD);
     expect(resolved.starRatingMultiplier).toEqual(STAR_RATING_MULTIPLIER);
+    expect(resolved.placeOfWorshipMinRatingCount).toBe(PLACE_OF_WORSHIP_MIN_RATING_COUNT);
+  });
+
+  it('applies a placeOfWorshipMinRatingCount override', async () => {
+    const store: ConfigStore = { getScoringConfig: async () => ({ placeOfWorshipMinRatingCount: 1500 }) };
+    expect((await resolveScoringConfig(store)).placeOfWorshipMinRatingCount).toBe(1500);
   });
 
   it('applies a partial override without disturbing unset fields', async () => {

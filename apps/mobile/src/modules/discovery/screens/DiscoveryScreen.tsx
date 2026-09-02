@@ -44,7 +44,7 @@ export function DiscoveryScreen({ navigation }: DiscoveryScreenProps) {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={t.type.displayMd}>Discover</Text>
           <Pressable onPress={() => navigation.navigate('Saved')} hitSlop={8} accessibilityRole="button">
-            <Text style={[t.type.subtitle, { color: t.colors.accent }]}>Saved</Text>
+            <Text style={[t.type.subtitle, { color: t.colors.accent }]}>Liked</Text>
           </Pressable>
         </View>
         <SegmentedControl

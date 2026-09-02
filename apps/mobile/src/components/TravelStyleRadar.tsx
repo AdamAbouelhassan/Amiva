@@ -3,11 +3,16 @@
  * travel style appears (onboarding, profile, post detail, every
  * compatibility view). Nothing else in the app draws a radar.
  *
- * - 8 axes in a fixed clock order (RADAR_AXIS_ORDER) so a user's "shape"
+ * - Axes in a fixed clock order (RADAR_AXIS_ORDER) so a user's "shape"
  *   is comparable across every screen.
- * - Axis labels + outer intersection dots tinted per category colour.
- * - Primary polygon filled with a gradient of the 4 core brand hues
- *   (the overlapping-lens echo), not a flat accent.
+ * - Each axis is marked with its category *icon* (was a text label), the
+ *   value dot + tip dot tinted that category's colour.
+ * - Primary polygon fill is **two overlaid diagonal gradients** — purple
+ *   (bottom-left) → yellow (top-right) on one, turquoise (bottom-right) →
+ *   pink (top-left) on the other — each fading to near-transparent through
+ *   the middle so every corner picks up the hue of the category icon that
+ *   sits near it. Endpoints are real category hues, not literals. Drawn as
+ *   two stacked <Polygon>s (or <AnimatedPolygon>s while morphing).
  * - Two-vector mode: the compare vector is a dashed outline in ink with a
  *   faint fill so the *difference* between the shapes is the story.
  * - Top-3 categories get a larger filled dot.
@@ -23,10 +28,11 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, Line, LinearGradient, Polygon, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Polygon, Stop } from 'react-native-svg';
 import { CATEGORY_MAX, CategoryId, TravelStyleVector, topCategories } from '@amiva/core';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { CATEGORY_LABELS, RADAR_AXIS_ORDER, spacing, useTheme } from '../theme';
+import { categoryGlyph } from './icons/CategoryIcon';
 
 const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
 
@@ -46,7 +52,7 @@ interface TravelStyleRadarProps {
   animate?: boolean;
 }
 
-const RINGS = 4;
+const RINGS = 5;
 const MORPH_MS = 280;
 const N = RADAR_AXIS_ORDER.length;
 
@@ -75,7 +81,10 @@ export function TravelStyleRadar({
   const reduced = useReducedMotion();
 
   const center = size / 2;
-  const maxRadius = center - (showLabels ? 40 : 10);
+  // Icons sit just outside the outer ring; less margin than the old text
+  // labels needed.
+  const maxRadius = center - (showLabels ? 24 : 10);
+  const glyphSize = 16;
 
   const axes = useMemo(
     () =>
@@ -87,6 +96,17 @@ export function TravelStyleRadar({
   );
   const cosArr = useMemo(() => axes.map((p) => p.cos), [axes]);
   const sinArr = useMemo(() => axes.map((p) => p.sin), [axes]);
+
+  // Fill gradient — two overlaid diagonal gradients so all four "corners"
+  // of the ring pick up their category hue: purple (bottom-left) → yellow
+  // (top-right) on one diagonal, turquoise (bottom-right) → pink (top-left)
+  // on the other. Each fades to near-transparent through the middle so a
+  // layer only really contributes at its own two corners. Endpoints are
+  // real category hues (roughly where those icons sit), not literals.
+  const cornerBL = t.category('places_of_worship'); // purple
+  const cornerTR = t.category('entertainment_and_recreation'); // yellow
+  const cornerBR = t.category('lodging'); // turquoise
+  const cornerTL = t.category('sports'); // pink
 
   const primary = series.find((s) => (s.kind ?? 'primary') === 'primary') ?? series[0];
   const compare = series.find((s) => s.kind === 'compare');
@@ -117,7 +137,9 @@ export function TravelStyleRadar({
     highlightTop && primary ? new Set(topCategories(primary.vector)) : new Set<CategoryId>();
 
   const a11y = primary
-    ? RADAR_AXIS_ORDER.map((c) => `${CATEGORY_LABELS[c]} ${primary.vector[c].toFixed(0)} of 10`).join(', ')
+    ? RADAR_AXIS_ORDER.map(
+        (c) => `${CATEGORY_LABELS[c]} ${primary.vector[c].toFixed(1)} of ${CATEGORY_MAX}`,
+      ).join(', ')
     : undefined;
 
   return (
@@ -128,11 +150,17 @@ export function TravelStyleRadar({
     >
       <Svg width={size} height={size}>
         <Defs>
-          <LinearGradient id="radarFill" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={t.colors.radarGradient[0]} stopOpacity={0.55} />
-            <Stop offset="0.4" stopColor={t.colors.radarGradient[1]} stopOpacity={0.4} />
-            <Stop offset="0.7" stopColor={t.colors.radarGradient[2]} stopOpacity={0.4} />
-            <Stop offset="1" stopColor={t.colors.radarGradient[3]} stopOpacity={0.5} />
+          {/* bottom-left → top-right : purple → yellow */}
+          <LinearGradient id="radarFillA" x1="0" y1="1" x2="1" y2="0">
+            <Stop offset={0} stopColor={cornerBL} stopOpacity={1} />
+            <Stop offset={0.5} stopColor={cornerBL} stopOpacity={0.5} />
+            <Stop offset={1} stopColor={cornerTR} stopOpacity={1} />
+          </LinearGradient>
+          {/* bottom-right → top-left : turquoise → pink */}
+          <LinearGradient id="radarFillB" x1="1" y1="1" x2="0" y2="0">
+            <Stop offset={0} stopColor={cornerBR} stopOpacity={1} />
+            <Stop offset={0.5} stopColor={cornerBR} stopOpacity={0.5} />
+            <Stop offset={1} stopColor={cornerTL} stopOpacity={1} />
           </LinearGradient>
         </Defs>
 
@@ -184,13 +212,21 @@ export function TravelStyleRadar({
             stroke={t.colors.accent}
           />
         ) : (
-          <Polygon
-            points={pointsFor(primaryValues, center, maxRadius, cosArr, sinArr)}
-            fill="url(#radarFill)"
-            stroke={t.colors.accent}
-            strokeWidth={2.5}
-            strokeLinejoin="round"
-          />
+          (() => {
+            const pts = pointsFor(primaryValues, center, maxRadius, cosArr, sinArr);
+            return (
+              <>
+                <Polygon points={pts} fill="url(#radarFillA)" />
+                <Polygon
+                  points={pts}
+                  fill="url(#radarFillB)"
+                  stroke={t.colors.accent}
+                  strokeWidth={2.5}
+                  strokeLinejoin="round"
+                />
+              </>
+            );
+          })()
         )}
 
         {primary &&
@@ -215,20 +251,16 @@ export function TravelStyleRadar({
         {showLabels &&
           RADAR_AXIS_ORDER.map((c, i) => {
             const p = axes[i]!;
-            const lr = maxRadius + 18;
+            const lr = maxRadius + 14;
+            const s = top3.has(c) ? glyphSize + 3 : glyphSize;
+            const gx = center + lr * p.cos - s / 2;
+            const gy = center + lr * p.sin - s / 2;
+            const glyph = categoryGlyph(c);
             return (
-              <SvgText
-                key={`lbl${i}`}
-                x={center + lr * p.cos}
-                y={center + lr * p.sin}
-                fontSize={9}
-                fontWeight={top3.has(c) ? '700' : '500'}
-                fill={t.categoryText(c)}
-                textAnchor="middle"
-                alignmentBaseline="middle"
-              >
-                {CATEGORY_LABELS[c]}
-              </SvgText>
+              <G key={`lbl${i}`} transform={`translate(${gx}, ${gy}) scale(${s / 24})`}>
+                <Path d={glyph.d} fill={t.categoryText(c)} />
+                {glyph.circle ? <Circle cx={12} cy={12} r={5.2} fill={t.categoryText(c)} /> : null}
+              </G>
             );
           })}
       </Svg>
@@ -282,14 +314,19 @@ function MorphingPolygon({
     return { points: pts.join(' ') };
   });
 
+  // Two layers sharing the morph — one per diagonal gradient (see <Defs>),
+  // stroke on the top one.
   return (
-    <AnimatedPolygon
-      animatedProps={animatedProps}
-      fill="url(#radarFill)"
-      stroke={stroke}
-      strokeWidth={2.5}
-      strokeLinejoin="round"
-    />
+    <>
+      <AnimatedPolygon animatedProps={animatedProps} fill="url(#radarFillA)" />
+      <AnimatedPolygon
+        animatedProps={animatedProps}
+        fill="url(#radarFillB)"
+        stroke={stroke}
+        strokeWidth={2.5}
+        strokeLinejoin="round"
+      />
+    </>
   );
 }
 

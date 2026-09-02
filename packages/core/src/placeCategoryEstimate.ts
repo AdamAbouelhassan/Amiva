@@ -11,20 +11,17 @@
  * instruction not to fork a second implementation.
  *
  * Two-tier design:
- *  - Default rule: an unlisted type's weight is `{ [type.category]: 10 }`
- *    (full weight on the category Google's own Table A already assigns
- *    it — data/googlePlacesTypes.json via googlePlaceTaxonomy.ts). Covers
- *    all ~477 types with zero manual effort. 10, not 1.0, to stay on the
- *    same 0-10 scale everything else in the codebase uses (a manually
- *    entered slider value, `CATEGORY_MIN`/`CATEGORY_MAX`, the decay math
- *    in travelStyleDecay.ts) — the migration prompt's own override
- *    numbers are given as fractions summing to 1.0 for illustration; the
- *    table below is that same *ratio*, scaled by 10, so a 0.6/0.4 split
- *    becomes 6/4. Absolute scale doesn't matter for cosine similarity,
- *    but it matters a great deal for computeStyleAdjustment's decay
- *    delta, which subtracts this vector directly against a 0-10-scale
- *    user vector — mismatched scales would make experienceVector's
+ *  - Default rule: an unlisted type's weight is `{ [type.category]:
+ *    CATEGORY_MAX }` (full weight on the category Google's own Table A
+ *    already assigns it). Covers all types with zero manual effort. On the
+ *    same 0–CATEGORY_MAX (0–5, 2026-09-03) scale as a slider value / the
+ *    decay math — mismatched scales would make experienceVector's
  *    contribution rounding-error-sized next to currentVector's.
+ *  - Override table (CATEGORY_WEIGHT_OVERRIDES): weights are the migration
+ *    prompt's illustration ratios (fractions of 1) scaled onto the 0–5
+ *    scale — e.g. a 0.6/0.4 split is `3/2`. They don't need to sum to
+ *    anything; only the ratio between an entry's categories matters (and
+ *    that each stays ≤ CATEGORY_MAX so nothing clamps and distorts it).
  *  - Override table (CATEGORY_WEIGHT_OVERRIDES): a curated exception list
  *    for types that genuinely span two (or three) categories for a
  *    *traveler's* purposes even though Google files them under only one.
@@ -46,76 +43,94 @@
  * consequence of the category-set change, not a new judgment call.
  */
 import { getCategoryForType } from './googlePlaceTaxonomy';
-import { CATEGORY_IDS, CategoryId, clampTravelStyleVector, TravelStyleVector, zeroTravelStyleVector } from './types';
+import {
+  CATEGORY_IDS,
+  CATEGORY_MAX,
+  CategoryId,
+  clampTravelStyleVector,
+  TravelStyleVector,
+  zeroTravelStyleVector,
+} from './types';
 
-/** Curated exceptions to the default 1-category-at-full-weight rule.
- * Weights are on the same 0-10 scale as everything else (see header) —
- * not required to sum to 10 per entry, just relative to each other. */
+/** Curated exceptions to the default single-category-at-full-weight rule.
+ * Weights are on the 0–5 scale (see header) — only the ratio within an
+ * entry matters. */
 export const CATEGORY_WEIGHT_OVERRIDES: Partial<Record<string, Partial<Record<CategoryId, number>>>> = {
   // --- starter set, migration prompt §"The type → category weight table" ---
-  historical_landmark: { entertainment_and_recreation: 6, culture: 4 },
-  beer_garden: { food_and_drink: 7, entertainment_and_recreation: 3 },
-  indoor_playground: { entertainment_and_recreation: 5, sports: 5 },
-  miniature_golf_course: { entertainment_and_recreation: 6, sports: 4 },
-  vineyard: { entertainment_and_recreation: 5, food_and_drink: 5 },
-  winery: { food_and_drink: 7, entertainment_and_recreation: 3 },
-  tourist_information_center: { services: 3, entertainment_and_recreation: 7 },
+  historical_landmark: { entertainment_and_recreation: 3, culture: 2 },
+  beer_garden: { food_and_drink: 3.5, entertainment_and_recreation: 1.5 },
+  indoor_playground: { entertainment_and_recreation: 2.5, sports: 2.5 },
+  miniature_golf_course: { entertainment_and_recreation: 3, sports: 2 },
+  vineyard: { entertainment_and_recreation: 2.5, food_and_drink: 2.5 },
+  winery: { food_and_drink: 3.5, entertainment_and_recreation: 1.5 },
+  // (`tourist_information_center` override removed — `services` category was
+  // cut in the taxonomy-reduction pass, and the type with it.)
+
+  // --- places of worship: only landmarked ones reach this function (the
+  // ingestion gate drops non-landmark parishes), and a landmark temple/
+  // cathedral/mosque is as much a Culture visit as a devotional one. ---
+  church: { places_of_worship: 2.5, culture: 2.5 }, // landmark churches read as much as a Culture visit as a devotional one
+  mosque: { places_of_worship: 2.5, culture: 2.5 }, // same reasoning as church
+  synagogue: { places_of_worship: 2.5, culture: 2.5 }, // same reasoning as church
+  hindu_temple: { places_of_worship: 2.5, culture: 2.5 }, // same reasoning as church
+  buddhist_temple: { places_of_worship: 2.5, culture: 2.5 }, // same reasoning as church
+  shinto_shrine: { places_of_worship: 2.5, culture: 2.5 }, // same reasoning as church
 
   // --- food & drink: venues where the experience/nightlife half is as real as the food ---
-  wine_bar: { food_and_drink: 7, entertainment_and_recreation: 3 }, // a tasting/social venue, not just a meal
-  cocktail_bar: { food_and_drink: 6, entertainment_and_recreation: 4 }, // trades on atmosphere as much as the drink
-  brewery: { food_and_drink: 6, entertainment_and_recreation: 4 }, // tours/tastings are the draw as much as the beer
-  brewpub: { food_and_drink: 7, entertainment_and_recreation: 3 },
-  tea_house: { food_and_drink: 6, culture: 4 }, // tea ceremony/culture is often the point of visiting
-  fine_dining_restaurant: { food_and_drink: 8, culture: 2 }, // upscale dining reads partly as a cultural outing
+  wine_bar: { food_and_drink: 3.5, entertainment_and_recreation: 1.5 }, // a tasting/social venue, not just a meal
+  cocktail_bar: { food_and_drink: 3, entertainment_and_recreation: 2 }, // trades on atmosphere as much as the drink
+  brewery: { food_and_drink: 3, entertainment_and_recreation: 2 }, // tours/tastings are the draw as much as the beer
+  brewpub: { food_and_drink: 3.5, entertainment_and_recreation: 1.5 },
+  tea_house: { food_and_drink: 3, culture: 2 }, // tea ceremony/culture is often the point of visiting
+  fine_dining_restaurant: { food_and_drink: 4, culture: 1 }, // upscale dining reads partly as a cultural outing
 
   // --- lodging: places that are a destination in themselves, not just where you sleep ---
-  resort_hotel: { lodging: 6, entertainment_and_recreation: 4 }, // amenities/activities are why you book it
-  campground: { lodging: 4, natural_features: 4, entertainment_and_recreation: 2 }, // camping is an activity, not just accommodation
-  camping_cabin: { lodging: 5, natural_features: 3, entertainment_and_recreation: 2 },
-  farmstay: { lodging: 5, natural_features: 3, entertainment_and_recreation: 2 }, // agritourism, not a plain overnight stay
+  resort_hotel: { lodging: 3, entertainment_and_recreation: 2 }, // amenities/activities are why you book it
+  campground: { lodging: 2, natural_features: 2, entertainment_and_recreation: 1 }, // camping is an activity, not just accommodation
+  camping_cabin: { lodging: 2.5, natural_features: 1.5, entertainment_and_recreation: 1 },
+  farmstay: { lodging: 2.5, natural_features: 1.5, entertainment_and_recreation: 1 }, // agritourism, not a plain overnight stay
 
   // --- culture: sites that are equally "things to go do" ---
-  castle: { culture: 6, entertainment_and_recreation: 4 },
-  cultural_landmark: { culture: 6, entertainment_and_recreation: 4 },
-  historical_place: { culture: 6, entertainment_and_recreation: 4 },
+  castle: { culture: 3, entertainment_and_recreation: 2 },
+  cultural_landmark: { culture: 3, entertainment_and_recreation: 2 },
+  historical_place: { culture: 3, entertainment_and_recreation: 2 },
 
   // --- performance venues that are as much culture as "a night out" ---
-  opera_house: { entertainment_and_recreation: 5, culture: 5 },
-  concert_hall: { entertainment_and_recreation: 5, culture: 5 },
-  philharmonic_hall: { entertainment_and_recreation: 5, culture: 5 },
+  opera_house: { entertainment_and_recreation: 2.5, culture: 2.5 },
+  concert_hall: { entertainment_and_recreation: 2.5, culture: 2.5 },
+  philharmonic_hall: { entertainment_and_recreation: 2.5, culture: 2.5 },
 
   // --- nightlife (no longer its own category — folded into entertainment_and_recreation/food_and_drink) ---
-  night_club: { entertainment_and_recreation: 7, food_and_drink: 3 }, // dancing/DJ is the draw, drinks secondary
-  casino: { entertainment_and_recreation: 7, food_and_drink: 3 },
-  karaoke: { entertainment_and_recreation: 7, food_and_drink: 3 },
+  night_club: { entertainment_and_recreation: 3.5, food_and_drink: 1.5 }, // dancing/DJ is the draw, drinks secondary
+  casino: { entertainment_and_recreation: 3.5, food_and_drink: 1.5 },
+  karaoke: { entertainment_and_recreation: 3.5, food_and_drink: 1.5 },
 
   // --- entertainment_and_recreation types (per Google) that are genuinely nature/sports experiences ---
-  national_park: { entertainment_and_recreation: 5, natural_features: 5 }, // it's the nature that draws travelers
-  hiking_area: { entertainment_and_recreation: 3, natural_features: 4, sports: 3 },
-  botanical_garden: { entertainment_and_recreation: 5, natural_features: 5 },
-  wildlife_park: { entertainment_and_recreation: 6, natural_features: 4 },
-  wildlife_refuge: { entertainment_and_recreation: 4, natural_features: 6 }, // more conservation/observation than staged entertainment
-  zoo: { entertainment_and_recreation: 7, natural_features: 3 },
-  aquarium: { entertainment_and_recreation: 7, natural_features: 3 },
-  water_park: { entertainment_and_recreation: 7, sports: 3 }, // genuinely physical, not passive entertainment
+  national_park: { entertainment_and_recreation: 2.5, natural_features: 2.5 }, // it's the nature that draws travelers
+  hiking_area: { entertainment_and_recreation: 1.5, natural_features: 2, sports: 1.5 },
+  botanical_garden: { entertainment_and_recreation: 2.5, natural_features: 2.5 },
+  wildlife_park: { entertainment_and_recreation: 3, natural_features: 2 },
+  wildlife_refuge: { entertainment_and_recreation: 2, natural_features: 3 }, // more conservation/observation than staged entertainment
+  zoo: { entertainment_and_recreation: 3.5, natural_features: 1.5 },
+  aquarium: { entertainment_and_recreation: 3.5, natural_features: 1.5 },
+  water_park: { entertainment_and_recreation: 3.5, sports: 1.5 }, // genuinely physical, not passive entertainment
 
   // --- sports: venues that are as much spectator entertainment (or lodging/nature) as athletics ---
-  stadium: { sports: 5, entertainment_and_recreation: 5 },
-  arena: { sports: 5, entertainment_and_recreation: 5 },
-  ski_resort: { sports: 4, natural_features: 4, lodging: 2 }, // often booked/experienced as a lodging+nature destination
-  golf_course: { sports: 8, natural_features: 2 },
+  stadium: { sports: 2.5, entertainment_and_recreation: 2.5 },
+  arena: { sports: 2.5, entertainment_and_recreation: 2.5 },
+  ski_resort: { sports: 2, natural_features: 2, lodging: 1 }, // often booked/experienced as a lodging+nature destination
+  golf_course: { sports: 4, natural_features: 1 },
 
   // --- natural features: also the primary leisure activity, not just scenery ---
-  beach: { natural_features: 6, entertainment_and_recreation: 4 }, // swimming/lounging is an activity
-  scenic_spot: { natural_features: 7, entertainment_and_recreation: 3 },
+  beach: { natural_features: 3, entertainment_and_recreation: 2 }, // swimming/lounging is an activity
+  scenic_spot: { natural_features: 3.5, entertainment_and_recreation: 1.5 },
 
   // --- health & wellness: booked as a leisure activity, not medical care ---
-  spa: { health_and_wellness: 6, entertainment_and_recreation: 4 },
-  massage_spa: { health_and_wellness: 6, entertainment_and_recreation: 4 },
-  sauna: { health_and_wellness: 6, entertainment_and_recreation: 4 },
-  yoga_studio: { health_and_wellness: 7, entertainment_and_recreation: 3 },
-  wellness_center: { health_and_wellness: 6, entertainment_and_recreation: 4 },
+  spa: { health_and_wellness: 3, entertainment_and_recreation: 2 },
+  massage_spa: { health_and_wellness: 3, entertainment_and_recreation: 2 },
+  sauna: { health_and_wellness: 3, entertainment_and_recreation: 2 },
+  yoga_studio: { health_and_wellness: 3.5, entertainment_and_recreation: 1.5 },
+  wellness_center: { health_and_wellness: 3, entertainment_and_recreation: 2 },
 };
 
 /** The weight vector a single Google place `type` contributes: the
@@ -129,7 +144,7 @@ function weightForType(type: string): Partial<TravelStyleVector> | undefined {
   const category = getCategoryForType(type);
   if (!category) return undefined; // unknown type — see estimateCategoryScoresFromPlace
 
-  return { [category]: 10 };
+  return { [category]: CATEGORY_MAX };
 }
 
 /** Blends the weight vectors of every recognized type on a place (a place
@@ -168,23 +183,16 @@ export function estimateCategoryScoresFromPlace(types: string[]): TravelStyleVec
  * One entry per CategoryId — CATEGORY_SEARCH_HINTS.test.ts asserts full
  * coverage. */
 export const CATEGORY_SEARCH_HINTS: Record<CategoryId, { googleType: string; keyword: string }> = {
-  automotive: { googleType: 'gas_station', keyword: 'automotive services' },
-  business: { googleType: 'coworking_space', keyword: 'business centers' },
   culture: { googleType: 'museum', keyword: 'cultural sites' },
-  education: { googleType: 'university', keyword: 'educational institutions' },
   entertainment_and_recreation: { googleType: 'tourist_attraction', keyword: 'things to do' },
-  facilities: { googleType: 'public_bath', keyword: 'public facilities' },
-  finance: { googleType: 'bank', keyword: 'banks and ATMs' },
   food_and_drink: { googleType: 'restaurant', keyword: 'food' },
-  geographical_areas: { googleType: 'locality', keyword: 'neighborhoods' },
-  government: { googleType: 'city_hall', keyword: 'government offices' },
   health_and_wellness: { googleType: 'spa', keyword: 'wellness and spas' },
-  housing: { googleType: 'apartment_building', keyword: 'housing' },
   lodging: { googleType: 'hotel', keyword: 'places to stay' },
   natural_features: { googleType: 'scenic_spot', keyword: 'nature and scenery' },
-  places_of_worship: { googleType: 'church', keyword: 'places of worship' },
-  services: { googleType: 'travel_agency', keyword: 'traveler services' },
+  // Layer 1 can only filter this category by type — the landmark condition
+  // is a Layer 2 (ingestion) concern, so a search scoped here still returns
+  // non-landmark churches; placeGate.isApprovedPlace drops them.
+  places_of_worship: { googleType: 'church', keyword: 'landmark temples and cathedrals' },
   shopping: { googleType: 'shopping_mall', keyword: 'shopping' },
   sports: { googleType: 'stadium', keyword: 'sports' },
-  transportation: { googleType: 'train_station', keyword: 'transportation' },
 };

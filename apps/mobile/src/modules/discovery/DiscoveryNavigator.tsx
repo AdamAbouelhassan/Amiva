@@ -16,9 +16,9 @@ export function DiscoveryNavigator() {
   return (
     <Stack.Navigator screenOptions={useStackScreenOptions()}>
       {/* Local / Trending / Friends are in-page tabs on DiscoveryScreen,
-          not routes. The "Saved" action lives in the screen body. */}
+          not routes. The "Liked" action lives in the screen body. */}
       <Stack.Screen name="DiscoverHome" component={DiscoveryScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="Saved" component={SavedScreen} options={{ title: 'Saved' }} />
+      <Stack.Screen name="Saved" component={SavedScreen} options={{ title: 'Liked' }} />
       <Stack.Screen name="ExperienceDetail" component={ExperienceDetailScreen} options={{ title: 'Experience' }} />
       <Stack.Screen
         name="EditExperience"

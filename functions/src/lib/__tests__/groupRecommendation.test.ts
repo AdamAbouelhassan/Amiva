@@ -32,7 +32,7 @@ describe('computeGroupRecommendationForCandidate', () => {
   it('segments when collaborators diverge', async () => {
     const userStore = FakeUserStore.seeded({
       alex: { travelStyle: vector({ lodging: 10 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
-      sam: { travelStyle: vector({ transportation: 10 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
+      sam: { travelStyle: vector({ sports: 10 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
     });
     const experienceStore = FakeExperienceStore.seeded({
       'exp-1': {

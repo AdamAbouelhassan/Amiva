@@ -21,7 +21,7 @@ export function TrendingScreen({ navigation }: TrendingScreenProps) {
     <ScreenContainer scroll={false}>
       <View style={{ paddingHorizontal: spacing.screen, paddingBottom: spacing.xs }}>
         <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
-          Most-saved experiences across Amiva
+          Most-liked experiences across Amiva
         </Text>
         {error && <Text style={[t.type.bodySmall, { color: t.colors.danger }]}>{error}</Text>}
       </View>
@@ -43,7 +43,7 @@ export function TrendingScreen({ navigation }: TrendingScreenProps) {
           !isLoading && !error ? (
             <BrandEmptyState
               title="Nothing trending yet"
-              body="As people log and save experiences across Amiva, the most popular ones show up here."
+              body="As people log and like experiences across Amiva, the most popular ones show up here."
             />
           ) : null
         }

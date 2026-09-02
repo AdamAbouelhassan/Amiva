@@ -47,8 +47,6 @@ export interface ThemeColors {
    * in both themes. */
   onScrim: string;
 
-  /** 4 core hues for the radar polygon gradient — the "overlapping lens" echo. */
-  radarGradient: [string, string, string, string];
   radarGrid: string;
   radarCompare: string;
 
@@ -88,7 +86,6 @@ export const lightColors: ThemeColors = {
   overlay: 'rgba(38,49,63,0.45)',
   onScrim: '#FFFFFF',
 
-  radarGradient: [palette.teal, palette.tealDeep, palette.amber, palette.coral],
   radarGrid: '#E7DFCE',
   radarCompare: palette.inkSoft,
   matchRamp: ['#F2A991', '#F3B872', '#7ED9C7', '#43C9B4'],
@@ -125,7 +122,6 @@ export const darkColors: ThemeColors = {
   overlay: 'rgba(0,0,0,0.6)',
   onScrim: '#FFFFFF',
 
-  radarGradient: ['#45D4BE', '#2AA594', '#F2A857', '#F2785C'],
   radarGrid: '#333E4A',
   radarCompare: '#9BA6B2',
   matchRamp: ['#F2A991', '#F3B872', '#7ED9C7', '#43C9B4'],

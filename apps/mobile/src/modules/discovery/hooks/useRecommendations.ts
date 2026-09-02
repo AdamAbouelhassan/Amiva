@@ -34,10 +34,12 @@ export interface PlaceRecommendationResult {
   photoReferences: string[];
   /** Short category label ("Restaurant", "Museum", …). */
   primaryType?: string;
+  /** Google Places (New) `priceLevel` enum string (display-only). */
+  priceLevel?: string;
   /** Google rating, 1.0–5.0 (absent for unrated places). */
   rating?: number;
   /** Number of Google reviews behind the rating. */
-  userRatingsTotal?: number;
+  userRatingCount?: number;
 }
 
 export interface LocalSection {

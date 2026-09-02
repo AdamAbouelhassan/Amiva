@@ -1,21 +1,32 @@
 /**
- * Derives a logged experience's categoryScores from its linked Place's
- * stored Google types — taxonomy migration (2026-09-02, see
- * docs/claude_code_prompt_taxonomy_migration.md): CreateExperienceScreen /
- * EditExperienceScreen no longer collect a manual category rating at all,
- * so this is now the *only* source of truth for what an experience
- * "scores." Called from onExperienceCreated (CLAUDE.md #8 — kept out of
- * the trigger itself so it's testable as a plain function against a fake
+ * Derives a logged experience's `categoryScores` (and `priceLevelAffinity`)
+ * from its linked Place's stored Google types + priceLevel — taxonomy
+ * migration (2026-09-02): CreateExperienceScreen / EditExperienceScreen no
+ * longer collect a manual category rating, so this is the *only* source of
+ * truth for what an experience "scores." Called from onExperienceCreated
+ * (CLAUDE.md #8 — kept out of the trigger so it's testable against a fake
  * PlaceStore).
  *
- * Reuses estimateCategoryScoresFromPlace exactly as Discover >
- * Recommendations does — one implementation, not a second one forked for
- * the logging path (explicit instruction in the migration prompt).
+ * Reuses `estimateCategoryScoresFromPlace` exactly as Discover >
+ * Recommendations does — one implementation, not a fork.
  */
-import { estimateCategoryScoresFromPlace, TravelStyleVector } from '@amiva/core';
+import { estimateCategoryScoresFromPlace, priceLevelToValue, TravelStyleVector } from '@amiva/core';
 import { PlaceStore } from './ports';
 
-export async function deriveExperienceCategoryScores(store: PlaceStore, placeId: string): Promise<TravelStyleVector> {
-  const types = await store.getPlaceTypes(placeId);
-  return estimateCategoryScoresFromPlace(types);
+export interface DerivedExperienceScoring {
+  categoryScores: TravelStyleVector;
+  /** 0–4, or undefined when the place had no usable Google priceLevel —
+   * callers skip the price nudge entirely (never nudge toward 0). */
+  priceLevelAffinity: number | undefined;
+}
+
+export async function deriveExperienceScoring(
+  store: PlaceStore,
+  placeId: string,
+): Promise<DerivedExperienceScoring> {
+  const place = await store.getPlace(placeId);
+  return {
+    categoryScores: estimateCategoryScoresFromPlace(place.types),
+    priceLevelAffinity: priceLevelToValue(place.priceLevel),
+  };
 }
