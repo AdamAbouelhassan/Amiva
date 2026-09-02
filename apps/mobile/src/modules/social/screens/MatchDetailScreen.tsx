@@ -4,8 +4,13 @@
  * numeric breakdown. A `presentation: 'modal'` screen (registered in every
  * stack a badge can appear in) so it slides + swipes exactly like the
  * "Log experience" modal.
+ *
+ * Fits on one screen — no scroll. The radar takes whatever vertical space
+ * is left once the header, legend, and value list are placed, sized off the
+ * measured gap so the animated polygon never redraws off-centre.
  */
-import { Text, View } from 'react-native';
+import { useState } from 'react';
+import { Text, useWindowDimensions, View } from 'react-native';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { TravelStyleRadar, TravelStyleValueList } from '../../../components/TravelStyleRadar';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
@@ -17,28 +22,39 @@ export function MatchDetailScreen({ route }: { route: { params: MatchDetailParam
   const { profile } = useCurrentUser();
   const { title, matchPercent, vector } = route.params;
   const mine = profile?.travelStyle;
+  const { width } = useWindowDimensions();
+  const [radarBox, setRadarBox] = useState(0);
+
+  const size = Math.max(140, Math.min(width - spacing.screen * 2, radarBox - spacing.md));
 
   return (
-    <ScreenContainer>
-      <Text style={[t.type.statNumber, { alignSelf: 'center' }]}>{matchPercent}% match</Text>
+    <ScreenContainer scroll={false}>
+      <View style={{ flex: 1, padding: spacing.screen, gap: spacing.md }}>
+        <Text style={[t.type.statNumber, { alignSelf: 'center' }]}>{matchPercent}% match</Text>
 
-      <View style={{ alignItems: 'center' }}>
-        <TravelStyleRadar
-          size={260}
-          animate={false}
-          series={[
-            ...(mine ? [{ vector: mine, kind: 'primary' as const }] : []),
-            { vector, kind: 'compare' as const },
-          ]}
-        />
+        <View style={{ flexDirection: 'row', gap: spacing.lg, alignSelf: 'center' }}>
+          <Legend color={t.colors.accent} label="You" />
+          <Legend color={t.colors.radarCompare} label={title} dashed />
+        </View>
+
+        <View
+          style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+          onLayout={(e) => setRadarBox(e.nativeEvent.layout.height)}
+        >
+          {radarBox > 0 ? (
+            <TravelStyleRadar
+              size={size}
+              animate={false}
+              series={[
+                ...(mine ? [{ vector: mine, kind: 'primary' as const }] : []),
+                { vector, kind: 'compare' as const },
+              ]}
+            />
+          ) : null}
+        </View>
+
+        <TravelStyleValueList vector={vector} />
       </View>
-
-      <View style={{ flexDirection: 'row', gap: spacing.lg, alignSelf: 'center' }}>
-        <Legend color={t.colors.accent} label="You" />
-        <Legend color={t.colors.radarCompare} label={title} dashed />
-      </View>
-
-      <TravelStyleValueList vector={vector} />
     </ScreenContainer>
   );
 }

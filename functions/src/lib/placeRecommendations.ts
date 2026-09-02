@@ -39,6 +39,10 @@ export interface PlaceSearchResult {
   lng: number;
   types: string[];
   priceLevel?: number;
+  /** Google rating, 1.0–5.0 (absent for unrated places). */
+  rating?: number;
+  /** How many Google reviews the rating is based on. */
+  userRatingsTotal?: number;
   /** Google Places photo references — the client turns these into image
    * URLs via the Places Photo endpoint (see apps/mobile/src/lib/placePhoto.ts). */
   photoReferences?: string[];
@@ -68,6 +72,10 @@ export interface PlaceRecommendationResult {
   /** Short human category ("Restaurant", "Night club", …), from the
    * place's Google types — the Google-Maps-style subtitle. */
   primaryType?: string;
+  /** Google rating, 1.0–5.0 (absent for unrated places). */
+  rating?: number;
+  /** Number of Google reviews behind the rating. */
+  userRatingsTotal?: number;
 }
 
 export interface LocalSection {
@@ -137,6 +145,8 @@ export async function getPlaceRecommendations(
       matchScore: matchScorer.score(viewerVector, categoryScores),
       photoReferences: place.photoReferences ?? [],
       primaryType: prettyPlaceType(place.types),
+      rating: place.rating,
+      userRatingsTotal: place.userRatingsTotal,
     };
   };
 

@@ -222,7 +222,18 @@ needs both `vectorA` & `vectorB` props to be a tappable gate).
 `MatchScoreBadge` now calls `useNavigation()` unconditionally, so it must
 only be rendered inside a navigator. Earlier `<Modal presentationStyle=
 "pageSheet">` and hand-rolled `PanResponder` versions are gone — don't
-revive them.
+revive them. `MatchDetailScreen` is **`scroll={false}`** — the radar takes
+the measured leftover space (like `CompatPane`) so the whole thing fits with
+no scroll.
+
+**Google ratings on place cards (2026-09-01):** `getPlaceRecommendations`
+carries `rating` (1.0–5.0) + `userRatingsTotal` from the Places Text Search
+response (`placesApiAdapter` → `PlaceSearchResult`/`PlaceRecommendationResult`);
+`PlaceRecommendationCard` shows `★ 4.6 (1.2k) · <type>` — so both Discovery
+**Local** and Planner **Add places** display it. The **`city, country` line
+is gone** from that card (every card there is already scoped to a location
+the user picked). Display-only, doesn't feed match ranking. **Needs a
+`functions` redeploy.**
 
 **`components/PressableScale.tsx` (2026-09-01):** a `Pressable` that
 dips+scales on hold (UI thread, `motion.press`, Reduce-Motion safe,

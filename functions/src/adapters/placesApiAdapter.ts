@@ -6,6 +6,8 @@ interface TextSearchResponseResult {
   geometry?: { location?: { lat: number; lng: number } };
   types?: string[];
   price_level?: number;
+  rating?: number;
+  user_ratings_total?: number;
   photos?: { photo_reference: string }[];
 }
 
@@ -48,6 +50,8 @@ export class GooglePlacesApi implements PlacesSearchPort {
         lng: result.geometry!.location!.lng,
         types: result.types ?? [],
         priceLevel: result.price_level,
+        rating: result.rating,
+        userRatingsTotal: result.user_ratings_total,
         photoReferences: (result.photos ?? [])
           .map((p) => p.photo_reference)
           .filter(Boolean)

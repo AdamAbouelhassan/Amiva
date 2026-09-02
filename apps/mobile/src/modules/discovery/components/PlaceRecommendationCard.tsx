@@ -14,6 +14,11 @@ import { placePhotoUrl } from '../../../lib/placePhoto';
 import { spacing, useTheme } from '../../../theme';
 import { PlaceRecommendationResult } from '../hooks/useRecommendations';
 
+/** 1234 → "1.2k", 980 → "980" — compact Google-style review count. */
+function formatCount(n: number): string {
+  return n >= 1000 ? `${(n / 1000).toFixed(n < 10_000 ? 1 : 0)}k` : String(n);
+}
+
 interface PlaceRecommendationCardProps {
   place: PlaceRecommendationResult;
   /** Fixed width — set for tiles inside a horizontal category row. */
@@ -135,10 +140,20 @@ export const PlaceRecommendationCard = memo(function PlaceRecommendationCard({
           >
             {place.name}
           </Text>
-          <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]} numberOfLines={1}>
-            {place.primaryType ? `${place.primaryType} · ` : ''}
-            {place.city}, {place.country}
-          </Text>
+          {/* Location is omitted — every card on these pages is already
+              scoped to a location the user picked. */}
+          {place.rating != null || place.primaryType ? (
+            <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]} numberOfLines={1}>
+              {place.rating != null ? (
+                <Text style={{ color: t.colors.warning }}>
+                  ★ {place.rating.toFixed(1)}
+                  {place.userRatingsTotal ? ` (${formatCount(place.userRatingsTotal)})` : ''}
+                  {place.primaryType ? '  ·  ' : ''}
+                </Text>
+              ) : null}
+              {place.primaryType ?? ''}
+            </Text>
+          ) : null}
         </View>
       </Card>
     </PressableScale>

@@ -117,6 +117,20 @@ describe('getPlaceRecommendations (category rows)', () => {
     expect(rows[0]!.category).toBe('socialNightlife');
   });
 
+  it('passes the Google rating + review count through', async () => {
+    const search = new FakePlacesSearchPort({
+      'cultural sites': [place('museum', ['museum'], { rating: 4.6, userRatingsTotal: 1234 })],
+    });
+    const [row] = await getPlaceRecommendations(
+      { placesSearch: search, userStore },
+      'viewer',
+      { country: 'Chile' },
+      { rows: 1 },
+    );
+    expect(row!.items[0]!.rating).toBe(4.6);
+    expect(row!.items[0]!.userRatingsTotal).toBe(1234);
+  });
+
   it('ranks within a row by match score and fills country/city + photos from the filter', async () => {
     const search = new FakePlacesSearchPort({
       'cultural sites': [
