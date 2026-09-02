@@ -40,53 +40,19 @@ export function ExperienceDetailScreen({ route }: ExperienceDetailScreenProps) {
   const isOwner = profile?.uid === experience.ownerId;
   const saved = save.saved;
 
-  const hasPhotos = experience.photoUrls.length > 0;
-
   return (
     <ScreenContainer onRefresh={refresh.onRefresh} refreshing={refresh.refreshing}>
-      {hasPhotos ? (
-        <View style={{ width: 280, alignSelf: 'center' }}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            snapToInterval={280 + spacing.sm}
-            decelerationRate="fast"
-          >
-            {experience.photoUrls.map((url) => (
-              <AppImage
-                key={url}
-                uri={url}
-                style={{ width: 280, height: 200, borderRadius: radius.card, marginRight: spacing.sm }}
-              />
-            ))}
-          </ScrollView>
-          {/* Non-owner actions ride the photo: match % top-right, Save
-              top-left — keeps the title line clear. */}
-          {!isOwner ? (
-            <>
-              {matchScore.data ? (
-                <View style={{ position: 'absolute', top: spacing.xs, right: spacing.xs }}>
-                  <MatchScoreBadge
-                    matchPercent={matchScore.data.matchPercent}
-                    vectorA={profile?.travelStyle}
-                    vectorB={experience.categoryScores}
-                    detailTitle={experience.title}
-                  />
-                </View>
-              ) : null}
-              <View style={{ position: 'absolute', top: spacing.xs, left: spacing.xs }}>
-                <IconButton
-                  variant="overlay"
-                  name={saved ? 'bookmark' : 'bookmark-outline'}
-                  active={saved}
-                  onPress={save.toggle}
-                  accessibilityLabel={saved ? 'Saved' : 'Save'}
-                />
-              </View>
-            </>
-          ) : null}
-        </View>
-      ) : null}
+      {experience.photoUrls.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {experience.photoUrls.map((url) => (
+            <AppImage
+              key={url}
+              uri={url}
+              style={{ width: 280, height: 200, borderRadius: radius.card, marginRight: spacing.sm }}
+            />
+          ))}
+        </ScrollView>
+      )}
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm }}>
         <View style={{ flex: 1 }}>
@@ -110,7 +76,7 @@ export function ExperienceDetailScreen({ route }: ExperienceDetailScreenProps) {
             variant="secondary"
             onPress={() => navigation.navigate('EditExperience', { experienceId })}
           />
-        ) : !hasPhotos ? (
+        ) : (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             {matchScore.data ? (
               <MatchScoreBadge
@@ -127,7 +93,7 @@ export function ExperienceDetailScreen({ route }: ExperienceDetailScreenProps) {
               accessibilityLabel={saved ? 'Saved' : 'Save'}
             />
           </View>
-        ) : null}
+        )}
       </View>
 
       <Button

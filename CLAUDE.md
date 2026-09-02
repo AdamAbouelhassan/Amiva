@@ -191,11 +191,14 @@ any React re-render.
 **Card actions on the image (2026-09-01):** photo corners hold the actions,
 body is just the text (so the experience name gets the full width).
 **match `MatchScoreBadge` → top-right, Save → top-left, Log → bottom-left**
-(+ Share bottom-right on `FeedItemCard`) — applied to `FeedItemCard`,
-`PlaceRecommendationCard`, and `ExperienceDetailScreen`'s photo carousel.
-Save/Log only for `!isOwner`. `IconButton variant="overlay"` (white glyph
-on `colors.overlay` scrim disc, `colors.onScrim` token); the match badge
-keeps its own ramp fill.
+(+ Share bottom-right on `FeedItemCard`) — applied to `FeedItemCard` and
+`PlaceRecommendationCard`. Save/Log only for `!isOwner`. `IconButton
+variant="overlay"` (white glyph on `colors.overlay` scrim disc,
+`colors.onScrim` token); the match badge keeps its own ramp fill.
+**`ExperienceDetailScreen` reverted (2026-09-01):** its photo carousel is
+back to the plain full-width horizontal `ScrollView` (the `width:280 /
+alignSelf:'center'` wrapper + on-photo overlays centred the images oddly);
+match % + Save for a non-owner sit in the header row next to the title.
 
 **`TravelStyleRadar` — `animate` prop (2026-09-01):** the morphing primary
 polygon runs in a `<MorphingPolygon>` sub-component and only when
