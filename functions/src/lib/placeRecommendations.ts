@@ -26,8 +26,8 @@ import {
   estimateCategoryScoresFromPlace,
   MatchScorer,
   topCategories,
-  TRAVEL_STYLE_CATEGORIES,
-  TravelStyleCategory,
+  CATEGORY_IDS,
+  CategoryId,
   TravelStyleVector,
 } from '@amiva/core';
 import { UserStore } from './ports';
@@ -55,7 +55,7 @@ export interface PlacesSearchPort {
 export interface PlaceRecommendationFilter {
   country: string;
   city?: string;
-  category?: TravelStyleCategory;
+  category?: CategoryId;
   text?: string;
 }
 
@@ -82,7 +82,7 @@ export interface LocalSection {
   /** `'search'` for a keyword result set, otherwise the category id. */
   key: string;
   /** The category this row represents, or `null` for keyword search. */
-  category: TravelStyleCategory | null;
+  category: CategoryId | null;
   items: PlaceRecommendationResult[];
 }
 
@@ -125,13 +125,16 @@ export async function getPlaceRecommendations(
   opts: { rows?: number; perRow?: number } = {},
   matchScorer: MatchScorer = defaultMatchScorer,
 ): Promise<LocalSection[]> {
-  const rowCount = Math.min(opts.rows ?? DEFAULT_ROWS, TRAVEL_STYLE_CATEGORIES.length);
+  const rowCount = Math.min(opts.rows ?? DEFAULT_ROWS, CATEGORY_IDS.length);
   const perRow = opts.perRow ?? DEFAULT_PER_ROW;
   const { travelStyle: viewerVector } = await stores.userStore.getUserStyle(viewerId);
   const location = filter.city ? `${filter.city}, ${filter.country}` : filter.country;
 
   const toResult = (place: PlaceSearchResult): PlaceRecommendationResult => {
-    const categoryScores = estimateCategoryScoresFromPlace(place.types, place.priceLevel);
+    // priceLevel is no longer a scoring input — the category taxonomy
+    // migration (2026-09-02) dropped the luxury/budgetBackpacker category
+    // axes it used to nudge; see placeCategoryEstimate.ts's header for why.
+    const categoryScores = estimateCategoryScoresFromPlace(place.types);
     return {
       placeId: place.placeId,
       name: place.name,
@@ -156,7 +159,7 @@ export async function getPlaceRecommendations(
       .sort((a, b) => b.matchScore - a.matchScore)
       .slice(0, take);
 
-  const rowForCategory = async (category: TravelStyleCategory, take: number): Promise<LocalSection> => {
+  const rowForCategory = async (category: CategoryId, take: number): Promise<LocalSection> => {
     const raw = await stores.placesSearch.textSearch(`${CATEGORY_SEARCH_HINTS[category].keyword} in ${location}`, {
       type: CATEGORY_SEARCH_HINTS[category].googleType,
     });

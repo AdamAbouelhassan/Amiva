@@ -5,8 +5,8 @@ import { combineStores, FakeFriendStore, FakeNotificationStore, FakeUserStore, v
 describe('addFriend', () => {
   it('creates a bidirectional edge with a cached compatibility score', async () => {
     const userStore = FakeUserStore.seeded({
-      alex: { travelStyle: vector({ adventure: 8 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
-      sam: { travelStyle: vector({ adventure: 8 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
+      alex: { travelStyle: vector({ entertainment_and_recreation: 8 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
+      sam: { travelStyle: vector({ entertainment_and_recreation: 8 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
     });
     const friendStore = new FakeFriendStore();
     const notificationStore = new FakeNotificationStore();
@@ -57,12 +57,12 @@ describe('recomputeCompatibilityForAllFriends', () => {
   it('recomputes and updates both directions of every friend edge', async () => {
     const userStore = FakeUserStore.seeded({
       alex: {
-        travelStyle: vector({ adventure: 10 }),
+        travelStyle: vector({ entertainment_and_recreation: 10 }),
         travelStyleBaseline: vector(),
         travelStyleLastUpdated: new Date(),
       },
       sam: {
-        travelStyle: vector({ adventure: 0, budgetBackpacker: 10 }),
+        travelStyle: vector({ entertainment_and_recreation: 0, transportation: 10 }),
         travelStyleBaseline: vector(),
         travelStyleLastUpdated: new Date(),
       },

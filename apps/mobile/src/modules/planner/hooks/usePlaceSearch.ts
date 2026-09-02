@@ -7,7 +7,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { httpsCallable } from 'firebase/functions';
-import { TravelStyleCategory } from '@amiva/core';
+import { CategoryId } from '@amiva/core';
 import { functions } from '../../../firebase/client';
 import type {
   LocalSection,
@@ -21,7 +21,7 @@ const callable = httpsCallable<{ filter: PlaceRecommendationFilter }, LocalSecti
 
 export function usePlaceSearch(place: { country: string; city?: string }) {
   const [text, setText] = useState('');
-  const [category, setCategory] = useState<TravelStyleCategory | undefined>();
+  const [category, setCategory] = useState<CategoryId | undefined>();
 
   const filter = useMemo<PlaceRecommendationFilter>(
     () => ({ country: place.country, city: place.city, category, text: text.trim() || undefined }),

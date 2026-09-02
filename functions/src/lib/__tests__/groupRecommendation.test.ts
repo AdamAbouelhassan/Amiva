@@ -31,15 +31,15 @@ describe('computeGroupRecommendationForCandidate', () => {
 
   it('segments when collaborators diverge', async () => {
     const userStore = FakeUserStore.seeded({
-      alex: { travelStyle: vector({ luxury: 10 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
-      sam: { travelStyle: vector({ budgetBackpacker: 10 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
+      alex: { travelStyle: vector({ lodging: 10 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
+      sam: { travelStyle: vector({ transportation: 10 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
     });
     const experienceStore = FakeExperienceStore.seeded({
       'exp-1': {
         experienceId: 'exp-1',
         ownerId: 'other',
         placeId: 'p1',
-        categoryScores: vector({ luxury: 10 }),
+        categoryScores: vector({ lodging: 10 }),
         photoUrls: [],
         date: new Date(),
         rating: 5,

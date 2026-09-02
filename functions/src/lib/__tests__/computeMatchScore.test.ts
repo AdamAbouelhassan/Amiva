@@ -3,15 +3,15 @@ import { FakeExperienceStore, FakeUserStore, vector } from './fakes';
 
 describe('computeMatchScore', () => {
   const userStore = FakeUserStore.seeded({
-    alex: { travelStyle: vector({ foodie: 8, culture: 6 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
-    sam: { travelStyle: vector({ foodie: 8, culture: 6 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
+    alex: { travelStyle: vector({ food_and_drink: 8, culture: 6 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
+    sam: { travelStyle: vector({ food_and_drink: 8, culture: 6 }), travelStyleBaseline: vector(), travelStyleLastUpdated: new Date() },
   });
   const experienceStore = FakeExperienceStore.seeded({
     'exp-1': {
       experienceId: 'exp-1',
       ownerId: 'sam',
       placeId: 'place-1',
-      categoryScores: vector({ foodie: 9, culture: 5 }),
+      categoryScores: vector({ food_and_drink: 9, culture: 5 }),
       photoUrls: [],
       date: new Date(),
       rating: 5,
@@ -20,7 +20,7 @@ describe('computeMatchScore', () => {
   const stores = { userStore, experienceStore };
 
   it('scores user vs. raw vector', async () => {
-    const result = await computeMatchScore({ type: 'user', userId: 'alex' }, { type: 'vector', vector: vector({ foodie: 8, culture: 6 }) }, stores);
+    const result = await computeMatchScore({ type: 'user', userId: 'alex' }, { type: 'vector', vector: vector({ food_and_drink: 8, culture: 6 }) }, stores);
     expect(result.matchPercent).toBe(100);
   });
 

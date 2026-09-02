@@ -7,7 +7,7 @@
  */
 import Slider from '@react-native-community/slider';
 import { Text, View } from 'react-native';
-import { CATEGORY_MAX, CATEGORY_MIN, TRAVEL_STYLE_CATEGORIES, TravelStyleVector } from '@amiva/core';
+import { CATEGORY_MAX, CATEGORY_MIN, CATEGORY_IDS, TravelStyleVector } from '@amiva/core';
 import { CATEGORY_LABELS, spacing, useTheme } from '../theme';
 import { CategoryIcon } from './icons/CategoryIcon';
 
@@ -16,12 +16,12 @@ interface TravelStyleSlidersProps {
   onChange: (next: TravelStyleVector) => void;
   disabled?: boolean;
   /** Render just one category (used by the one-at-a-time onboarding flow). */
-  only?: (typeof TRAVEL_STYLE_CATEGORIES)[number];
+  only?: (typeof CATEGORY_IDS)[number];
 }
 
 export function TravelStyleSliders({ value, onChange, disabled, only }: TravelStyleSlidersProps) {
   const t = useTheme();
-  const categories = only ? [only] : TRAVEL_STYLE_CATEGORIES;
+  const categories = only ? [only] : CATEGORY_IDS;
 
   return (
     <View style={{ gap: spacing.md }}>

@@ -27,7 +27,7 @@ describe('getTrending (flat ranked list)', () => {
   const now = new Date('2026-01-15T00:00:00Z');
   const userStore = () =>
     FakeUserStore.seeded({
-      viewer: { travelStyle: vector({ adventure: 10 }), travelStyleBaseline: vector(), travelStyleLastUpdated: now },
+      viewer: { travelStyle: vector({ entertainment_and_recreation: 10 }), travelStyleBaseline: vector(), travelStyleLastUpdated: now },
     });
   const deps = (trendingStore: TrendingStore, visibilityStore: FakeVisibilityStore, friendStore = new FakeFriendStore()) => ({
     trendingStore,
@@ -51,7 +51,7 @@ describe('getTrending (flat ranked list)', () => {
 
   it('includes each card\'s viewer match score without letting it drive the ranking', async () => {
     const store = new FakeTrendingStore([
-      candidate({ experienceId: 'on-style', ownerId: 'a', categoryScores: vector({ adventure: 10 }), rating: 4 }),
+      candidate({ experienceId: 'on-style', ownerId: 'a', categoryScores: vector({ entertainment_and_recreation: 10 }), rating: 4 }),
     ]);
     const [item] = await getTrending(deps(store, FakeVisibilityStore.seeded({ a: 'public' })), 'viewer', now);
     expect(item!.matchScore).toBeCloseTo(1);

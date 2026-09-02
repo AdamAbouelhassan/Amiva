@@ -1,10 +1,10 @@
 import { Pressable, Text, View } from 'react-native';
-import type { TravelStyleCategory } from '@amiva/core';
+import type { CategoryId } from '@amiva/core';
 import { CATEGORY_LABELS, radius, spacing, useTheme } from '../theme';
 import { CategoryIcon } from './icons/CategoryIcon';
 
 interface CategoryChipProps {
-  category: TravelStyleCategory;
+  category: CategoryId;
   selected?: boolean;
   onPress?: () => void;
 }

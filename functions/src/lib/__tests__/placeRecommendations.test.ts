@@ -57,8 +57,8 @@ describe('prettyPlaceType', () => {
 describe('getPlaceRecommendations (category rows)', () => {
   const userStore = FakeUserStore.seeded({
     viewer: {
-      // culture strongest, then foodie
-      travelStyle: vector({ culture: 10, foodie: 8, adventure: 2 }),
+      // culture strongest, then food_and_drink
+      travelStyle: vector({ culture: 10, food_and_drink: 8, entertainment_and_recreation: 2 }),
       travelStyleBaseline: vector(),
       travelStyleLastUpdated: new Date(),
     },
@@ -70,7 +70,7 @@ describe('getPlaceRecommendations (category rows)', () => {
       food: [place('resto-1', ['restaurant'])],
     });
     const rows = await getPlaceRecommendations({ placesSearch: search, userStore }, 'viewer', { country: 'Chile' }, { rows: 2 });
-    expect(rows.map((r) => r.category)).toEqual(['culture', 'foodie']);
+    expect(rows.map((r) => r.category)).toEqual(['culture', 'food_and_drink']);
     expect(rows[0]!.items[0]!.placeId).toBe('museum-1');
     expect(rows[1]!.items[0]!.placeId).toBe('resto-1');
     expect(search.calls[0]!.type).toBe('museum');
@@ -80,7 +80,7 @@ describe('getPlaceRecommendations (category rows)', () => {
     const shared = [place('spot', ['museum'])];
     const search = new FakePlacesSearchPort({ 'cultural sites': shared, food: shared });
     const rows = await getPlaceRecommendations({ placesSearch: search, userStore }, 'viewer', { country: 'Chile' }, { rows: 2 });
-    expect(rows.map((r) => r.category)).toEqual(['culture']); // foodie row emptied by dedup, dropped
+    expect(rows.map((r) => r.category)).toEqual(['culture']); // food_and_drink row emptied by dedup, dropped
   });
 
   it('collapses to a single keyword row when text is given', async () => {
@@ -100,21 +100,21 @@ describe('getPlaceRecommendations (category rows)', () => {
     const rows = await getPlaceRecommendations(
       { placesSearch: search, userStore },
       'viewer',
-      { country: 'Mexico', text: 'tacos', category: 'foodie' },
+      { country: 'Mexico', text: 'tacos', category: 'food_and_drink' },
     );
     expect(rows[0]!.items[0]!.placeId).toBe('taco-2');
     expect(search.calls[0]!.type).toBe('restaurant');
   });
 
   it('shows only the selected category row when a category (no text) is set', async () => {
-    const search = new FakePlacesSearchPort({ nightlife: [place('club-1', ['night_club'])] });
+    const search = new FakePlacesSearchPort({ 'things to do': [place('club-1', ['night_club'])] });
     const rows = await getPlaceRecommendations(
       { placesSearch: search, userStore },
       'viewer',
-      { country: 'Spain', category: 'socialNightlife' },
+      { country: 'Spain', category: 'entertainment_and_recreation' },
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.category).toBe('socialNightlife');
+    expect(rows[0]!.category).toBe('entertainment_and_recreation');
   });
 
   it('passes the Google rating + review count through', async () => {

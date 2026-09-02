@@ -9,7 +9,7 @@
  * BOTH themes — primary buttons put ink on the bright fill, not white.
  */
 import { categoryHues, categoryHuesDark, categoryHuesText, palette } from './tokens';
-import type { TravelStyleCategory } from '@amiva/core';
+import type { CategoryId } from '@amiva/core';
 
 export interface ThemeColors {
   background: string;
@@ -132,11 +132,11 @@ export const darkColors: ThemeColors = {
 };
 
 /** Category hue for fills / icons / radar polygon (large areas & graphics). */
-export function categoryColor(category: TravelStyleCategory, isDark: boolean): string {
+export function categoryColor(category: CategoryId, isDark: boolean): string {
   return (isDark ? categoryHuesDark : categoryHues)[category];
 }
 
 /** Category hue safe as small TEXT on the theme's surfaces (WCAG AA). */
-export function categoryTextColor(category: TravelStyleCategory, isDark: boolean): string {
+export function categoryTextColor(category: CategoryId, isDark: boolean): string {
   return (isDark ? categoryHuesDark : categoryHuesText)[category];
 }

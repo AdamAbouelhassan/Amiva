@@ -9,8 +9,14 @@ interface FeedLikeItem extends SectionableItem {
 }
 
 describe('sectionByTopCategories', () => {
-  // Viewer's top 3 (by score): culture (9), foodie (8), adventure (7).
-  const viewer = vector({ culture: 9, foodie: 8, adventure: 7, relaxation: 2, nature: 1 });
+  // Viewer's top 3 (by score): culture (9), food_and_drink (8), entertainment_and_recreation (7).
+  const viewer = vector({
+    culture: 9,
+    food_and_drink: 8,
+    entertainment_and_recreation: 7,
+    health_and_wellness: 2,
+    natural_features: 1,
+  });
   const friendSort = feedComparator(0.7);
 
   function item(overrides: Partial<FeedLikeItem> & { categoryScores: FeedLikeItem['categoryScores'] }): FeedLikeItem {
@@ -19,31 +25,31 @@ describe('sectionByTopCategories', () => {
 
   it("returns exactly sectionCount sections, headed by the viewer's top categories in order", () => {
     const sections = sectionByTopCategories<FeedLikeItem>([], viewer, { sort: friendSort });
-    expect(sections.map((s) => s.category)).toEqual(['culture', 'foodie', 'adventure']);
+    expect(sections.map((s) => s.category)).toEqual(['culture', 'food_and_drink', 'entertainment_and_recreation']);
   });
 
   it('places an item in a section only if it clears the category threshold', () => {
     const museum = item({ categoryScores: vector({ culture: 8 }) });
-    const cafe = item({ categoryScores: vector({ foodie: 5 }) }); // below default threshold (6)
+    const cafe = item({ categoryScores: vector({ food_and_drink: 5 }) }); // below default threshold (6)
 
     const sections = sectionByTopCategories([museum, cafe], viewer, { sort: friendSort });
     const cultureSection = sections.find((s) => s.category === 'culture')!;
-    const foodieSection = sections.find((s) => s.category === 'foodie')!;
+    const foodSection = sections.find((s) => s.category === 'food_and_drink')!;
 
     expect(cultureSection.items).toContain(museum);
-    expect(foodieSection.items).not.toContain(cafe);
+    expect(foodSection.items).not.toContain(cafe);
   });
 
   it('allows the same item to appear in multiple sections when it scores highly across categories', () => {
-    // A food tour scoring high on both Foodie and Culture (functional_specification.md §2.5's own example).
-    const foodTour = item({ categoryScores: vector({ foodie: 9, culture: 8 }) });
+    // A food tour scoring high on both Food & Drink and Culture (functional_specification.md §2.5's own example).
+    const foodTour = item({ categoryScores: vector({ food_and_drink: 9, culture: 8 }) });
 
     const sections = sectionByTopCategories([foodTour], viewer, { sort: friendSort });
     const cultureSection = sections.find((s) => s.category === 'culture')!;
-    const foodieSection = sections.find((s) => s.category === 'foodie')!;
+    const foodSection = sections.find((s) => s.category === 'food_and_drink')!;
 
     expect(cultureSection.items).toContain(foodTour);
-    expect(foodieSection.items).toContain(foodTour);
+    expect(foodSection.items).toContain(foodTour);
   });
 
   it('orders items within a section using the caller-supplied comparator (e.g. feedComparator for Feed)', () => {

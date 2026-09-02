@@ -7,15 +7,15 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { TRAVEL_STYLE_CATEGORIES, TravelStyleCategory } from '@amiva/core';
+import { CATEGORY_IDS, CategoryId } from '@amiva/core';
 import { CATEGORY_LABELS, motion, useTheme } from '../theme';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { CategoryIcon } from './icons/CategoryIcon';
 
 interface CategoryIconFilterProps {
   /** undefined = no category filter (all). */
-  value: TravelStyleCategory | undefined;
-  onChange: (next: TravelStyleCategory | undefined) => void;
+  value: CategoryId | undefined;
+  onChange: (next: CategoryId | undefined) => void;
 }
 
 /** Minimalist icon-only category filter (brief): the 8 category glyphs in
@@ -28,7 +28,7 @@ export function CategoryIconFilter({ value, onChange }: CategoryIconFilterProps)
   return (
     <View style={{ gap: 4 }}>
       <View style={{ flexDirection: 'row', gap: 6 }}>
-        {TRAVEL_STYLE_CATEGORIES.map((cat) => (
+        {CATEGORY_IDS.map((cat) => (
           <Chip
             key={cat}
             category={cat}
@@ -53,7 +53,7 @@ function Chip({
   selected,
   onPress,
 }: {
-  category: TravelStyleCategory;
+  category: CategoryId;
   selected: boolean;
   onPress: () => void;
 }) {

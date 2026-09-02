@@ -1,20 +1,26 @@
 /**
  * Edit a logged experience (functional_specification.md §3.3 — "Experiences
  * can be edited or deleted after posting"). Title, notes, rating, photos,
- * category profile, and date. Location isn't editable (it defines the
- * experience's place); delete + re-log to move it.
+ * and date. Location isn't editable (it defines the experience's place);
+ * delete + re-log to move it.
+ *
+ * Taxonomy migration (2026-09-02): categoryScores is no longer part of
+ * this form at all — it's server-derived from the linked Place
+ * (onExperienceCreated) and never touched again after creation, so
+ * editing other fields doesn't send it in the update patch (and
+ * firestore.rules enforces `unchanged('categoryScores')` on update as a
+ * second line of defense). The radar below is a read-only display of the
+ * experience's existing value, for context only.
  */
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { TravelStyleVector, zeroTravelStyleVector } from '@amiva/core';
 import { Button } from '../../../components/Button';
 import { DateField } from '../../../components/DateField';
 import { PhotoGalleryPicker } from '../../../components/PhotoGalleryPicker';
 import { ScreenContainer } from '../../../components/ScreenContainer';
 import { TextField } from '../../../components/TextField';
 import { TravelStyleRadar } from '../../../components/TravelStyleRadar';
-import { TravelStyleSliders } from '../../../components/TravelStyleSliders';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { uploadPhotoSet } from '../../../lib/uploadPhotos';
 import { ExperienceDoc } from '../../../repositories/types';
@@ -32,7 +38,6 @@ interface FormState {
   notes: string;
   rating: number;
   photoUris: string[];
-  categoryScores: TravelStyleVector;
   date: Date;
 }
 
@@ -42,7 +47,6 @@ function toForm(exp: ExperienceDoc): FormState {
     notes: exp.notes,
     rating: exp.rating,
     photoUris: exp.photoUrls,
-    categoryScores: exp.categoryScores,
     date: exp.date,
   };
 }
@@ -61,7 +65,6 @@ export function EditExperienceScreen({ route, navigation }: EditExperienceScreen
     notes: '',
     rating: 5,
     photoUris: [],
-    categoryScores: zeroTravelStyleVector(),
     date: new Date(),
   }));
   const [saving, setSaving] = useState(false);
@@ -88,7 +91,6 @@ export function EditExperienceScreen({ route, navigation }: EditExperienceScreen
           notes: form.notes,
           rating: form.rating,
           photoUrls,
-          categoryScores: form.categoryScores,
           date: form.date,
           dateSource: 'manual',
         },
@@ -144,10 +146,12 @@ export function EditExperienceScreen({ route, navigation }: EditExperienceScreen
 
       <View style={{ gap: spacing.sm }}>
         <Text style={t.type.subtitle}>Category profile</Text>
+        <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
+          Estimated automatically from the place — not editable here.
+        </Text>
         <View style={{ alignItems: 'center' }}>
-          <TravelStyleRadar series={[{ vector: form.categoryScores }]} size={200} showLabels={false} />
+          <TravelStyleRadar series={[{ vector: experience.categoryScores }]} size={200} showLabels={false} />
         </View>
-        <TravelStyleSliders value={form.categoryScores} onChange={(v) => set('categoryScores', v)} />
       </View>
 
       <Button

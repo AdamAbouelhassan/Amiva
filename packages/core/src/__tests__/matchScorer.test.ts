@@ -27,25 +27,25 @@ describe('cosineSimilarity', () => {
 });
 
 describe('CosineSimilarityMatchScorer (Strategy implementation)', () => {
-  it('scores two identical 8-category vectors as a perfect match', () => {
+  it('scores two identical category vectors as a perfect match', () => {
     const scorer = new CosineSimilarityMatchScorer();
-    const a = vector({ adventure: 8, foodie: 6, culture: 4 });
+    const a = vector({ entertainment_and_recreation: 8, food_and_drink: 6, culture: 4 });
     expect(scorer.score(a, a)).toBeCloseTo(1);
   });
 
-  it('scores a high-luxury vector poorly against a high-budget-backpacker vector', () => {
+  it('scores a high-lodging vector poorly against a high-transportation vector', () => {
     const scorer = new CosineSimilarityMatchScorer();
-    const luxuryTraveler = vector({ luxury: 10, relaxation: 8 });
-    const backpacker = vector({ budgetBackpacker: 10, adventure: 8 });
-    const score = scorer.score(luxuryTraveler, backpacker);
+    const lodgingTraveler = vector({ lodging: 10, health_and_wellness: 8 });
+    const backpacker = vector({ transportation: 10, entertainment_and_recreation: 8 });
+    const score = scorer.score(lodgingTraveler, backpacker);
     expect(score).toBeLessThan(0.3);
   });
 
-  it('rewards composite experiences that overlap on multiple axes (e.g. luxury food tour)', () => {
+  it('rewards composite experiences that overlap on multiple axes (e.g. a food tour at a nice hotel)', () => {
     const scorer = new CosineSimilarityMatchScorer();
-    const foodieLuxuryUser = vector({ luxury: 8, foodie: 8 });
-    const luxuryFoodTourExperience = vector({ luxury: 9, foodie: 9 });
-    expect(scorer.score(foodieLuxuryUser, luxuryFoodTourExperience)).toBeGreaterThan(0.95);
+    const foodieLodgingUser = vector({ lodging: 8, food_and_drink: 8 });
+    const foodTourExperience = vector({ lodging: 9, food_and_drink: 9 });
+    expect(scorer.score(foodieLodgingUser, foodTourExperience)).toBeGreaterThan(0.95);
   });
 });
 

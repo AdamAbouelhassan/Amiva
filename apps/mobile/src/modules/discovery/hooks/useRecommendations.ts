@@ -9,7 +9,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { httpsCallable } from 'firebase/functions';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { TravelStyleCategory, TravelStyleVector } from '@amiva/core';
+import { CategoryId, TravelStyleVector } from '@amiva/core';
 import type { SelectedLocation } from '../../../components/LocationSearchField';
 import { useCurrentLocation } from '../../../hooks/useCurrentLocation';
 import { functions } from '../../../firebase/client';
@@ -17,7 +17,7 @@ import { functions } from '../../../firebase/client';
 export interface PlaceRecommendationFilter {
   country: string;
   city?: string;
-  category?: TravelStyleCategory;
+  category?: CategoryId;
   text?: string;
 }
 
@@ -43,7 +43,7 @@ export interface PlaceRecommendationResult {
 export interface LocalSection {
   /** `'search'` for keyword results, otherwise the category id. */
   key: string;
-  category: TravelStyleCategory | null;
+  category: CategoryId | null;
   items: PlaceRecommendationResult[];
 }
 
@@ -57,7 +57,7 @@ export function useRecommendations() {
   // What the query actually uses — trails the field by 400ms so typing
   // stays responsive and doesn't fire a (billed) Places call per keystroke.
   const [debouncedText, setDebouncedText] = useState('');
-  const [category, setCategory] = useState<TravelStyleCategory | undefined>();
+  const [category, setCategory] = useState<CategoryId | undefined>();
   // The chips render off `category` (instant highlight); the query runs off
   // the deferred copy so selecting one never blocks the tap. Must be the
   // primitive, not the `filter` object — `useDeferredValue` on a value

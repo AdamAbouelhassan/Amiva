@@ -36,7 +36,12 @@ export interface PlaceDoc {
   city: string;
   lat: number;
   lng: number;
-  googlePlaceType?: string;
+  /** Taxonomy migration (2026-09-02): was a single `googlePlaceType?:
+   * string` (only Google's *first* returned type) — widened to the full
+   * array so estimateCategoryScoresFromPlace has every type to blend, not
+   * just one. Drives a logged experience's categoryScores server-side
+   * (onExperienceCreated). */
+  googlePlaceTypes: string[];
   createdAt: Date;
 }
 

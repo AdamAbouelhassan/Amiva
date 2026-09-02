@@ -15,9 +15,12 @@ describe('variance', () => {
 
 describe('averageVectors', () => {
   it('averages per category across collaborators', () => {
-    const result = averageVectors([vector({ adventure: 10, foodie: 0 }), vector({ adventure: 0, foodie: 10 })]);
-    expect(result.adventure).toBe(5);
-    expect(result.foodie).toBe(5);
+    const result = averageVectors([
+      vector({ entertainment_and_recreation: 10, food_and_drink: 0 }),
+      vector({ entertainment_and_recreation: 0, food_and_drink: 10 }),
+    ]);
+    expect(result.entertainment_and_recreation).toBe(5);
+    expect(result.food_and_drink).toBe(5);
   });
   it('throws on an empty list', () => {
     expect(() => averageVectors([])).toThrow();
@@ -26,10 +29,10 @@ describe('averageVectors', () => {
 
 describe('computeGroupRecommendation', () => {
   it('returns a blended recommendation when the group is aligned (low variance)', () => {
-    const candidate = vector({ culture: 9, foodie: 8 });
+    const candidate = vector({ culture: 9, food_and_drink: 8 });
     const collaborators = [
-      { collaboratorId: 'alex', travelStyle: vector({ culture: 8, foodie: 7 }) },
-      { collaboratorId: 'sam', travelStyle: vector({ culture: 9, foodie: 8 }) },
+      { collaboratorId: 'alex', travelStyle: vector({ culture: 8, food_and_drink: 7 }) },
+      { collaboratorId: 'sam', travelStyle: vector({ culture: 9, food_and_drink: 8 }) },
     ];
 
     const result = computeGroupRecommendation(collaborators, candidate, { varianceThreshold: 0.05 });
@@ -38,10 +41,10 @@ describe('computeGroupRecommendation', () => {
   });
 
   it('returns segmented per-collaborator recommendations when the group diverges (high variance)', () => {
-    const candidate = vector({ luxury: 10, relaxation: 9 });
+    const candidate = vector({ lodging: 10, health_and_wellness: 9 });
     const collaborators = [
-      { collaboratorId: 'alex', travelStyle: vector({ luxury: 10, relaxation: 9 }) }, // near-perfect match
-      { collaboratorId: 'sam', travelStyle: vector({ budgetBackpacker: 10, adventure: 9 }) }, // poor match
+      { collaboratorId: 'alex', travelStyle: vector({ lodging: 10, health_and_wellness: 9 }) }, // near-perfect match
+      { collaboratorId: 'sam', travelStyle: vector({ transportation: 10, entertainment_and_recreation: 9 }) }, // poor match
     ];
 
     const result = computeGroupRecommendation(collaborators, candidate, { varianceThreshold: 0.02 });
@@ -56,10 +59,10 @@ describe('computeGroupRecommendation', () => {
   });
 
   it('does not force a single flattened compromise when variance is high — segmented result carries no groupVector', () => {
-    const candidate = vector({ luxury: 10 });
+    const candidate = vector({ lodging: 10 });
     const collaborators = [
-      { collaboratorId: 'a', travelStyle: vector({ luxury: 10 }) },
-      { collaboratorId: 'b', travelStyle: vector({ budgetBackpacker: 10 }) },
+      { collaboratorId: 'a', travelStyle: vector({ lodging: 10 }) },
+      { collaboratorId: 'b', travelStyle: vector({ transportation: 10 }) },
     ];
     const result = computeGroupRecommendation(collaborators, candidate, { varianceThreshold: 0.01 });
     expect(result.type).toBe('segmented');

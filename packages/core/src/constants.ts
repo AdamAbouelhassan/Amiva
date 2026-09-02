@@ -64,6 +64,39 @@ export const FEED_SECTION_COUNT = 3;
  * scoring high on both Luxury and Foodie) is exactly this case. */
 export const CATEGORY_SECTION_THRESHOLD = 6;
 
+/** How strongly a *logged* experience's star rating modulates the decay
+ * nudge to the logger's own travelStyle (taxonomy migration, 2026-09-02 —
+ * docs/claude_code_prompt_taxonomy_migration.md's "star-rating-modulated
+ * nudge"). A 1-star experience the user hated shouldn't pull their style
+ * toward it at all; a 5-star one should pull slightly harder than the
+ * flat W_LOGGED behavior this replaces (4 stars = parity with the old
+ * flat weighting). Deliberately NOT part of DecayConfig/DEFAULT_DECAY_CONFIG
+ * below — it only ever applies to the logged path (a save has no star
+ * rating), so it's threaded through separately in
+ * functions/src/lib/travelStyleUpdate.ts rather than folded into the
+ * generic decay formula in travelStyleDecay.ts. Overridable via
+ * remoteConfig.ts like the other constants here. */
+export const STAR_RATING_MULTIPLIER: Record<1 | 2 | 3 | 4 | 5, number> = {
+  1: 0,
+  2: 0.4,
+  3: 0.7,
+  4: 1.0,
+  5: 1.3,
+};
+
+/** Looks up STAR_RATING_MULTIPLIER defensively — clamps/rounds an
+ * arbitrary numeric rating into the valid 1-5 range first, rather than
+ * trusting the caller (mirrors clampCategoryValue's defensiveness in
+ * types.ts), so a malformed/out-of-range rating degrades to the nearest
+ * valid multiplier instead of returning undefined. */
+export function getStarRatingMultiplier(
+  rating: number,
+  table: Record<1 | 2 | 3 | 4 | 5, number> = STAR_RATING_MULTIPLIER,
+): number {
+  const clamped = Math.min(5, Math.max(1, Math.round(rating))) as 1 | 2 | 3 | 4 | 5;
+  return table[clamped];
+}
+
 export interface DecayConfig {
   wLogged: number;
   wSaved: number;

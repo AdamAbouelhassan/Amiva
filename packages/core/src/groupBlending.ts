@@ -11,7 +11,7 @@
  */
 import { GROUP_VARIANCE_THRESHOLD } from './constants';
 import { MatchScorer, defaultMatchScorer } from './matchScorer';
-import { TRAVEL_STYLE_CATEGORIES, TravelStyleVector } from './types';
+import { CATEGORY_IDS, TravelStyleVector } from './types';
 
 export interface Collaborator {
   collaboratorId: string;
@@ -48,7 +48,7 @@ export function averageVectors(vectors: TravelStyleVector[]): TravelStyleVector 
     throw new Error('averageVectors: at least one vector is required');
   }
   const result = {} as TravelStyleVector;
-  for (const category of TRAVEL_STYLE_CATEGORIES) {
+  for (const category of CATEGORY_IDS) {
     const sum = vectors.reduce((acc, v) => acc + v[category], 0);
     result[category] = sum / vectors.length;
   }

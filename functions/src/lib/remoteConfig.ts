@@ -9,6 +9,7 @@ import {
   DEFAULT_DECAY_CONFIG,
   GROUP_VARIANCE_THRESHOLD,
   HIGH_MATCH_THRESHOLD,
+  STAR_RATING_MULTIPLIER,
 } from '@amiva/core';
 
 export interface ConfigStore {
@@ -24,12 +25,17 @@ export interface ScoringConfigDoc {
   maxStep: number;
   highMatchThreshold: number;
   groupVarianceThreshold: number;
+  /** Partial override of STAR_RATING_MULTIPLIER — only the star values
+   * being tuned need to be set; the rest fall back to the core default
+   * (taxonomy migration, 2026-09-02). */
+  starRatingMultiplier: Partial<Record<1 | 2 | 3 | 4 | 5, number>>;
 }
 
 export interface ResolvedScoringConfig {
   decay: DecayConfig;
   highMatchThreshold: number;
   groupVarianceThreshold: number;
+  starRatingMultiplier: Record<1 | 2 | 3 | 4 | 5, number>;
 }
 
 export async function resolveScoringConfig(store: ConfigStore): Promise<ResolvedScoringConfig> {
@@ -43,5 +49,6 @@ export async function resolveScoringConfig(store: ConfigStore): Promise<Resolved
     },
     highMatchThreshold: override.highMatchThreshold ?? HIGH_MATCH_THRESHOLD,
     groupVarianceThreshold: override.groupVarianceThreshold ?? GROUP_VARIANCE_THRESHOLD,
+    starRatingMultiplier: { ...STAR_RATING_MULTIPLIER, ...override.starRatingMultiplier },
   };
 }

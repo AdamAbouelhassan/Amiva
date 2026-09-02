@@ -1,26 +1,37 @@
-import { CATEGORY_SEARCH_HINTS, estimateCategoryScoresFromPlace, GOOGLE_PLACE_TYPE_WEIGHTS } from '../placeCategoryEstimate';
-import { CATEGORY_MAX, CATEGORY_MIN, TRAVEL_STYLE_CATEGORIES } from '../types';
+import { CATEGORY_WEIGHT_OVERRIDES, CATEGORY_SEARCH_HINTS, estimateCategoryScoresFromPlace } from '../placeCategoryEstimate';
+import { getCategoryForType, isKnownPlaceType } from '../googlePlaceTaxonomy';
+import googlePlacesTypes from '../data/googlePlacesTypes.json';
+import { CATEGORY_IDS, CATEGORY_MAX, CATEGORY_MIN } from '../types';
+
+const ALL_TYPES = googlePlacesTypes.types.map((t) => t.type);
 
 describe('estimateCategoryScoresFromPlace', () => {
-  it('returns the zero vector when no type is recognized', () => {
-    const result = estimateCategoryScoresFromPlace(['point_of_interest', 'establishment']);
-    for (const category of TRAVEL_STYLE_CATEGORIES) {
+  it('returns the zero vector for a completely unrecognized type', () => {
+    const result = estimateCategoryScoresFromPlace(['not_a_real_google_type']);
+    for (const category of CATEGORY_IDS) {
       expect(result[category]).toBe(0);
     }
   });
 
-  it('scores a single-type place from that type\'s weight table entry', () => {
-    const result = estimateCategoryScoresFromPlace(['museum']);
-    expect(result.culture).toBe(GOOGLE_PLACE_TYPE_WEIGHTS.museum!.culture);
-    expect(result.adventure).toBe(0);
+  it('default rule: an unlisted type scores full weight on its own Table A category', () => {
+    // "university" is in education, has no override entry.
+    expect(CATEGORY_WEIGHT_OVERRIDES.university).toBeUndefined();
+    const result = estimateCategoryScoresFromPlace(['university']);
+    expect(result.education).toBe(10);
+    expect(result.culture).toBe(0);
+  });
+
+  it('override rule: a listed type uses its curated split instead of the default', () => {
+    const result = estimateCategoryScoresFromPlace(['historical_landmark']);
+    expect(result.entertainment_and_recreation).toBe(CATEGORY_WEIGHT_OVERRIDES.historical_landmark!.entertainment_and_recreation);
+    expect(result.culture).toBe(CATEGORY_WEIGHT_OVERRIDES.historical_landmark!.culture);
   });
 
   it('averages weights across multiple recognized types on the same place', () => {
-    // night_club: socialNightlife 9, luxury 3. bar: socialNightlife 8, foodie 2.
-    const result = estimateCategoryScoresFromPlace(['night_club', 'bar']);
-    expect(result.socialNightlife).toBeCloseTo((9 + 8) / 2);
-    expect(result.luxury).toBeCloseTo(3 / 2);
-    expect(result.foodie).toBeCloseTo(2 / 2);
+    // museum (default: culture=10) + university (default: education=10)
+    const result = estimateCategoryScoresFromPlace(['museum', 'university']);
+    expect(result.culture).toBeCloseTo(5);
+    expect(result.education).toBeCloseTo(5);
   });
 
   it('ignores unrecognized types instead of diluting the average toward zero', () => {
@@ -29,35 +40,66 @@ describe('estimateCategoryScoresFromPlace', () => {
     expect(withNoise).toEqual(withoutNoise);
   });
 
-  it('nudges luxury up for a high price level', () => {
-    const cheap = estimateCategoryScoresFromPlace(['restaurant'], 0);
-    const pricey = estimateCategoryScoresFromPlace(['restaurant'], 4);
-    expect(pricey.luxury).toBeGreaterThan(cheap.luxury);
-  });
-
-  it('nudges budgetBackpacker up for a low price level', () => {
-    const cheap = estimateCategoryScoresFromPlace(['restaurant'], 0);
-    const pricey = estimateCategoryScoresFromPlace(['restaurant'], 4);
-    expect(cheap.budgetBackpacker).toBeGreaterThan(pricey.budgetBackpacker);
-  });
-
   it('always returns a vector clamped within [CATEGORY_MIN, CATEGORY_MAX]', () => {
-    // hiking_area + national_park + ski_resort all weight adventure/nature
-    // heavily, plus a max price-level nudge, to try to push past 10.
-    const result = estimateCategoryScoresFromPlace(['hiking_area', 'national_park', 'ski_resort'], 4);
-    for (const category of TRAVEL_STYLE_CATEGORIES) {
+    const result = estimateCategoryScoresFromPlace(['museum', 'university', 'restaurant', 'spa']);
+    for (const category of CATEGORY_IDS) {
       expect(result[category]).toBeGreaterThanOrEqual(CATEGORY_MIN);
       expect(result[category]).toBeLessThanOrEqual(CATEGORY_MAX);
     }
   });
 });
 
+describe('CATEGORY_WEIGHT_OVERRIDES', () => {
+  it('every override key is a real, known Google place type', () => {
+    for (const type of Object.keys(CATEGORY_WEIGHT_OVERRIDES)) {
+      expect(isKnownPlaceType(type)).toBe(true);
+    }
+  });
+
+  it('every override value uses only real CategoryId keys', () => {
+    for (const weights of Object.values(CATEGORY_WEIGHT_OVERRIDES)) {
+      for (const category of Object.keys(weights ?? {})) {
+        expect(CATEGORY_IDS).toContain(category);
+      }
+    }
+  });
+
+  it('every override weight is non-negative', () => {
+    for (const weights of Object.values(CATEGORY_WEIGHT_OVERRIDES)) {
+      for (const weight of Object.values(weights ?? {})) {
+        expect(weight).toBeGreaterThanOrEqual(0);
+      }
+    }
+  });
+});
+
+describe('googlePlaceTaxonomy', () => {
+  it('resolves every one of the ~477 known types to a real CategoryId', () => {
+    for (const type of ALL_TYPES) {
+      const category = getCategoryForType(type);
+      expect(category).toBeDefined();
+      expect(CATEGORY_IDS).toContain(category);
+    }
+  });
+
+  it('falls back gracefully (undefined, not a throw) for a type it does not recognize', () => {
+    expect(getCategoryForType('some_brand_new_google_type_from_the_future')).toBeUndefined();
+    expect(isKnownPlaceType('some_brand_new_google_type_from_the_future')).toBe(false);
+  });
+});
+
 describe('CATEGORY_SEARCH_HINTS', () => {
-  it('has an entry for every travel style category', () => {
-    for (const category of TRAVEL_STYLE_CATEGORIES) {
+  it('has an entry for every category, each with a non-empty googleType and keyword', () => {
+    for (const category of CATEGORY_IDS) {
       expect(CATEGORY_SEARCH_HINTS[category]).toBeDefined();
       expect(CATEGORY_SEARCH_HINTS[category].googleType.length).toBeGreaterThan(0);
       expect(CATEGORY_SEARCH_HINTS[category].keyword.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("every hint's googleType is itself a real, known Google place type", () => {
+    for (const category of CATEGORY_IDS) {
+      expect(isKnownPlaceType(CATEGORY_SEARCH_HINTS[category].googleType)).toBe(true);
     }
   });
 });

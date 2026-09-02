@@ -121,7 +121,17 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(resource.data.ownerId)).data.privacySetting
       );
       allow create: if isSignedIn() && isOwner(request.resource.data.ownerId);
-      allow update, delete: if isOwner(resource.data.ownerId);
+      // Taxonomy migration (2026-09-02): categoryScores is server-derived
+      // only (onExperienceCreated, from the linked Place's stored
+      // googlePlaceTypes) — there's no UI producing a client-authored
+      // value anymore (CreateExperienceScreen/EditExperienceScreen no
+      // longer collect one). `unchanged` here is defense-in-depth on top
+      // of that: even a client bypassing the app's own UI can't smuggle a
+      // fake value into an *update* the way the brief create-time
+      // placeholder window already tolerates (it gets overwritten by the
+      // trigger moments later anyway).
+      allow update: if isOwner(resource.data.ownerId) && unchanged('categoryScores');
+      allow delete: if isOwner(resource.data.ownerId);
     }
 
     // --- saves ---------------------------------------------------------------

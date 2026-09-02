@@ -14,14 +14,14 @@
  */
 import { CATEGORY_SECTION_THRESHOLD, FEED_SECTION_COUNT } from './constants';
 import { topCategories } from './profileInsights';
-import { TravelStyleCategory, TravelStyleVector } from './types';
+import { CategoryId, TravelStyleVector } from './types';
 
 export interface SectionableItem {
   categoryScores: TravelStyleVector;
 }
 
 export interface FeedSection<T> {
-  category: TravelStyleCategory;
+  category: CategoryId;
   items: T[];
 }
 

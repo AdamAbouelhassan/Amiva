@@ -16,6 +16,7 @@ const place = (overrides: Partial<{ country: string; city: string; placeId: stri
   city: overrides.city ?? 'Tokyo',
   lat: 35.6,
   lng: 139.7,
+  googlePlaceTypes: [] as string[],
 });
 
 const draft = (overrides: Record<string, unknown> = {}) => ({

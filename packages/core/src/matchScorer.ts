@@ -7,7 +7,7 @@
  * Used identically for User↔Experience, User↔User, and Group↔Experience
  * (functional_specification.md §2.6).
  */
-import { TRAVEL_STYLE_CATEGORIES, TravelStyleVector } from './types';
+import { CATEGORY_IDS, TravelStyleVector } from './types';
 
 export interface MatchScorer {
   /** Returns similarity in [0, 1] for two travel style vectors (category
@@ -19,7 +19,7 @@ export interface MatchScorer {
 /** Converts a TravelStyleVector into a plain ordered number[] using the
  * canonical category order, for numeric vector math. */
 export function toOrderedArray(vector: TravelStyleVector): number[] {
-  return TRAVEL_STYLE_CATEGORIES.map((category) => vector[category]);
+  return CATEGORY_IDS.map((category) => vector[category]);
 }
 
 /** Pure cosine similarity between two equal-length numeric vectors.

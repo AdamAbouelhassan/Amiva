@@ -24,7 +24,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Line, LinearGradient, Polygon, Stop, Text as SvgText } from 'react-native-svg';
-import { CATEGORY_MAX, TravelStyleCategory, TravelStyleVector, topCategories } from '@amiva/core';
+import { CATEGORY_MAX, CategoryId, TravelStyleVector, topCategories } from '@amiva/core';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { CATEGORY_LABELS, RADAR_AXIS_ORDER, spacing, useTheme } from '../theme';
 
@@ -114,7 +114,7 @@ export function TravelStyleRadar({
     : null;
 
   const top3 =
-    highlightTop && primary ? new Set(topCategories(primary.vector)) : new Set<TravelStyleCategory>();
+    highlightTop && primary ? new Set(topCategories(primary.vector)) : new Set<CategoryId>();
 
   const a11y = primary
     ? RADAR_AXIS_ORDER.map((c) => `${CATEGORY_LABELS[c]} ${primary.vector[c].toFixed(0)} of 10`).join(', ')

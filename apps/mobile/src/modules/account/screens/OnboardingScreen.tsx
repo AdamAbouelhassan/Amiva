@@ -3,10 +3,12 @@
  * Auth has already run (see RootNavigator); this screen creates the
  * Firestore `users/{uid}` profile doc that marks onboarding complete.
  *
- * Flow (brief §3.1): capture the 8 travel-style sliders FIRST with a live
+ * Flow (brief §3.1): capture the travel-style sliders FIRST with a live
  * radar that morphs as you drag, then a full-screen reveal of the finished
  * shape, then the profile fields — so the core mechanic clicks before any
- * form-filling.
+ * form-filling. 19 sliders as of the taxonomy migration (2026-09-02, was
+ * 8) — same flow, wider (docs/claude_code_prompt_taxonomy_migration.md
+ * instruction #2).
  */
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';

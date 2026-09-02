@@ -47,7 +47,7 @@ export function useLogExperienceNav() {
               city: place.city,
               lat: place.lat,
               lng: place.lng,
-              googlePlaceType: place.googlePlaceType,
+              googlePlaceTypes: place.googlePlaceTypes,
             }
           : {
               placeId: experience.placeId,
@@ -56,6 +56,7 @@ export function useLogExperienceNav() {
               city: experience.city,
               lat: 0,
               lng: 0,
+              googlePlaceTypes: [],
             },
         title: experience.title,
         categoryScores: experience.categoryScores,
@@ -86,6 +87,16 @@ export function useLogExperienceNav() {
             lat,
             lng,
             photoRef: place.photoRef,
+            // PlaceLike (a saved place / Local recommendation) only ever
+            // carries an already-computed categoryScores, not raw Google
+            // types — unlike the PlacesAutocomplete path, this place may
+            // not exist in `places` yet, so onExperienceCreated's
+            // server-side derivation (functions/src/lib/
+            // experienceCategoryDerivation.ts) has nothing to look up and
+            // falls back to the zero vector. Known gap, not the primary
+            // logging path the taxonomy migration targets — flagged
+            // rather than silently mis-scored.
+            googlePlaceTypes: [],
           },
           categoryScores: place.categoryScores,
         },

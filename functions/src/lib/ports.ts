@@ -43,6 +43,15 @@ export interface ExperienceStore {
   getExperience(experienceId: string): Promise<ExperienceRecord>;
 }
 
+/** Backs deriving an experience's categoryScores from its linked Place
+ * (taxonomy migration, 2026-09-02 — see lib/experienceCategoryDerivation.ts). */
+export interface PlaceStore {
+  /** The stored Google types for a place — empty array if the place doc
+   * doesn't exist or has none on file, so callers degrade to the zero
+   * vector rather than throwing. */
+  getPlaceTypes(placeId: string): Promise<string[]>;
+}
+
 export interface TripRecord {
   tripId: string;
   coverPhotoUrl?: string;

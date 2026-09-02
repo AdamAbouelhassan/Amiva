@@ -1,38 +1,47 @@
-import { TRAVEL_STYLE_CATEGORIES, TravelStyleCategory } from '@amiva/core';
+import { CATEGORY_IDS, CategoryId } from '@amiva/core';
 
-/** Human-readable labels for the 8 fixed categories — the only place
- * these display strings are defined (CLAUDE.md #6, DRY on constants). */
-export const CATEGORY_LABELS: Record<TravelStyleCategory, string> = {
-  adventure: 'Adventure',
-  luxury: 'Luxury',
+/** Human-readable labels for the 19 fixed categories — Google's own
+ * `label` field from packages/core/src/data/googlePlacesCategories.json,
+ * copied verbatim (not shortened/reinterpreted) so this stays the single
+ * place these display strings are defined (CLAUDE.md #6, DRY on
+ * constants) without silently drifting from the taxonomy's own naming. */
+export const CATEGORY_LABELS: Record<CategoryId, string> = {
+  automotive: 'Automotive',
+  business: 'Business',
   culture: 'Culture',
-  foodie: 'Foodie',
-  relaxation: 'Relaxation',
-  socialNightlife: 'Social',
-  nature: 'Nature',
-  budgetBackpacker: 'Backpacker',
+  education: 'Education',
+  entertainment_and_recreation: 'Entertainment and Recreation',
+  facilities: 'Facilities',
+  finance: 'Finance',
+  food_and_drink: 'Food and Drink',
+  geographical_areas: 'Geographical Areas',
+  government: 'Government',
+  health_and_wellness: 'Health and Wellness',
+  housing: 'Housing',
+  lodging: 'Lodging',
+  natural_features: 'Natural Features',
+  places_of_worship: 'Places of Worship',
+  services: 'Services',
+  shopping: 'Shopping',
+  sports: 'Sports',
+  transportation: 'Transportation',
 };
 
 /**
- * Clock order for `<TravelStyleRadar>` axes (brief §2): Adventure at 12,
- * then clockwise. This is a *display* order only — it is deliberately
- * decoupled from `TRAVEL_STYLE_CATEGORIES` (whose order is locked to
- * cosine-similarity vector alignment and must never change). Every radar
- * everywhere uses this order so a user's "shape" is visually comparable.
+ * Display order for `<TravelStyleRadar>` axes. Pre-migration this was a
+ * hand-curated "clock order" deliberately decoupled from CATEGORY_IDS
+ * (whose order is locked to cosine-similarity vector alignment). A
+ * 19-spoke radar is a known follow-up design problem (visually cluttered;
+ * several categories sit near-zero for essentially every user — see
+ * TravelStyleRadar.tsx) that the taxonomy migration explicitly defers
+ * rather than solves here, so there's no principled 19-item clock order
+ * to curate yet either. Placeholder: same order as CATEGORY_IDS. Revisit
+ * together with the radar redesign.
  */
-export const RADAR_AXIS_ORDER: TravelStyleCategory[] = [
-  'adventure',
-  'culture',
-  'foodie',
-  'socialNightlife',
-  'budgetBackpacker',
-  'relaxation',
-  'nature',
-  'luxury',
-];
+export const RADAR_AXIS_ORDER: CategoryId[] = [...CATEGORY_IDS];
 
 // sanity: display order must be a permutation of the canonical set
-if (RADAR_AXIS_ORDER.length !== TRAVEL_STYLE_CATEGORIES.length) {
+if (RADAR_AXIS_ORDER.length !== CATEGORY_IDS.length) {
   throw new Error('RADAR_AXIS_ORDER must contain every travel-style category exactly once');
 }
 

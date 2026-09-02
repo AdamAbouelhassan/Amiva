@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
-import type { TravelStyleCategory } from '@amiva/core';
+import type { CategoryId } from '@amiva/core';
 import { radius, shadow, spacing } from './spacing';
 import { categoryColor, categoryTextColor, darkColors, lightColors, ThemeColors } from './themes';
 import { makeType, TypeScale } from './typography';
@@ -15,9 +15,9 @@ export interface Theme {
   radius: typeof radius;
   shadow: typeof shadow;
   /** Category hue for fills / icons / radar. */
-  category: (c: TravelStyleCategory) => string;
+  category: (c: CategoryId) => string;
   /** Category hue safe as small text (WCAG AA on theme surfaces). */
-  categoryText: (c: TravelStyleCategory) => string;
+  categoryText: (c: CategoryId) => string;
   isDark: boolean;
   mode: ThemeMode;
   setMode: (m: ThemeMode) => void;

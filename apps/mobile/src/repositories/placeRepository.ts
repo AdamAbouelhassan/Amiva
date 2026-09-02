@@ -20,7 +20,7 @@ function fromFirestore(id: string, data: DocumentData): PlaceDoc {
     city: data.city,
     lat: data.lat,
     lng: data.lng,
-    googlePlaceType: data.googlePlaceType,
+    googlePlaceTypes: data.googlePlaceTypes ?? [],
     createdAt: toDate(data.createdAt),
   };
 }

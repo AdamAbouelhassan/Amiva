@@ -26,7 +26,7 @@
 import { DecayConfig, DEFAULT_DECAY_CONFIG } from './constants';
 import {
   clampTravelStyleVector,
-  TRAVEL_STYLE_CATEGORIES,
+  CATEGORY_IDS,
   TravelStyleVector,
 } from './types';
 
@@ -45,6 +45,16 @@ export interface StyleAdjustmentInput {
   /** When the triggering event occurred (usually "now"). */
   eventDate: Date;
   config?: DecayConfig;
+  /** Replaces the `isLogged ? config.wLogged : config.wSaved` weight
+   * selection entirely when provided — the star-rating-modulated nudge
+   * (taxonomy migration, 2026-09-02): a logged event's caller
+   * (functions/src/lib/travelStyleUpdate.ts) computes
+   * `config.wLogged * getStarRatingMultiplier(rating)` and passes it here,
+   * so this function doesn't need to know about star ratings at all — it
+   * just applies whatever weight it's given, decayed and capped exactly
+   * as before. A save never sets this (saves have no star rating), so its
+   * flat `config.wSaved` behavior is unchanged. */
+  weightOverride?: number;
 }
 
 export interface StyleAdjustmentResult {
@@ -62,14 +72,14 @@ export function daysBetween(from: Date, to: Date): number {
 
 export function computeStyleAdjustment(input: StyleAdjustmentInput): StyleAdjustmentResult {
   const config = input.config ?? DEFAULT_DECAY_CONFIG;
-  const weight = input.isLogged ? config.wLogged : config.wSaved;
+  const weight = input.weightOverride ?? (input.isLogged ? config.wLogged : config.wSaved);
   const daysSinceBaseline = daysBetween(input.travelStyleLastUpdated, input.eventDate);
   const decayFactor = Math.exp(-config.decayLambda * daysSinceBaseline);
 
   const delta = {} as TravelStyleVector;
   const travelStyle = {} as TravelStyleVector;
 
-  for (const category of TRAVEL_STYLE_CATEGORIES) {
+  for (const category of CATEGORY_IDS) {
     const rawDelta =
       (input.experienceVector[category] - input.currentVector[category]) * weight * decayFactor;
     const cappedDelta = Math.min(config.maxStep, Math.max(-config.maxStep, rawDelta));

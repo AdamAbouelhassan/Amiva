@@ -8,6 +8,10 @@ export const upsertPlace = functions.https.onCall(async (data: PlaceUpsertInput,
   if (!data.placeId || !data.name || !data.country || !data.city) {
     throw new functions.https.HttpsError('invalid-argument', 'placeId, name, country, and city are required.');
   }
-  await new FirestorePlaceStore().upsertPlace(data, new Date());
+  // Defensive default — an older/un-updated client build could still send
+  // no googlePlaceTypes at all; falling back to [] degrades to the zero
+  // vector at scoring time (estimateCategoryScoresFromPlace) rather than
+  // rejecting the place entirely.
+  await new FirestorePlaceStore().upsertPlace({ ...data, googlePlaceTypes: data.googlePlaceTypes ?? [] }, new Date());
   return { success: true };
 });

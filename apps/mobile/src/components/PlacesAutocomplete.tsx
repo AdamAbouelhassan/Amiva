@@ -17,7 +17,10 @@ export interface SelectedPlace {
   city: string;
   lat: number;
   lng: number;
-  googlePlaceType?: string;
+  /** Taxonomy migration (2026-09-02): the full Google `types` array (was
+   * only `types?.[0]`) — an experience's categoryScores is now derived
+   * server-side from every type on the place, not just the first. */
+  googlePlaceTypes: string[];
   /** First Google `photo_reference` — used as the default experience photo
    * when the user doesn't add their own. */
   photoRef?: string;
@@ -82,7 +85,7 @@ export function PlacesAutocomplete({ onSelect, initialPlace }: PlacesAutocomplet
         extractComponent(result.address_components ?? [], 'administrative_area_level_1'),
       lat: result.geometry?.location?.lat,
       lng: result.geometry?.location?.lng,
-      googlePlaceType: result.types?.[0],
+      googlePlaceTypes: result.types ?? [],
       photoRef: result.photos?.[0]?.photo_reference,
     };
 

@@ -7,4 +7,5 @@ export * from './feedSections';
 export * from './groupBlending';
 export * from './tripCategorization';
 export * from './profileInsights';
+export * from './googlePlaceTaxonomy';
 export * from './placeCategoryEstimate';

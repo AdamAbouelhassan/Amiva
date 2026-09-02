@@ -5,6 +5,7 @@ import {
   FriendStore,
   NotificationRecord,
   NotificationStore,
+  PlaceStore,
   TripRecord,
   TripStore,
   UserStore,
@@ -108,6 +109,18 @@ export class FakeFriendStore implements FriendStore {
   async updateCompatibilityScore(userId: string, friendId: string, score: number): Promise<void> {
     const edge = this.edges.find((e) => e.userId === userId && e.friendId === friendId);
     if (edge) edge.compatibilityScore = score;
+  }
+}
+
+export class FakePlaceStore implements PlaceStore {
+  constructor(private types: Map<string, string[]> = new Map()) {}
+
+  static seeded(entries: Record<string, string[]>): FakePlaceStore {
+    return new FakePlaceStore(new Map(Object.entries(entries)));
+  }
+
+  async getPlaceTypes(placeId: string): Promise<string[]> {
+    return this.types.get(placeId) ?? [];
   }
 }
 

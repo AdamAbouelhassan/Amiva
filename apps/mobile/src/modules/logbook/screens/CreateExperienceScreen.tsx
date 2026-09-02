@@ -4,10 +4,23 @@
  * what ultimately triggers `onExperienceCreated` server-side (travel
  * style decay + trip cover photo), which is what makes the match % show
  * up correctly back in the Discovery feed.
+ *
+ * Taxonomy migration (2026-09-02): the manual category-slider step is
+ * gone — categoryScores is derived algorithmically from the selected
+ * Place's Google types, full stop (docs/claude_code_prompt_taxonomy_migration.md
+ * instruction #3). What's submitted here is a zero-vector placeholder
+ * (CLAUDE.md principle #2: never let client computation become the
+ * persisted, displayed-everywhere-else value) — onExperienceCreated
+ * immediately overwrites it with the real, server-derived vector, the
+ * same "create now, backfill a moment later" shape already used here for
+ * the trip cover photo. The radar below is a live *preview only*, computed
+ * client-side with the same pure estimateCategoryScoresFromPlace function
+ * the server uses, purely so the user sees roughly what they're about to
+ * get before posting.
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
-import { TravelStyleVector, zeroTravelStyleVector } from '@amiva/core';
+import { estimateCategoryScoresFromPlace, zeroTravelStyleVector } from '@amiva/core';
 import { Button } from '../../../components/Button';
 import { DateField } from '../../../components/DateField';
 import { PlacesAutocomplete, SelectedPlace } from '../../../components/PlacesAutocomplete';
@@ -15,7 +28,6 @@ import { ScreenContainer } from '../../../components/ScreenContainer';
 import { SelectField } from '../../../components/SelectField';
 import { TextField } from '../../../components/TextField';
 import { TravelStyleRadar } from '../../../components/TravelStyleRadar';
-import { TravelStyleSliders } from '../../../components/TravelStyleSliders';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { placePhotoUrl } from '../../../lib/placePhoto';
 import { uploadPhotoSet } from '../../../lib/uploadPhotos';
@@ -46,12 +58,16 @@ export function CreateExperienceScreen({ route, navigation }: CreateExperienceSc
   const [notes, setNotes] = useState('');
   const [rating, setRating] = useState(5);
   const [localPhotoUris, setLocalPhotoUris] = useState<string[]>([]);
-  const [categoryScores, setCategoryScores] = useState<TravelStyleVector>(
-    prefill?.categoryScores ?? zeroTravelStyleVector(),
-  );
   const [date, setDate] = useState(new Date());
   const [dateSource, setDateSource] = useState<'exif' | 'manual'>('manual');
   const [uploading, setUploading] = useState(false);
+
+  // Preview only — never submitted. The server derives the real value
+  // from the Place doc's stored types once the experience is created.
+  const previewCategoryScores = useMemo(
+    () => estimateCategoryScoresFromPlace(place?.googlePlaceTypes ?? []),
+    [place],
+  );
 
   const createExperience = useCreateExperience();
 
@@ -77,7 +93,9 @@ export function CreateExperienceScreen({ route, navigation }: CreateExperienceSc
         notes,
         rating,
         photoUrls,
-        categoryScores,
+        // Placeholder — onExperienceCreated derives and overwrites the
+        // real value server-side (see header comment).
+        categoryScores: zeroTravelStyleVector(),
         date,
         dateSource,
       });
@@ -157,16 +175,17 @@ export function CreateExperienceScreen({ route, navigation }: CreateExperienceSc
         }}
       />
 
-      <View style={{ gap: spacing.sm }}>
-        <Text style={t.type.subtitle}>Category profile</Text>
-        <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
-          Rate this experience across the same 8 categories — this is what powers everyone's match % against it.
-        </Text>
-        <View style={{ alignItems: 'center' }}>
-          <TravelStyleRadar series={[{ vector: categoryScores }]} size={200} showLabels={false} />
+      {place && (
+        <View style={{ gap: spacing.sm }}>
+          <Text style={t.type.subtitle}>Category profile</Text>
+          <Text style={[t.type.bodySmall, { color: t.colors.textSecondary }]}>
+            Estimated automatically from {place.name} — this is what powers everyone's match % against it.
+          </Text>
+          <View style={{ alignItems: 'center' }}>
+            <TravelStyleRadar series={[{ vector: previewCategoryScores }]} size={200} showLabels={false} />
+          </View>
         </View>
-        <TravelStyleSliders value={categoryScores} onChange={setCategoryScores} />
-      </View>
+      )}
 
       <Button label="Post" onPress={submit} loading={uploading || createExperience.isPending} disabled={!canSubmit} />
     </ScreenContainer>
