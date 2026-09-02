@@ -118,10 +118,9 @@ export function LogbookHomeScreen({ navigation }: LogbookHomeScreenProps) {
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'trips', label: 'Trips' },
-            { value: 'countries', label: 'By country' },
             { value: 'timeline', label: 'Timeline' },
-          ]}
+            { value: 'countries', label: 'By country' },
+            ]}
         />
       </View>
 
